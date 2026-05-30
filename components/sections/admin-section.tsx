@@ -27,8 +27,8 @@ import {
   Layers,
   History,
 } from "lucide-react"
-import { SectionsManagementTab } from "./sections-management-tab"
-import { SectionAuditTab } from "./section-audit-tab"
+import { SectionsManagementTab } from "@/components/sections/sections-management-tab"
+import { SectionAuditTab } from "@/components/sections/section-audit-tab"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -1057,7 +1057,7 @@ export function AdminSection() {
                               onClick={() => handleToggleTechAdmin(user)}
                               variant="outline"
                               size="sm"
-                              title={user.secondaryRole === "Тех. Администратор" ? "Снять Тех. Администратора" : "Выдать Тех. Администратора"}
+                              title={user.secondaryRole === "Тех. Администратор" ? "Снять Тех. Администратора" : "Выда��ь Тех. Администратора"}
                               className={`h-8 w-8 p-0 transition-all ${
                                 user.secondaryRole === "Тех. Администратор"
                                   ? "border-amber-500 text-amber-500 hover:bg-amber-500/10"
