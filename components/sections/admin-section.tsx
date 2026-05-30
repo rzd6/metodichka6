@@ -24,7 +24,11 @@ import {
   Link,
   Terminal,
   RefreshCw,
+  Layers,
+  History,
 } from "lucide-react"
+import { SectionsManagementTab } from "./sections-management-tab"
+import { SectionAuditTab } from "./section-audit-tab"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -56,6 +60,8 @@ function getCurrentUser() {
 
 export function AdminSection() {
   const { theme } = useTheme()
+  const [activeTab, setActiveTab] = useState<"accounts" | "sections" | "audit">("accounts")
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingUser, setEditingUser] = useState<string | null>(null)
@@ -520,8 +526,90 @@ export function AdminSection() {
     )
   }
 
+  const isTechAdminUser = isCurrentTechAdmin()
+
+  // If showing a non-accounts tab that needs full-page editor, render separately
+  if (activeTab === "sections" && isTechAdminUser) {
+    return (
+      <div className="space-y-3 opacity-95">
+        {/* Tab bar */}
+        <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+          {[
+            { id: "accounts" as const, label: "Аккаунты", icon: Users },
+            { id: "sections" as const, label: "Разделы", icon: Layers },
+            { id: "audit" as const, label: "Аудит разделов", icon: History },
+          ].map(({ id, label, icon: Ic }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={activeTab === id ? { backgroundColor: getTieColor(), color: "#fff" } : { color: theme.mode === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
+            >
+              <Ic className="w-4 h-4" />
+              <span className="hidden sm:block">{label}</span>
+            </button>
+          ))}
+        </div>
+        {currentUser && (
+          <SectionsManagementTab
+            currentUser={{ id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role, vkAccessToken: "", secondaryRole: currentUser.secondaryRole, reportTag: currentUser.reportTag }}
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
+          />
+        )}
+      </div>
+    )
+  }
+
+  if (activeTab === "audit" && isTechAdminUser) {
+    return (
+      <div className="space-y-3 opacity-95">
+        {/* Tab bar */}
+        <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+          {[
+            { id: "accounts" as const, label: "Аккаунты", icon: Users },
+            { id: "sections" as const, label: "Разделы", icon: Layers },
+            { id: "audit" as const, label: "Аудит разделов", icon: History },
+          ].map(({ id, label, icon: Ic }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={activeTab === id ? { backgroundColor: getTieColor(), color: "#fff" } : { color: theme.mode === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
+            >
+              <Ic className="w-4 h-4" />
+              <span className="hidden sm:block">{label}</span>
+            </button>
+          ))}
+        </div>
+        <SectionAuditTab tieColor={getTieColor()} isDark={theme.mode === "dark"} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3 opacity-95">
+      {/* Tab bar — only for tech admins */}
+      {isTechAdminUser && (
+        <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+          {[
+            { id: "accounts" as const, label: "Аккаунты", icon: Users },
+            { id: "sections" as const, label: "Разделы", icon: Layers },
+            { id: "audit" as const, label: "Аудит разделов", icon: History },
+          ].map(({ id, label, icon: Ic }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={activeTab === id ? { backgroundColor: getTieColor(), color: "#fff" } : { color: theme.mode === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
+            >
+              <Ic className="w-4 h-4" />
+              <span className="hidden sm:block">{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
         <div
