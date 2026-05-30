@@ -14,7 +14,7 @@ import {
   Terminal,
   Bell,
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { SettingsModal } from "@/components/settings-modal"
 import { NotificationsModal } from "@/components/notifications-modal"
 import { useTheme } from "@/contexts/theme-context"
@@ -35,6 +35,12 @@ import {
 } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
 import { getAvatarFilterFromColor } from "@/lib/color-utils"
+import {
+  getCustomSections,
+  toggleCustomSectionVisibility,
+  type CustomSection,
+} from "@/data/custom-sections"
+import { getIconComponent } from "@/components/section-editor/section-editor-header"
 
 interface LocalUser {
   id: string
@@ -58,10 +64,25 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const [showNotifications, setShowNotifications] = useState(false)
   const [customAvatar, setCustomAvatar] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [customSections, setCustomSections] = useState<CustomSection[]>([])
   const { theme } = useTheme()
   const router = useRouter()
 
+  const isTechAdmin = user.role === "Тех. Администратор" || user.secondaryRole === "Тех. Администратор"
+
   const [displayTag, setDisplayTag] = useState("")
+
+  const loadCustomSections = useCallback(async () => {
+    const data = await getCustomSections()
+    setCustomSections(data)
+  }, [])
+
+  useEffect(() => {
+    loadCustomSections()
+    const handler = () => loadCustomSections()
+    window.addEventListener("customSectionsUpdated", handler)
+    return () => window.removeEventListener("customSectionsUpdated", handler)
+  }, [loadCustomSections])
 
   useEffect(() => {
     const loadAvatar = () => {
@@ -549,6 +570,54 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                 {!isCollapsed && <span className="ml-2 text-sm truncate">{section.label}</span>}
               </Button>
             ))}
+
+            {/* Custom sections */}
+            {customSections
+              .filter((cs) => !cs.is_hidden || isTechAdmin)
+              .map((cs) => {
+                const IconComp = getIconComponent(cs.icon)
+                const isActive = activeSection === cs.id
+                const iconColor = isActive ? "#ffffff" : theme.mode === "dark" ? "#ffffff" : "#000000"
+                return (
+                  <div key={cs.id} className={`relative group flex items-center`}>
+                    <Button
+                      variant="ghost"
+                      className={`flex-1 ${isCollapsed ? "justify-center px-2 h-10" : "justify-start h-9"} ${isActive ? "text-white" : getTextColor()} hover:bg-white/10`}
+                      style={isActive ? { backgroundColor: getTieColor() } : { backgroundColor: "transparent" }}
+                      onClick={() => onSectionChange(cs.id)}
+                      title={isCollapsed ? cs.title : undefined}
+                    >
+                      <span className="flex items-center justify-center w-5 h-5 flex-shrink-0">
+                        <IconComp className="w-5 h-5" style={{ color: iconColor }} />
+                      </span>
+                      {!isCollapsed && (
+                        <span className={`ml-2 text-sm truncate ${cs.is_hidden ? "opacity-50 italic" : ""}`}>
+                          {cs.title}
+                          {cs.is_hidden && " (скрыт)"}
+                        </span>
+                      )}
+                    </Button>
+                    {/* Visibility toggle for tech admins, only in expanded mode */}
+                    {isTechAdmin && !isCollapsed && (
+                      <button
+                        className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-white/10"
+                        title={cs.is_hidden ? "Сделать видимым" : "Скрыть раздел"}
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          await toggleCustomSectionVisibility(cs.id, !cs.is_hidden, { nickname: user.nickname, role: user.role }, cs.title)
+                          loadCustomSections()
+                          window.dispatchEvent(new Event("customSectionsUpdated"))
+                        }}
+                      >
+                        {cs.is_hidden
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={getTieColor()} strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.mode === "dark" ? "#ffffff80" : "#00000060"} strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        }
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
           </nav>
 
           <div className={`mt-auto pt-4 mb-2 ${isCollapsed ? "space-y-2" : "space-y-2"}`}>

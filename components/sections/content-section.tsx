@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { LecturesSection } from "./lectures-section"
 import { TrainingSection } from "./training-section"
 import { EventsSection } from "./events-section"
@@ -20,6 +21,8 @@ import { RZDWebsiteSection } from "./rzd-website-section"
 import { BugReportSection } from "./bug-report-section"
 import { TrainScheduleSection } from "./train-schedule-section"
 import { BugReportButton } from "@/components/bug-report-button"
+import { CustomSectionView } from "./custom-section-view"
+import { getCustomSections, type CustomSection } from "@/data/custom-sections"
 import type { UserRole } from "@/data/users"
 
 const SECTION_LABELS: Record<string, string> = {
@@ -67,7 +70,22 @@ function SectionWrapper({ activeSection, children }: { activeSection: string; ch
 }
 
 export function ContentSection({ activeSection, onSectionChange, userRole, userNickname }: ContentSectionProps) {
+  const [customSections, setCustomSections] = useState<CustomSection[]>([])
+
+  useEffect(() => {
+    getCustomSections().then(setCustomSections)
+    const handler = () => getCustomSections().then(setCustomSections)
+    window.addEventListener("customSectionsUpdated", handler)
+    return () => window.removeEventListener("customSectionsUpdated", handler)
+  }, [])
+
+  const customSection = customSections.find((cs) => cs.id === activeSection)
+
   const inner = (() => {
+    // Custom section takes priority if found
+    if (customSection) {
+      return <CustomSectionView section={customSection} userRole={userRole} />
+    }
     switch (activeSection) {
       case "information":
         return <InformationSection userRole={userRole} />
