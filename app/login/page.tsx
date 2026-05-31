@@ -79,7 +79,7 @@ export default function LoginPage() {
 
     VKID.Config.init({
       app: VK_APP_ID,
-      redirectUrl: `${window.location.origin}/login`,
+      redirectUrl: "https://metodichka-rzd6.vercel.app/login",
       responseMode: VKID.ConfigResponseMode.Callback,
       source: VKID.ConfigSource.LOWCODE,
       scope: "",
