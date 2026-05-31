@@ -6,6 +6,7 @@ import { getThemeColor } from "@/lib/theme-utils"
 import { Check, Copy, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
 import type { CustomSection, ContentBlock } from "@/data/custom-sections"
 import type { UserRole } from "@/data/users"
+import { proxyImageUrl } from "@/lib/image-proxy"
 
 interface Props {
   section: CustomSection
@@ -65,7 +66,23 @@ function BlockRenderer({ block, tieColor, isDark }: { block: ContentBlock; tieCo
     return (
       <figure className="space-y-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={block.url} alt={block.alt ?? block.caption ?? ""} className="rounded-xl max-w-full object-cover" />
+        <img
+          src={proxyImageUrl(block.url)}
+          alt={block.alt ?? block.caption ?? ""}
+          className="rounded-xl max-w-full object-cover"
+          onError={(e) => {
+            const img = e.currentTarget
+            if (!img.dataset.errored) {
+              img.dataset.errored = "1"
+              img.style.display = "none"
+              const placeholder = document.createElement("div")
+              placeholder.className = "rounded-xl flex items-center justify-center text-xs py-8 px-4 text-center"
+              placeholder.style.cssText = `background:${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}; color:${isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}; border:1px dashed ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`
+              placeholder.textContent = block.caption ? `[${block.caption}]` : "[Изображение недоступно]"
+              img.parentNode?.insertBefore(placeholder, img)
+            }
+          }}
+        />
         {block.caption && <figcaption className={`text-xs text-center ${textMuted}`}>{block.caption}</figcaption>}
       </figure>
     )

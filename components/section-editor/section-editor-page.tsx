@@ -15,7 +15,7 @@ interface Actor {
 interface SectionEditorPageProps {
   section: CustomSection | null  // null = создание нового
   actor: Actor
-  onSave: (section: CustomSection) => Promise<void>
+  onSave: (section: CustomSection) => Promise<string | null>  // null = success, string = error message
   onCancel: () => void
 }
 
@@ -47,11 +47,14 @@ export function SectionEditorPage({
   })
 
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const handleSave = useCallback(async () => {
     setSaving(true)
+    setSaveError(null)
     try {
-      await onSave(draft)
+      const err = await onSave(draft)
+      if (err) setSaveError(err)
     } finally {
       setSaving(false)
     }
@@ -75,6 +78,14 @@ export function SectionEditorPage({
           isDark={isDark}
         />
       </div>
+
+      {/* Save error banner */}
+      {saveError && (
+        <div className="mx-4 mt-3 px-4 py-2.5 rounded-xl border border-red-500/40 text-xs text-red-400 flex items-center gap-2" style={{ backgroundColor: "rgba(239,68,68,0.08)" }}>
+          <span className="flex-1">{saveError}</span>
+          <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-300">✕</button>
+        </div>
+      )}
 
       {/* Canvas */}
       <div className="pt-4 pb-8">

@@ -36,6 +36,7 @@ import {
 } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
 import { getAvatarFilterFromColor } from "@/lib/color-utils"
+import { proxyImageUrl } from "@/lib/image-proxy"
 import {
   getCustomSections,
   toggleCustomSectionVisibility,
@@ -88,6 +89,14 @@ function DevRoleSwitcher({
       const stored = JSON.parse(localStorage.getItem("currentUser") || "{}")
       stored.role = role
       stored.isDev = true
+      // When switching away from Тех. Администратор, remove secondaryRole
+      // so role-based visibility checks reflect the selected role accurately.
+      // When switching back to Тех. Администратор, restore it.
+      if (role === "Тех. Администратор") {
+        stored.secondaryRole = "Тех. Администратор"
+      } else {
+        delete stored.secondaryRole
+      }
       localStorage.setItem("currentUser", JSON.stringify(stored))
       window.dispatchEvent(new CustomEvent("devRoleChanged", { detail: { role } }))
       // Full reload so all role-based UI recalculates cleanly
@@ -612,12 +621,13 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                     style={{ borderColor: getTieColor() }}
                   >
                     <Image
-                      src={customAvatar || getAvatarForRole(user.role) || "/placeholder.svg"}
+                      src={proxyImageUrl(customAvatar || getAvatarForRole(user.role) || "/placeholder.svg")}
                       alt="Avatar"
                       width={48}
                       height={48}
                       className="w-full h-full object-cover object-center scale-110"
                       style={customAvatar ? undefined : { filter: getAvatarFilter() }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = getAvatarForRole(user.role) || "/placeholder.svg" }}
                     />
                   </div>
                   <div className="flex-1 min-w-0 flex items-center">
@@ -646,12 +656,13 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                 style={{ borderColor: getTieColor() }}
               >
                 <Image
-                  src={customAvatar || getAvatarForRole(user.role) || "/placeholder.svg"}
+                  src={proxyImageUrl(customAvatar || getAvatarForRole(user.role) || "/placeholder.svg")}
                   alt="Avatar"
                   width={48}
                   height={48}
                   className="w-full h-full object-cover object-center scale-110"
                   style={customAvatar ? undefined : { filter: getAvatarFilter() }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = getAvatarForRole(user.role) || "/placeholder.svg" }}
                 />
               </div>
             )}
