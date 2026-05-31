@@ -100,8 +100,15 @@ export default function LoginPage() {
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload: any) => {
-        const { code, device_id } = payload
-        VKID.Auth.exchangeCode(code, device_id)
+        const { code, device_id, state, code_verifier } = payload
+        // Используем наш серверный прокси вместо VKID.Auth.exchangeCode,
+        // т.к. VK не разрешает CORS для прямых browser→id.vk.com запросов.
+        fetch("/api/vk/exchange", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, device_id, state, code_verifier }),
+        })
+          .then((r) => r.json())
           .then(vkidOnSuccess)
           .catch(vkidOnError)
       })
