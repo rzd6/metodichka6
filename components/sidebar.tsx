@@ -13,6 +13,7 @@ import {
   Wrench,
   Terminal,
   Bell,
+  FlaskConical,
 } from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
 import { SettingsModal } from "@/components/settings-modal"
@@ -57,6 +58,113 @@ interface SidebarProps {
   isCollapsed: boolean
   setIsCollapsed: (collapsed: boolean) => void
   user: LocalUser
+}
+
+const DEV_ROLES: UserRole[] = [
+  "Тех. Администратор",
+  "Руководство",
+  "Заместитель",
+  "Старший Состав",
+  "ЦдУД",
+  "ПТО",
+]
+
+function DevRoleSwitcher({
+  currentRole,
+  isCollapsed,
+  tieColor,
+  isDark,
+}: {
+  currentRole: UserRole
+  isCollapsed: boolean
+  tieColor: string
+  isDark: boolean
+}) {
+  const [open, setOpen] = useState(false)
+
+  const switchRole = (role: UserRole) => {
+    setOpen(false)
+    try {
+      const stored = JSON.parse(localStorage.getItem("currentUser") || "{}")
+      stored.role = role
+      stored.isDev = true
+      localStorage.setItem("currentUser", JSON.stringify(stored))
+      window.dispatchEvent(new CustomEvent("devRoleChanged", { detail: { role } }))
+      // Full reload so all role-based UI recalculates cleanly
+      window.location.reload()
+    } catch {
+      // ignore
+    }
+  }
+
+  const textMuted = isDark ? "text-white/40" : "text-black/40"
+  const bg = isDark ? "#1a1a1a" : "#f5f5f5"
+  const border = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+
+  if (isCollapsed) {
+    return (
+      <div className="relative flex justify-center mb-2">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="w-10 h-10 rounded-lg flex items-center justify-center border"
+          style={{ borderColor: tieColor + "60", color: tieColor }}
+          title="DEV: сменить роль"
+        >
+          <FlaskConical className="w-4 h-4" />
+        </button>
+        {open && (
+          <div
+            className="absolute bottom-12 left-0 z-50 rounded-xl shadow-xl border min-w-[160px] overflow-hidden"
+            style={{ backgroundColor: bg, borderColor: border }}
+          >
+            <p className={`text-[10px] uppercase font-bold px-3 pt-2 pb-1 ${textMuted}`}>DEV: роль</p>
+            {DEV_ROLES.map((r) => (
+              <button
+                key={r}
+                onClick={() => switchRole(r)}
+                className="w-full text-left px-3 py-1.5 text-xs hover:opacity-80 transition-opacity"
+                style={{ color: r === currentRole ? tieColor : isDark ? "#fff" : "#000", fontWeight: r === currentRole ? 700 : 400 }}
+              >
+                {r === currentRole ? "• " : ""}{r}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative mb-2 mx-0">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-opacity hover:opacity-80"
+        style={{ borderColor: tieColor + "60", color: tieColor, backgroundColor: tieColor + "10" }}
+      >
+        <FlaskConical className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="flex-1 text-left truncate">DEV: {currentRole}</span>
+        <span className="text-[10px] opacity-60">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div
+          className="absolute bottom-10 left-0 right-0 z-50 rounded-xl shadow-xl border overflow-hidden"
+          style={{ backgroundColor: bg, borderColor: border }}
+        >
+          <p className={`text-[10px] uppercase font-bold px-3 pt-2 pb-1 ${textMuted}`}>Сменить роль</p>
+          {DEV_ROLES.map((r) => (
+            <button
+              key={r}
+              onClick={() => switchRole(r)}
+              className="w-full text-left px-3 py-1.5 text-xs hover:opacity-80 transition-opacity"
+              style={{ color: r === currentRole ? tieColor : isDark ? "#fff" : "#000", fontWeight: r === currentRole ? 700 : 400 }}
+            >
+              {r === currentRole ? "• " : ""}{r}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsCollapsed, user }: SidebarProps) {
@@ -619,6 +727,16 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                 )
               })}
           </nav>
+
+          {/* Dev role switcher — visible only to the hidden test account */}
+          {user.id === "dev-test-account" && (
+            <DevRoleSwitcher
+              currentRole={user.role}
+              isCollapsed={isCollapsed}
+              tieColor={getTieColor()}
+              isDark={theme.mode === "dark"}
+            />
+          )}
 
           <div className={`mt-auto pt-4 mb-2 ${isCollapsed ? "space-y-2" : "space-y-2"}`}>
             {!isCollapsed ? (

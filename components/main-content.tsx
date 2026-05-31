@@ -117,6 +117,9 @@ function MainContentInner() {
 
     // Verify + refresh from DB in background (does NOT log out on network error)
     const refreshFromDb = async (currentData: LocalUser) => {
+      // Dev test account lives only in localStorage — skip DB verification entirely
+      if ((currentData as any).isDev === true || currentData.id === "dev-test-account") return
+
       try {
         const allUsers = await getAllUsers(true)
         const dbUser = allUsers.find((u) => u.id === currentData.id)
