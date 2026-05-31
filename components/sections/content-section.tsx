@@ -69,17 +69,43 @@ function SectionWrapper({ activeSection, children }: { activeSection: string; ch
   )
 }
 
+// Built-in section IDs — any activeSection NOT in this set is treated as a potential custom section
+const BUILTIN_IDS = new Set([
+  "contents", "information", "duty", "reports-section", "lectures", "training",
+  "events", "exams", "interviews", "retro-train", "reports", "orders", "gov-wave",
+  "report-compiler", "admin", "report-generation", "rzd-website", "train-schedule", "bug-report",
+])
+
 export function ContentSection({ activeSection, onSectionChange, userRole, userNickname }: ContentSectionProps) {
   const [customSections, setCustomSections] = useState<CustomSection[]>([])
+  const [customSectionsLoaded, setCustomSectionsLoaded] = useState(false)
 
   useEffect(() => {
-    getCustomSections().then(setCustomSections)
+    getCustomSections().then((data) => {
+      setCustomSections(data)
+      setCustomSectionsLoaded(true)
+    })
     const handler = () => getCustomSections().then(setCustomSections)
     window.addEventListener("customSectionsUpdated", handler)
     return () => window.removeEventListener("customSectionsUpdated", handler)
   }, [])
 
   const customSection = customSections.find((cs) => cs.id === activeSection)
+  const isBuiltin = BUILTIN_IDS.has(activeSection)
+
+  // If activeSection looks like a custom section but hasn't loaded yet — show skeleton
+  if (!isBuiltin && !customSectionsLoaded) {
+    return (
+      <SectionWrapper activeSection={activeSection}>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-8 rounded-xl bg-white/10 w-1/3" />
+          <div className="h-4 rounded-lg bg-white/5 w-full" />
+          <div className="h-4 rounded-lg bg-white/5 w-4/5" />
+          <div className="h-4 rounded-lg bg-white/5 w-3/5" />
+        </div>
+      </SectionWrapper>
+    )
+  }
 
   const inner = (() => {
     // Custom section takes priority if found
@@ -126,6 +152,14 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "bug-report":
         return <BugReportSection />
       default:
+        // Custom section loaded but not found — show "not found" instead of Information
+        if (customSectionsLoaded && !isBuiltin) {
+          return (
+            <div className="py-16 text-center opacity-40">
+              <p className="text-sm">Раздел не найден</p>
+            </div>
+          )
+        }
         return <InformationSection userRole={userRole} />
     }
   })()

@@ -39,8 +39,10 @@ import { getAvatarFilterFromColor } from "@/lib/color-utils"
 import { proxyImageUrl } from "@/lib/image-proxy"
 import {
   getCustomSections,
+  getBuiltinOverrides,
   toggleCustomSectionVisibility,
   type CustomSection,
+  type BuiltinSectionOverride,
 } from "@/data/custom-sections"
 import { getIconComponent } from "@/components/section-editor/section-editor-header"
 
@@ -182,6 +184,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const [customAvatar, setCustomAvatar] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [customSections, setCustomSections] = useState<CustomSection[]>([])
+  const [builtinOverrides, setBuiltinOverrides] = useState<Record<string, BuiltinSectionOverride>>({})
   const { theme } = useTheme()
   const router = useRouter()
 
