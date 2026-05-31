@@ -3,13 +3,24 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { contentData } from "@/data/content"
 import { Copy, Check, Dumbbell } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import { getBuiltinOverrides } from "@/data/custom-sections"
 
 export function TrainingSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
+  const [contentOverride, setContentOverride] = useState<any>(null)
   const { theme } = useTheme()
+
+  useEffect(() => {
+    const load = () => getBuiltinOverrides().then((ov) => {
+      setContentOverride(ov["training"]?.content_override ?? null)
+    })
+    load()
+    window.addEventListener("builtinOverridesUpdated", load)
+    return () => window.removeEventListener("builtinOverridesUpdated", load)
+  }, [])
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
@@ -107,7 +118,7 @@ export function TrainingSection() {
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">
-        {contentData.training.map((training) => (
+        {(contentOverride?.main ?? contentData.training).map((training: any) => (
           <AccordionItem
             key={training.id}
             value={training.id}

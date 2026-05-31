@@ -203,7 +203,7 @@ function AccordionBlock({ block, tieColor, isDark, border, textBase, textMuted }
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({})
 
   // Support both legacy (title+body) and new (items[]) formats
-  const items: { id: string; title: string; body: string }[] =
+  const items: { id: string; title: string; body: string; blocks?: any[] }[] =
     block.items && block.items.length > 0
       ? block.items
       : [{ id: "legacy", title: block.title ?? "", body: block.body ?? "" }]
@@ -214,6 +214,7 @@ function AccordionBlock({ block, tieColor, isDark, border, textBase, textMuted }
     <div className={`rounded-xl border ${border} overflow-hidden divide-y`} style={{ borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
       {items.map((item) => {
         const isOpen = !!openItems[item.id]
+        const hasBlocks = Array.isArray(item.blocks) && item.blocks.length > 0
         return (
           <div key={item.id}>
             <button
@@ -228,8 +229,21 @@ function AccordionBlock({ block, tieColor, isDark, border, textBase, textMuted }
               }
             </button>
             {isOpen && (
-              <div className={`px-4 py-3 text-sm leading-relaxed border-t ${border} ${textMuted} whitespace-pre-wrap`}>
-                {item.body}
+              <div className={`px-4 py-3 border-t ${border}`}>
+                {hasBlocks
+                  ? (
+                    // Render nested structured blocks
+                    <div className="space-y-3">
+                      {item.blocks!.map((subBlock: any) => (
+                        <BlockRenderer key={subBlock.id} block={subBlock} tieColor={tieColor} isDark={isDark} />
+                      ))}
+                    </div>
+                  )
+                  : (
+                    // Legacy plain text body
+                    <p className={`text-sm leading-relaxed ${textMuted} whitespace-pre-wrap`}>{item.body}</p>
+                  )
+                }
               </div>
             )}
           </div>

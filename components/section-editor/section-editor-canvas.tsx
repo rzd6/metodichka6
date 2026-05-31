@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import type React from "react"
 import { Button } from "@/components/ui/button"
 import {
   Trash2, GripVertical, ChevronDown, ChevronUp,
@@ -253,7 +254,7 @@ function BlockEditor({ block, idx, total, onChange, onRemove, onMove, tieColor, 
     // Migrate legacy single-item format
     const items: AccordionItem[] = block.items && block.items.length > 0
       ? block.items
-      : [{ id: `acc-${Date.now()}`, title: block.title ?? "Пункт 1", body: block.body ?? "" }]
+      : [{ id: `acc-${Date.now()}`, title: block.title ?? "Пункт 1", body: block.body ?? "", blocks: [] }]
 
     const updateItem = (i: number, patch: Partial<AccordionItem>) => {
       const next = items.map((it, idx) => idx === i ? { ...it, ...patch } : it)
@@ -266,47 +267,28 @@ function BlockEditor({ block, idx, total, onChange, onRemove, onMove, tieColor, 
     }
 
     const addItem = () => {
-      onChange({ ...block, items: [...items, newAccordionItem()] })
+      onChange({ ...block, items: [...items, { ...newAccordionItem(), blocks: [] }] })
     }
 
     return wrap(
       <div className="space-y-3">
         {items.map((item, i) => (
-          <div key={item.id} className={`rounded-xl border ${border} overflow-hidden`}>
-            <div className={`flex items-center gap-2 px-3 py-2 border-b ${border}`}
-              style={{ backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}>
-              <span className={`text-xs font-semibold flex-1 ${textMuted}`}>Пункт {i + 1}</span>
-              {items.length > 1 && (
-                <button
-                  onClick={() => removeItem(i)}
-                  className="p-1 rounded hover:bg-red-500/20 transition-colors"
-                  title="Удалить пункт"
-                >
-                  <X className="w-3 h-3 text-red-500" />
-                </button>
-              )}
-            </div>
-            <div className="p-2.5 space-y-2">
-              <div>
-                <span className={labelCls}>Заголовок пункта</span>
-                <input
-                  className={inputCls}
-                  value={item.title}
-                  onChange={(e) => updateItem(i, { title: e.target.value })}
-                  placeholder="Заголовок..."
-                />
-              </div>
-              <div>
-                <span className={labelCls}>Содержимое пункта</span>
-                <textarea
-                  className={`${inputCls} min-h-20 resize-y`}
-                  value={item.body}
-                  onChange={(e) => updateItem(i, { body: e.target.value })}
-                  placeholder="Текст, который будет виден при раскрытии..."
-                />
-              </div>
-            </div>
-          </div>
+          <AccordionItemEditor
+            key={item.id}
+            item={item}
+            index={i}
+            total={items.length}
+            onUpdate={(patch) => updateItem(i, patch)}
+            onRemove={() => removeItem(i)}
+            inputCls={inputCls}
+            labelCls={labelCls}
+            tieColor={tieColor}
+            isDark={isDark}
+            border={border}
+            hoverBg={hoverBg}
+            textMuted={textMuted}
+            cardBg={cardBg}
+          />
         ))}
         <button
           onClick={addItem}
@@ -688,4 +670,197 @@ function BlockEditor({ block, idx, total, onChange, onRemove, onMove, tieColor, 
   )
 
   return null
+}
+
+// ─── Accordion item editor with nested blocks ────────────────────────────────
+interface AccordionItemEditorProps {
+  item: AccordionItem
+  index: number
+  total: number
+  onUpdate: (patch: Partial<AccordionItem>) => void
+  onRemove: () => void
+  inputCls: string
+  labelCls: string
+  tieColor: string
+  isDark: boolean
+  border: string
+  hoverBg: string
+  textMuted: string
+  cardBg: string
+}
+
+function AccordionItemEditor({
+  item, index, total, onUpdate, onRemove,
+  inputCls, labelCls, tieColor, isDark, border, hoverBg, textMuted, cardBg,
+}: AccordionItemEditorProps) {
+  const [collapsed, setCollapsed] = useState(true)
+  const [subPaletteOpen, setSubPaletteOpen] = useState(false)
+
+  // Ensure blocks array exists (migrate legacy body → keep body too for compat)
+  const blocks: ContentBlock[] = item.blocks ?? []
+  const hasLegacyBody = !item.blocks && !!item.body
+
+  const setBlocks = (next: ContentBlock[]) => onUpdate({ blocks: next })
+
+  const addSubBlock = (type: BlockType) => {
+    setBlocks([...blocks, newBlock(type)])
+    setSubPaletteOpen(false)
+    setCollapsed(false)
+  }
+
+  const updateSubBlock = (idx: number, b: ContentBlock) => {
+    const next = [...blocks]
+    next[idx] = b
+    setBlocks(next)
+  }
+
+  const removeSubBlock = (idx: number) => setBlocks(blocks.filter((_, i) => i !== idx))
+
+  const moveSubBlock = (idx: number, dir: -1 | 1) => {
+    const next = [...blocks]
+    const target = idx + dir
+    if (target < 0 || target >= next.length) return
+    ;[next[idx], next[target]] = [next[target], next[idx]]
+    setBlocks(next)
+  }
+
+  // Sub-palette — same block types but exclude accordion (no nesting of accordions)
+  const SUB_PALETTE: { type: BlockType; label: string; icon: React.ComponentType<any> }[] = [
+    { type: "text",      label: "Текст",       icon: AlignLeft },
+    { type: "copyable",  label: "Копирование", icon: Copy },
+    { type: "heading",   label: "Заголовок",   icon: Type },
+    { type: "list",      label: "Список",      icon: List },
+    { type: "steps",     label: "Шаги",        icon: ArrowDown },
+    { type: "callout",   label: "Выделение",   icon: Info },
+    { type: "code",      label: "Код",         icon: Code },
+    { type: "link",      label: "Ссылка",      icon: Link2 },
+    { type: "image",     label: "Изображение", icon: ImageIcon },
+    { type: "table",     label: "Таблица",     icon: TableIcon },
+    { type: "divider",   label: "Разделитель", icon: Minus },
+    { type: "badge_row", label: "Бейджи",      icon: Tag },
+  ]
+
+  return (
+    <div className={`rounded-xl border ${border} overflow-hidden`}>
+      {/* Item header */}
+      <div
+        className={`flex items-center gap-2 px-3 py-2 border-b ${border}`}
+        style={{ backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
+      >
+        <button
+          onClick={() => setCollapsed((v) => !v)}
+          className={`p-1 rounded ${hoverBg} transition-colors`}
+          title={collapsed ? "Развернуть" : "Свернуть"}
+        >
+          {collapsed
+            ? <ChevronDown className="w-3.5 h-3.5" style={{ color: tieColor }} />
+            : <ChevronUp className="w-3.5 h-3.5" style={{ color: tieColor }} />
+          }
+        </button>
+        <span className={`text-xs font-semibold flex-1 ${textMuted}`}>
+          Пункт {index + 1}{item.title ? ` — ${item.title}` : ""}
+        </span>
+        <span className={`text-[10px] ${textMuted}`}>
+          {blocks.length} блок{blocks.length === 1 ? "" : blocks.length < 5 ? "а" : "ов"}
+        </span>
+        {total > 1 && (
+          <button
+            onClick={onRemove}
+            className="p-1 rounded hover:bg-red-500/20 transition-colors"
+            title="Удалить пункт"
+          >
+            <X className="w-3 h-3 text-red-500" />
+          </button>
+        )}
+      </div>
+
+      {/* Item body — always show title input, collapse blocks */}
+      <div className="p-2.5 space-y-2">
+        <div>
+          <span className={labelCls}>Заголовок пункта</span>
+          <input
+            className={inputCls}
+            value={item.title}
+            onChange={(e) => onUpdate({ title: e.target.value })}
+            placeholder="Заголовок..."
+          />
+        </div>
+
+        {/* Legacy body migration notice */}
+        {hasLegacyBody && (
+          <div className={`text-xs px-3 py-2 rounded-lg`} style={{ backgroundColor: tieColor + "15", color: tieColor }}>
+            Пункт содержит старый текстовый формат. Добавьте новые блоки — они будут показаны вместо старого текста.
+          </div>
+        )}
+
+        {!collapsed && (
+          <div className="space-y-2 pt-1">
+            {blocks.length === 0 && !subPaletteOpen && (
+              <div className={`rounded-xl border border-dashed ${border} p-6 text-center ${textMuted} text-xs`}>
+                Нет блоков. Добавьте первый блок внутри пункта.
+              </div>
+            )}
+            {blocks.map((subBlock, si) => (
+              <BlockEditor
+                key={subBlock.id}
+                block={subBlock}
+                idx={si}
+                total={blocks.length}
+                onChange={(b) => updateSubBlock(si, b)}
+                onRemove={() => removeSubBlock(si)}
+                onMove={(dir) => moveSubBlock(si, dir)}
+                tieColor={tieColor}
+                isDark={isDark}
+                border={border}
+                cardBg={cardBg}
+                hoverBg={hoverBg}
+                textMuted={textMuted}
+              />
+            ))}
+
+            {/* Sub-block add button */}
+            <button
+              onClick={() => setSubPaletteOpen((v) => !v)}
+              className={`w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed transition-colors ${isDark ? "border-white/20 text-white/50 hover:text-white hover:border-white/40" : "border-black/20 text-black/40 hover:text-black hover:border-black/40"}`}
+            >
+              {subPaletteOpen
+                ? <><X className="w-3.5 h-3.5" />Закрыть</>
+                : <><PlusCircle className="w-3.5 h-3.5" />Добавить блок внутри пункта</>
+              }
+            </button>
+
+            {subPaletteOpen && (
+              <div
+                className={`rounded-xl border ${border} p-2.5`}
+                style={{ backgroundColor: isDark ? "#111" : "#f9f9f9" }}
+              >
+                <p className={`text-xs mb-2 font-medium ${textMuted}`}>Тип блока:</p>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+                  {SUB_PALETTE.map(({ type, label, icon: Ic }) => (
+                    <button
+                      key={type}
+                      onClick={() => addSubBlock(type)}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-xl ${hoverBg} transition-colors text-center border ${border}`}
+                    >
+                      <Ic className="w-4 h-4" style={{ color: tieColor }} />
+                      <span className={`text-[10px] leading-tight ${isDark ? "text-white/70" : "text-black/60"}`}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {collapsed && blocks.length > 0 && (
+          <button
+            onClick={() => setCollapsed(false)}
+            className={`text-xs ${textMuted} hover:opacity-80 transition-opacity`}
+          >
+            Показать {blocks.length} блок{blocks.length === 1 ? "" : blocks.length < 5 ? "а" : "ов"} содержимого...
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }

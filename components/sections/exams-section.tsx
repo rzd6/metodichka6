@@ -6,12 +6,23 @@ import { Copy, Check, GraduationCap, X, Circle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import { getBuiltinOverrides } from "@/data/custom-sections"
 
 export function ExamsSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<"theoretical" | "practical">("theoretical")
   const [answerScores, setAnswerScores] = useState<{ [key: string]: number }>({})
+  const [contentOverride, setContentOverride] = useState<any>(null)
   const { theme } = useTheme()
+
+  useEffect(() => {
+    const load = () => getBuiltinOverrides().then((ov) => {
+      setContentOverride(ov["exams"]?.content_override ?? null)
+    })
+    load()
+    window.addEventListener("builtinOverridesUpdated", load)
+    return () => window.removeEventListener("builtinOverridesUpdated", load)
+  }, [])
 
   useEffect(() => {
     setCopiedIndex(null)
@@ -379,8 +390,8 @@ export function ExamsSection() {
       </div>
 
       <div className="space-y-4">
-        {selectedCategory === "theoretical" && renderCategory(contentData.exams.theoretical, true)}
-        {selectedCategory === "practical" && renderCategory(contentData.exams.practical)}
+        {selectedCategory === "theoretical" && renderCategory(contentOverride?.main ?? contentData.exams.theoretical, true)}
+        {selectedCategory === "practical" && renderCategory(contentOverride?.additional ?? contentData.exams.practical)}
       </div>
     </div>
   )

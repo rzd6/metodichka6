@@ -39,9 +39,11 @@ async function ensureTable() {
       section_id TEXT PRIMARY KEY,
       title TEXT,
       icon TEXT,
+      content_override JSONB,
       updated_at TIMESTAMPTZ DEFAULT NOW(),
       updated_by TEXT NOT NULL DEFAULT ''
     );
+    ALTER TABLE builtin_section_overrides ADD COLUMN IF NOT EXISTS content_override JSONB;
   `)
 }
 
@@ -53,9 +55,13 @@ export async function GET(req: NextRequest) {
 
     if (searchParams.get("type") === "builtin_overrides") {
       const res = await db.query("SELECT * FROM builtin_section_overrides")
-      const map: Record<string, { title?: string; icon?: string }> = {}
+      const map: Record<string, { title?: string; icon?: string; content_override?: any }> = {}
       for (const row of res.rows) {
-        map[row.section_id] = { title: row.title ?? undefined, icon: row.icon ?? undefined }
+        map[row.section_id] = {
+          title: row.title ?? undefined,
+          icon: row.icon ?? undefined,
+          content_override: row.content_override ?? undefined,
+        }
       }
       return NextResponse.json({ data: map })
     }
@@ -176,6 +182,36 @@ export async function POST(req: NextRequest) {
         `INSERT INTO section_audit_log (section_id, section_title, action, actor_nickname, actor_role, changes)
          VALUES ($1,$2,'builtin_override_reset',$3,$4,$5)`,
         [sectionId, originalTitle ?? sectionId, actor?.nickname ?? "unknown", actor?.role ?? "unknown", JSON.stringify({ reset: true })]
+      )
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === "upsert_builtin_content") {
+      const { sectionId, contentOverride, actor } = body
+      await db.query(
+        `INSERT INTO builtin_section_overrides (section_id, content_override, updated_at, updated_by)
+         VALUES ($1, $2, NOW(), $3)
+         ON CONFLICT (section_id) DO UPDATE SET content_override=$2, updated_at=NOW(), updated_by=$3`,
+        [sectionId, JSON.stringify(contentOverride), actor?.nickname ?? "unknown"]
+      )
+      await db.query(
+        `INSERT INTO section_audit_log (section_id, section_title, action, actor_nickname, actor_role, changes)
+         VALUES ($1,$1,'builtin_content_override',$2,$3,$4)`,
+        [sectionId, actor?.nickname ?? "unknown", actor?.role ?? "unknown", JSON.stringify({ contentOverride })]
+      )
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === "reset_builtin_content") {
+      const { sectionId, actor } = body
+      await db.query(
+        `UPDATE builtin_section_overrides SET content_override=NULL, updated_at=NOW(), updated_by=$2 WHERE section_id=$1`,
+        [sectionId, actor?.nickname ?? "unknown"]
+      )
+      await db.query(
+        `INSERT INTO section_audit_log (section_id, section_title, action, actor_nickname, actor_role, changes)
+         VALUES ($1,$1,'builtin_content_reset',$2,$3,$4)`,
+        [sectionId, actor?.nickname ?? "unknown", actor?.role ?? "unknown", JSON.stringify({ reset: true })]
       )
       return NextResponse.json({ success: true })
     }
