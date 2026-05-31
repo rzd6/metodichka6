@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { google } from "googleapis"
+import { GoogleAuth } from "google-auth-library"
 import { Pool } from "pg"
-
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
 let pool: Pool | null = null
 function getPool(): Pool {
@@ -21,14 +20,15 @@ function getAuth() {
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
   if (!privateKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY не задан")
 
-  // Handle both escaped \\n (from env var UI) and literal newlines
-  const normalizedKey = privateKey.includes("\\n")
-    ? privateKey.replace(/\\n/g, "\n")
-    : privateKey
+  // Normalize escaped newlines that come from env var storage
+  const normalizedKey = privateKey.replace(/\\n/g, "\n")
 
-  const auth = new google.auth.JWT({
-    email: SERVICE_ACCOUNT_EMAIL,
-    key: normalizedKey,
+  const auth = new GoogleAuth({
+    credentials: {
+      client_email: SERVICE_ACCOUNT_EMAIL,
+      // google-auth-library converts PKCS#1 → PKCS#8 internally, avoiding ERR_OSSL_UNSUPPORTED
+      private_key: normalizedKey,
+    },
     scopes: [
       "https://www.googleapis.com/auth/spreadsheets",
       "https://www.googleapis.com/auth/drive",
