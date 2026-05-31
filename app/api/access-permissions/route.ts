@@ -9,15 +9,10 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
 const SETTINGS_KEY = "section_permissions"
 
-let pool: Pool | null = null
-
 function getPool(): Pool {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.POSTGRES_URL_NON_POOLING,
-    })
-  }
-  return pool
+  const connectionString = process.env.POSTGRES_URL_NON_POOLING
+  if (!connectionString) throw new Error("Не задана переменная POSTGRES_URL_NON_POOLING")
+  return new Pool({ connectionString })
 }
 
 async function ensureTable() {

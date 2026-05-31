@@ -3,14 +3,11 @@ import { google } from "googleapis"
 import { GoogleAuth } from "google-auth-library"
 import { Pool } from "pg"
 
-let pool: Pool | null = null
 function getPool(): Pool {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING,
-      max: 3,
-    })
-  }
+  const connectionString = process.env.POSTGRES_URL_NON_POOLING
+  if (!connectionString) throw new Error("Не задана переменная POSTGRES_URL_NON_POOLING")
+  return new Pool({ connectionString })
+}
   return pool
 }
 

@@ -4,15 +4,10 @@ import { Pool } from "pg"
 // Disable self-signed cert check for Supabase direct connection
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
-let pool: Pool | null = null
-
 function getPool(): Pool {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.POSTGRES_URL_NON_POOLING,
-    })
-  }
-  return pool
+  const connectionString = process.env.POSTGRES_URL_NON_POOLING
+  if (!connectionString) throw new Error("Не задана переменная POSTGRES_URL_NON_POOLING")
+  return new Pool({ connectionString })
 }
 
 async function ensureTable() {
