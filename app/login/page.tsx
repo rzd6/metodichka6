@@ -13,7 +13,7 @@ import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 
 // App ID из официального кода VK
-const VK_APP_ID = 54573548
+const VK_APP_ID = 54617279
 
 export default function LoginPage() {
   const [nickname, setNickname] = useState("")
