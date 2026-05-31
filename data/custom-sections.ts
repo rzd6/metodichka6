@@ -37,7 +37,9 @@ export interface TextBlock {
 export interface AccordionItem {
   id: string
   title: string
-  body: string // rich text / plain text content inside the item
+  body: string // legacy plain text (kept for backwards compat)
+  // New: structured blocks inside the accordion item. If present — takes priority over body.
+  blocks?: ContentBlock[]
 }
 
 export interface AccordionBlock {

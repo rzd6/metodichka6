@@ -152,8 +152,17 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "bug-report":
         return <BugReportSection />
       default:
-        // Custom section loaded but not found — show "not found" instead of Information
-        if (customSectionsLoaded && !isBuiltin) {
+        // Non-builtin ID: show skeleton while loading, "not found" after load
+        if (!isBuiltin) {
+          if (!customSectionsLoaded) {
+            return (
+              <div className="space-y-4 animate-pulse">
+                <div className="h-8 rounded-xl bg-white/10 w-1/3" />
+                <div className="h-4 rounded-lg bg-white/5 w-full" />
+                <div className="h-4 rounded-lg bg-white/5 w-4/5" />
+              </div>
+            )
+          }
           return (
             <div className="py-16 text-center opacity-40">
               <p className="text-sm">Раздел не найден</p>
