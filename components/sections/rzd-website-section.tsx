@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, Edit, Check, Bell, Upload, X, UserRound, Users } from "lucide-react"
+import { Plus, Trash2, Edit, Check, Bell, Upload, X, UserRound, Users, Table as TableIcon } from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import type { UserRole } from "@/data/users"
@@ -26,10 +26,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-// Renders article content. If it contains an <iframe> tag (as stored HTML text),
-// we split on iframes and render them as real iframe elements with auto-height.
+// Converts any Google Sheets share/edit/pubhtml URL to a clean embed URL
+function toSheetsEmbedUrl(url: string): string {
+  // Already an embed URL
+  if (url.includes("/spreadsheets/d/") && url.includes("/embed")) return url
+  // pubhtml → embed
+  const m = url.match(/\/spreadsheets\/d\/([^/]+)/)
+  if (m) return `https://docs.google.com/spreadsheets/d/${m[1]}/embed?rm=minimal`
+  return url
+}
+
+// Detects if a raw text line is a Google Sheets URL (share, edit, pubhtml, embed)
+function isGoogleSheetsUrl(text: string): boolean {
+  return /https?:\/\/docs\.google\.com\/spreadsheets\/d\/[^/\s]+/.test(text.trim())
+}
+
+// Renders article content. Handles:
+//  - <iframe> tags stored as HTML text
+//  - bare Google Sheets URLs on their own line
+//  - plain text
 function ArticleContent({ content, isDark }: { content: string; isDark: boolean }) {
-  // Match self-closing or open/close iframe tags
   const iframeRegex = /(<iframe[\s\S]*?(?:\/>|<\/iframe>))/gi
   const parts = content.split(iframeRegex)
 
@@ -37,17 +53,48 @@ function ArticleContent({ content, isDark }: { content: string; isDark: boolean 
     <div className={`text-sm mb-2 leading-relaxed ${isDark ? "text-white/70" : "text-gray-600"}`}>
       {parts.map((part, i) => {
         if (/^<iframe/i.test(part)) {
-          // Extract src attribute
           const srcMatch = part.match(/src=["']([^"']+)["']/i)
           const src = srcMatch ? srcMatch[1] : null
           if (!src) return null
           return <AutoIframe key={i} src={src} />
         }
-        // Plain text — preserve newlines
+        // Check each line for a bare Google Sheets URL
+        if (isGoogleSheetsUrl(part)) {
+          const lines = part.split("\n")
+          return (
+            <span key={i}>
+              {lines.map((line, li) => {
+                if (isGoogleSheetsUrl(line)) {
+                  return <GoogleSheetsEmbed key={li} url={line.trim()} />
+                }
+                return line ? <span key={li} className="whitespace-pre-wrap">{line}{li < lines.length - 1 ? "\n" : ""}</span> : null
+              })}
+            </span>
+          )
+        }
         return part ? (
           <span key={i} className="whitespace-pre-wrap">{part}</span>
         ) : null
       })}
+    </div>
+  )
+}
+
+// Google Sheets embedded viewer
+function GoogleSheetsEmbed({ url }: { url: string }) {
+  const embedUrl = toSheetsEmbedUrl(url)
+  return (
+    <div className="my-3 w-full rounded-xl overflow-hidden border border-white/10" style={{ height: 480 }}>
+      <iframe
+        src={embedUrl}
+        width="100%"
+        height="100%"
+        frameBorder={0}
+        scrolling="yes"
+        style={{ border: "none", display: "block" }}
+        title="Google Таблица"
+        sandbox="allow-scripts allow-same-origin allow-popups"
+      />
     </div>
   )
 }
@@ -468,9 +515,32 @@ export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionP
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="content" className="text-base font-medium">
-                  Текст уведомления
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="content" className="text-base font-medium">
+                    Текст уведомления
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ta = document.getElementById("content") as HTMLTextAreaElement | null
+                      if (!ta) return
+                      const url = window.prompt("Вставьте ссылку на Google Таблицу:")
+                      if (!url) return
+                      const insert = "\n" + url.trim() + "\n"
+                      const start = ta.selectionStart ?? ta.value.length
+                      ta.value = ta.value.slice(0, start) + insert + ta.value.slice(start)
+                      ta.dispatchEvent(new Event("input", { bubbles: true }))
+                    }}
+                    className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                      theme.mode === "dark"
+                        ? "border-white/20 text-white/60 hover:text-white hover:border-white/40"
+                        : "border-black/20 text-black/50 hover:text-black hover:border-black/40"
+                    }`}
+                  >
+                    <TableIcon className="w-3.5 h-3.5" />
+                    Вставить Google Таблицу
+                  </button>
+                </div>
                 <Textarea
                   id="content"
                   name="content"
@@ -483,6 +553,9 @@ export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionP
                       : "bg-white border-gray-300 text-black placeholder:text-gray-400"
                     }`}
                 />
+                <p className={`text-xs ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}>
+                  Вставьте ссылку на Google Таблицу отдельной строкой — она автоматически отобразится как встроенная таблица
+                </p>
               </div>
 
               {/* Author toggle — only for Руководство / Тех. Администратор */}
