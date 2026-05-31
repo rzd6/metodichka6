@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "missing_params" }, { status: 400 })
     }
 
-    const clientId = process.env.VK_APP_ID || "54572284"
+    const clientId = process.env.VK_APP_ID || "54617279"
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin}/login`
 
     const params: Record<string, string> = {
