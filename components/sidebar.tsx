@@ -683,7 +683,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
             )}
           </div>
 
-          <nav className={`space-y-1 flex-1 overflow-y-auto ${isCollapsed ? "scrollbar-hide" : "pr-2"}`}>
+          <nav className={`space-y-1 flex-1 overflow-y-auto overflow-x-hidden ${isCollapsed ? "scrollbar-hide" : "pr-2"}`}>
             {sections.map((section) => {
               const ov = builtinOverrides[section.id]
               const displayLabel = ov?.title ?? section.label
@@ -721,19 +721,19 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                 const isActive = activeSection === cs.id
                 const iconColor = isActive ? "#ffffff" : theme.mode === "dark" ? "#ffffff" : "#000000"
                 return (
-                  <div key={cs.id} className={`relative group flex items-center`}>
+                  <div key={cs.id} className={`relative group flex items-center min-w-0`}>
                     <Button
                       variant="ghost"
-                      className={`flex-1 ${isCollapsed ? "justify-center px-2 h-10" : "justify-start h-9"} ${isActive ? "text-white" : getTextColor()} hover:bg-white/10`}
+                      className={`flex-1 min-w-0 ${isCollapsed ? "justify-center px-2 h-10" : "justify-start h-9"} ${isActive ? "text-white" : getTextColor()} hover:bg-white/10`}
                       style={isActive ? { backgroundColor: getTieColor() } : { backgroundColor: "transparent" }}
                       onClick={() => onSectionChange(cs.id)}
-                      title={isCollapsed ? cs.title : undefined}
+                      title={cs.title}
                     >
                       <span className="flex items-center justify-center w-5 h-5 flex-shrink-0">
                         <IconComp className="w-5 h-5" style={{ color: iconColor }} />
                       </span>
                       {!isCollapsed && (
-                        <span className={`ml-2 text-sm truncate ${cs.is_hidden ? "opacity-50 italic" : ""}`}>
+                        <span className={`ml-2 text-sm truncate min-w-0 ${cs.is_hidden ? "opacity-50 italic" : ""}`}>
                           {cs.title}
                           {cs.is_hidden && " (скрыт)"}
                         </span>

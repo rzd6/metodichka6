@@ -258,6 +258,8 @@ export async function toggleCustomSectionVisibility(
 export interface BuiltinSectionOverride {
   title?: string
   icon?: string
+  // Structured content override — when set, replaces the static content.ts data
+  content_override?: any
 }
 
 export async function getBuiltinOverrides(): Promise<Record<string, BuiltinSectionOverride>> {
@@ -294,6 +296,37 @@ export async function resetBuiltinOverride(
     const json = await apiFetch("/api/custom-sections", {
       method: "POST",
       body: JSON.stringify({ action: "reset_builtin_override", sectionId, originalTitle, actor }),
+    })
+    return !!json.success
+  } catch {
+    return false
+  }
+}
+
+export async function upsertBuiltinContent(
+  sectionId: string,
+  contentOverride: any,
+  actor: { nickname: string; role: string }
+): Promise<boolean> {
+  try {
+    const json = await apiFetch("/api/custom-sections", {
+      method: "POST",
+      body: JSON.stringify({ action: "upsert_builtin_content", sectionId, contentOverride, actor }),
+    })
+    return !!json.success
+  } catch {
+    return false
+  }
+}
+
+export async function resetBuiltinContent(
+  sectionId: string,
+  actor: { nickname: string; role: string }
+): Promise<boolean> {
+  try {
+    const json = await apiFetch("/api/custom-sections", {
+      method: "POST",
+      body: JSON.stringify({ action: "reset_builtin_content", sectionId, actor }),
     })
     return !!json.success
   } catch {

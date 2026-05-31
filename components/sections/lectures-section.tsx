@@ -5,11 +5,28 @@ import { Copy, Check, BookOpenText } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import { getBuiltinOverrides } from "@/data/custom-sections"
 
 export function LecturesSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<"main" | "additional">("main")
+  const [contentOverride, setContentOverride] = useState<any>(null)
   const { theme } = useTheme()
+
+  useEffect(() => {
+    getBuiltinOverrides().then((overrides) => {
+      const ov = overrides["lectures"]
+      if (ov?.content_override) setContentOverride(ov.content_override)
+    })
+    const handler = () => {
+      getBuiltinOverrides().then((overrides) => {
+        const ov = overrides["lectures"]
+        setContentOverride(ov?.content_override ?? null)
+      })
+    }
+    window.addEventListener("builtinOverridesUpdated", handler)
+    return () => window.removeEventListener("builtinOverridesUpdated", handler)
+  }, [])
 
   useEffect(() => {
     setCopiedIndex(null)
@@ -93,7 +110,11 @@ export function LecturesSection() {
     })
   }
 
-  const lectures = selectedCategory === "main" ? contentData.lectures.main : contentData.lectures.additional
+  const staticData = selectedCategory === "main" ? contentData.lectures.main : contentData.lectures.additional
+  const overrideData = contentOverride
+    ? (selectedCategory === "main" ? contentOverride.main : contentOverride.additional)
+    : null
+  const lectures = overrideData ?? staticData
 
   return (
     <div className="space-y-6 opacity-95">

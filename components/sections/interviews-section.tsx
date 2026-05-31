@@ -3,11 +3,12 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { contentData } from "@/data/content"
 import { Copy, Check, Briefcase } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import { formatReportText } from "@/lib/report-text"
 import type { UserGender } from "@/data/roles"
+import { getBuiltinOverrides } from "@/data/custom-sections"
 
 function getUserReportPrefs(): { gender: UserGender } {
   try {
@@ -20,7 +21,17 @@ function getUserReportPrefs(): { gender: UserGender } {
 
 export function InterviewsSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
+  const [contentOverride, setContentOverride] = useState<any>(null)
   const { theme } = useTheme()
+
+  useEffect(() => {
+    const load = () => getBuiltinOverrides().then((ov) => {
+      setContentOverride(ov["interviews"]?.content_override ?? null)
+    })
+    load()
+    window.addEventListener("builtinOverridesUpdated", load)
+    return () => window.removeEventListener("builtinOverridesUpdated", load)
+  }, [])
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
@@ -120,7 +131,7 @@ export function InterviewsSection() {
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">
-        {contentData.interviews.map((interview) => (
+        {(contentOverride?.main ?? contentData.interviews).map((interview: any) => (
           <AccordionItem
             key={interview.id}
             value={interview.id}
