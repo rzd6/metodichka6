@@ -53,6 +53,7 @@ export function SectionsManagementTab({ currentUser }: Props) {
   const [refreshing, setRefreshing] = useState(false)
   const [editorTarget, setEditorTarget] = useState<CustomSection | null | undefined>(undefined) // undefined = closed, null = new
   const [deleteTarget, setDeleteTarget] = useState<CustomSection | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const border = isDark ? "border-white/10" : "border-black/10"
   const cardBg = isDark ? "bg-[#0f1419]/50" : "bg-white"
@@ -69,13 +70,15 @@ export function SectionsManagementTab({ currentUser }: Props) {
 
   useEffect(() => { load() }, [load])
 
-  const handleSave = async (draft: CustomSection) => {
+  const handleSave = async (draft: CustomSection): Promise<string | null> => {
+    setSaveError(null)
     const isNew = !sections.find((s) => s.id === draft.id)
+    let result
     if (isNew) {
-      await createCustomSection(draft, actor)
+      result = await createCustomSection(draft, actor)
     } else {
       const old = sections.find((s) => s.id === draft.id)
-      await updateCustomSection(draft.id, {
+      result = await updateCustomSection(draft.id, {
         title: draft.title,
         icon: draft.icon,
         content: draft.content,
@@ -84,9 +87,17 @@ export function SectionsManagementTab({ currentUser }: Props) {
         section_order: draft.section_order,
       }, actor, old)
     }
+    if (!result) {
+      const msg = isNew
+        ? "Не удалось создать раздел. Проверьте подключение к базе данных."
+        : "Не удалось сохранить изменения. Попробуйте ещё раз."
+      setSaveError(msg)
+      return msg
+    }
     await load(true)
     setEditorTarget(undefined)
     window.dispatchEvent(new Event("customSectionsUpdated"))
+    return null
   }
 
   const handleToggleVisibility = async (section: CustomSection) => {
@@ -222,6 +233,18 @@ export function SectionsManagementTab({ currentUser }: Props) {
       )}
 
       {/* Info card */}
+      {saveError && (
+        <div className="rounded-xl border border-red-500/30 p-3 flex gap-2" style={{ backgroundColor: "rgba(239,68,68,0.08)" }}>
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-500" />
+          <div className="flex-1">
+            <p className="text-xs text-red-500 leading-relaxed">{saveError}</p>
+          </div>
+          <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-300 flex-shrink-0">
+            <span className="text-xs">✕</span>
+          </button>
+        </div>
+      )}
+
       <div className={`rounded-xl border ${border} p-3 flex gap-2`} style={{ backgroundColor: tieColor + "0d" }}>
         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: tieColor }} />
         <p className={`text-xs leading-relaxed ${textMuted}`}>

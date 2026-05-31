@@ -251,6 +251,54 @@ export async function toggleCustomSectionVisibility(
   }
 }
 
+// ─── Builtin section overrides ────────────────────────────────────────────────
+
+export interface BuiltinSectionOverride {
+  title?: string
+  icon?: string
+}
+
+export async function getBuiltinOverrides(): Promise<Record<string, BuiltinSectionOverride>> {
+  try {
+    const json = await apiFetch("/api/custom-sections?type=builtin_overrides")
+    return json.data ?? {}
+  } catch {
+    return {}
+  }
+}
+
+export async function upsertBuiltinOverride(
+  sectionId: string,
+  override: BuiltinSectionOverride,
+  actor: { nickname: string; role: string }
+): Promise<boolean> {
+  try {
+    const json = await apiFetch("/api/custom-sections", {
+      method: "POST",
+      body: JSON.stringify({ action: "upsert_builtin_override", sectionId, ...override, actor }),
+    })
+    return !!json.success
+  } catch {
+    return false
+  }
+}
+
+export async function resetBuiltinOverride(
+  sectionId: string,
+  originalTitle: string,
+  actor: { nickname: string; role: string }
+): Promise<boolean> {
+  try {
+    const json = await apiFetch("/api/custom-sections", {
+      method: "POST",
+      body: JSON.stringify({ action: "reset_builtin_override", sectionId, originalTitle, actor }),
+    })
+    return !!json.success
+  } catch {
+    return false
+  }
+}
+
 export async function getSectionAuditLog(): Promise<SectionAuditEntry[]> {
   try {
     const json = await apiFetch("/api/section-audit")

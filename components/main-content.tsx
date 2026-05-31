@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import type { UserRole } from "@/data/users"
 import { getAllUsers } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
+import { proxyImageUrl } from "@/lib/image-proxy"
 
 interface LocalUser {
   id: string
@@ -225,7 +226,8 @@ function MainContentInner() {
       <div
         className="fixed inset-0 -z-10"
         style={{
-          backgroundImage: `url(${getBackgroundImage()})`,
+          backgroundColor: theme.mode === "dark" ? "#0a0a0a" : "#f0f0f0",
+          backgroundImage: `url(${proxyImageUrl(getBackgroundImage())})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
