@@ -74,12 +74,13 @@ const DIRECTIONS = [
   { value: "privolzhsk-mirny", label: "Приволжск — Мирный", short: "2/4" },
 ] as const
 
-const DIRECTION_TABS = [
-  { id: "mirny-privolzhsk", label: "Мирный — Приволжск" },
-  { id: "privolzhsk-mirny", label: "Приволжск — Мирный" },
+const STATION_TABS = [
+  { id: "mirny",      label: "Мирный",     labelEn: "Mirny" },
+  { id: "nevsky",     label: "Невский",    labelEn: "Nevsky" },
+  { id: "privolzhsk", label: "Приволжск",  labelEn: "Privolzhsk" },
 ] as const
 
-type DirectionTab = "mirny-privolzhsk" | "privolzhsk-mirny"
+type StationTab = "mirny" | "nevsky" | "privolzhsk"
 
 const VALID_DEPARTURE_MINUTES = [0, 15, 30, 45]
 
@@ -151,48 +152,58 @@ function validateDepartureTime(time: string, trainClass: string): boolean {
 }
 
 /**
- * Determine which date's schedule to show for the passenger board.
- * - If current Moscow hour >= 6: show trains for *tomorrow* that depart before 06:00
- *   plus today's remaining trains (those not yet departed).
- * - If current Moscow hour < 6 (00–05): show only today's trains, filter out departed.
- *
- * Returns filtered list of trains to display with the relevant departure shown.
+ * Возвращает прибытие/отправление/путь для конкретной станции.
+ * mirny-privolzhsk: Мирный=start, Невский=middle, Приволжск=end
+ * privolzhsk-mirny: Приволжск=start, Невский=middle, Мирный=end
  */
-function getVisibleTrainsForBoard(
+function getStationTimes(
+  train: TrainRecord,
+  station: StationTab
+): { arrival: string | null; departure: string | null; platform: number } {
+  const dir = train.direction
+  if (dir === "mirny-privolzhsk") {
+    if (station === "mirny")     return { arrival: null, departure: train.depart_start, platform: train.platform_start }
+    if (station === "nevsky")    return { arrival: train.arrive_middle, departure: train.depart_middle, platform: train.platform_middle }
+    if (station === "privolzhsk") return { arrival: train.arrive_end, departure: null, platform: train.platform_end }
+  }
+  if (dir === "privolzhsk-mirny") {
+    if (station === "privolzhsk") return { arrival: null, departure: train.depart_start, platform: train.platform_start }
+    if (station === "nevsky")    return { arrival: train.arrive_middle, departure: train.depart_middle, platform: train.platform_middle }
+    if (station === "mirny")    return { arrival: train.arrive_end, departure: null, platform: train.platform_end }
+  }
+  return { arrival: null, departure: null, platform: 1 }
+}
+
+function getVisibleTrainsForStation(
   trains: TrainRecord[],
-  shifts: TrainShift[],
-  direction: DirectionTab,
-  selectedDate: string,
-  isLiveMode: boolean // true when selectedDate === today
-): Array<{ train: TrainRecord; shift: TrainShift; arrival: string | null; departure: string | null; platform: number }> {
-  const claimedForDir = shifts.filter((sh) => sh.direction === direction)
+  _shifts: TrainShift[],
+  station: StationTab,
+  isLiveMode: boolean
+): Array<{ train: TrainRecord; arrival: string | null; departure: string | null; platform: number }> {
+  // Все поезда проходят через все три станции
+  const sorted = [...trains].sort((a, b) => {
+    const { departure: da } = getStationTimes(a, station)
+    const { departure: db } = getStationTimes(b, station)
+    const ta = timeToMinutes(da ?? undefined)
+    const tb = timeToMinutes(db ?? undefined)
+    if (ta === -1 && tb === -1) return 0
+    if (ta === -1) return 1
+    if (tb === -1) return -1
+    return ta - tb
+  })
 
-  return claimedForDir
-    .map((shift) => {
-      const train = trains.find((t) => t.train_number === shift.train_number)
-      if (!train) return null
-
-      const departure = train.depart_start ?? null
-      const arrival = train.arrive_end ?? null
-      const platform = train.platform_start
-
-      if (isLiveMode) {
+  return sorted
+    .map((train) => {
+      const { arrival, departure, platform } = getStationTimes(train, station)
+      // В живом режиме убираем поезда, которые уже отправились с этой станции
+      if (isLiveMode && departure) {
         const nowMins = getMoscowHour() * 60 + parseInt(getMoscowTime().split(":")[1])
-        const hour = getMoscowHour()
         const departMins = timeToMinutes(departure)
-
-        if (hour >= 6) {
-          // Show trains that haven't departed yet today, plus tomorrow's early trains
-          if (departMins !== -1 && departMins < nowMins) return null // already departed today
-        } else {
-          // 00–06: only show trains that haven't departed yet
-          if (departMins !== -1 && departMins < nowMins) return null
-        }
+        if (departMins !== -1 && departMins < nowMins) return null
       }
-
-      return { train, shift, arrival: null, departure, platform }
+      return { train, arrival, departure, platform }
     })
-    .filter(Boolean) as Array<{ train: TrainRecord; shift: TrainShift; arrival: string | null; departure: string | null; platform: number }>
+    .filter(Boolean) as Array<{ train: TrainRecord; arrival: string | null; departure: string | null; platform: number }>
 }
 
 export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSectionProps) {
@@ -203,7 +214,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   const [shifts, setShifts] = useState<TrainShift[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const [activeDirection, setActiveDirection] = useState<DirectionTab>("mirny-privolzhsk")
+  const [activeStation, setActiveStation] = useState<StationTab>("mirny")
   const [shiftDate, setShiftDate] = useState(getMoscowDateISO())
   const [deleteShiftTarget, setDeleteShiftTarget] = useState<TrainShift | null>(null)
 
@@ -269,14 +280,13 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
     ru: {
       scheduleTitle: (date: string) => `РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ НА ${formatDateRu(date).toUpperCase()}`,
       arrivalsTitle: "Прибытие и отправление поездов",
-      stationLabel: (dir: DirectionTab) => dir === "mirny-privolzhsk" ? "Станция Мирный" : "Станция Приволжск",
-      trainNum: "Номер поезда",
+      stationLabel: (s: StationTab) => `Станция ${STATION_TABS.find((t) => t.id === s)?.label ?? s}`,
+      trainNum: "Поезд",
       category: "Категория",
-      destination: "Назначение",
+      destination: "Направление",
       arrival: "Прибытие",
       departure: "Отправление",
       track: "Путь",
-      driver: "Машинист",
       moscowTime: "Московское\nвремя",
     },
     en: {
@@ -285,14 +295,13 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         return `SCHEDULE FOR ${d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, ".")}`
       },
       arrivalsTitle: "Arrivals & Departures",
-      stationLabel: (dir: DirectionTab) => dir === "mirny-privolzhsk" ? "Station Mirny" : "Station Privolzhsk",
+      stationLabel: (s: StationTab) => `Station ${STATION_TABS.find((t) => t.id === s)?.labelEn ?? s}`,
       trainNum: "Train",
       category: "Class",
       destination: "Destination",
       arrival: "Arrival",
       departure: "Departure",
       track: "Track",
-      driver: "Driver",
       moscowTime: "Moscow\ntime",
     },
   }[lang]
@@ -488,8 +497,8 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
     return false
   }
 
-  // Board rows: only claimed shifts, filtered by time logic
-  const boardRows = getVisibleTrainsForBoard(trains, shifts, activeDirection, shiftDate, isLiveMode)
+  // Board rows: все поезда через активную станцию (для пассажиров, без фильтра по занятости)
+  const boardRows = getVisibleTrainsForStation(trains, shifts, activeStation, isLiveMode)
 
   // ---- Colours ----
   const boardBg = "#1a1f2e"
@@ -551,21 +560,21 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
           )}
         </div>
 
-        {/* Direction tabs */}
+        {/* Station tabs */}
         <div className="flex gap-0" style={{ borderBottom: `1px solid ${borderClr}` }}>
-          {DIRECTION_TABS.map((tab) => (
+          {STATION_TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveDirection(tab.id)}
+              onClick={() => setActiveStation(tab.id)}
               className="flex-1 py-2.5 text-sm font-semibold tracking-wide transition-all"
               style={
-                activeDirection === tab.id
+                activeStation === tab.id
                   ? { background: getTieColor(), color: "#fff" }
                   : { background: "#252b3b", color: "rgba(255,255,255,0.55)" }
               }
             >
               <span className="transition-opacity duration-500" style={{ opacity: langVisible ? 1 : 0 }}>
-                {lang === "ru" ? tab.label : (tab.id === "mirny-privolzhsk" ? "Mirny — Privolzhsk" : "Privolzhsk — Mirny")}
+                {lang === "ru" ? tab.label : tab.labelEn}
               </span>
             </button>
           ))}
@@ -578,7 +587,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
               {T.arrivalsTitle}
             </p>
             <p className="text-white/50 text-xs mt-0.5 transition-opacity duration-500" style={{ opacity: langVisible ? 1 : 0 }}>
-              {T.stationLabel(activeDirection)}
+              {T.stationLabel(activeStation)}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -597,37 +606,35 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         {/* Column headers */}
         <div
           className="grid text-white text-sm font-semibold px-5 py-2.5"
-          style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px 180px 48px", background: headerBg }}
+          style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px", background: headerBg }}
         >
-          {[T.trainNum, T.category, T.destination, T.arrival, T.departure, T.track, T.driver, ""].map((h, i) => (
+          {[T.trainNum, T.category, T.destination, T.arrival, T.departure, T.track].map((h, i) => (
             <span key={i} className="transition-opacity duration-500 text-center first:text-left" style={{ opacity: langVisible ? 1 : 0 }}>
               {h}
             </span>
           ))}
         </div>
 
-        {/* Rows — only claimed, time-filtered */}
+        {/* Rows — все поезда для станции */}
         {boardRows.length === 0 ? (
           <div className="py-10 text-center text-white/40 text-sm" style={{ background: boardBg }}>
-            {shifts.filter((s) => s.direction === activeDirection).length === 0
-              ? "На выбранную дату нет занятых рейсов в этом направлении."
-              : "Все рейсы этого направления уже отправились."}
+            {trains.length === 0 ? "База рейсов пуста." : "Все рейсы уже отправились."}
           </div>
         ) : (
-          boardRows.map(({ train, shift, arrival, departure, platform }, idx) => {
-            const dirLabel = activeDirection === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
-            const dirLabelEn = activeDirection === "mirny-privolzhsk" ? "Mirny — Privolzhsk" : "Privolzhsk — Mirny"
+          boardRows.map(({ train, arrival, departure, platform }, idx) => {
+            const dirLabel = train.direction === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
+            const dirLabelEn = train.direction === "mirny-privolzhsk" ? "Mirny — Privolzhsk" : "Privolzhsk — Mirny"
             const rowBg = idx % 2 === 0 ? rowEvenBg : rowOddBg
             const abbr = CLASS_ABBR[train.class] ?? train.class
             return (
               <div
                 key={train.id}
                 className="grid items-center px-5 py-3 text-sm"
-                style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px 180px 48px", background: rowBg, borderBottom: `1px solid ${borderClr}` }}
+                style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px", background: rowBg, borderBottom: `1px solid ${borderClr}` }}
               >
                 <span className="text-xl font-extrabold" style={{ color: "#f5c518" }}>{train.train_number}</span>
                 <span className="font-bold text-white/90 uppercase text-xs tracking-wide transition-opacity duration-500 text-center" style={{ opacity: langVisible ? 1 : 0 }}>
-                  {lang === "ru" ? abbr : abbr}
+                  {abbr}
                 </span>
                 <span className="font-semibold text-center transition-opacity duration-500" style={{ color: "#f5c518", opacity: langVisible ? 1 : 0 }}>
                   {lang === "ru" ? dirLabel : dirLabelEn}
@@ -639,20 +646,6 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                   {departure ?? <span className="text-white/30 text-lg font-bold">—</span>}
                 </span>
                 <span className="font-bold text-white/80 text-base text-center">{platform}</span>
-                <div className="text-center">
-                  <span className="text-white/90 text-sm font-medium">{shift.claimed_by_nickname}</span>
-                </div>
-                <div className="flex justify-end">
-                  {canRemoveShift(shift) && (
-                    <button
-                      onClick={() => setDeleteShiftTarget(shift)}
-                      className="w-7 h-7 flex items-center justify-center rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
-                      title="Освободить рейс"
-                    >
-                      <UserX className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
               </div>
             )
           })
