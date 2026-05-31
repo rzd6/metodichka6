@@ -183,22 +183,41 @@ function BlockRenderer({ block, tieColor, isDark }: { block: ContentBlock; tieCo
 }
 
 function AccordionBlock({ block, tieColor, isDark, border, textBase, textMuted }: any) {
-  const [open, setOpen] = useState(false)
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({})
+
+  // Support both legacy (title+body) and new (items[]) formats
+  const items: { id: string; title: string; body: string }[] =
+    block.items && block.items.length > 0
+      ? block.items
+      : [{ id: "legacy", title: block.title ?? "", body: block.body ?? "" }]
+
+  const toggle = (id: string) => setOpenItems((prev) => ({ ...prev, [id]: !prev[id] }))
+
   return (
-    <div className={`rounded-xl border ${border} overflow-hidden`}>
-      <button
-        className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold ${textBase} transition-colors`}
-        style={{ backgroundColor: open ? tieColor + "18" : "transparent" }}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span>{block.title}</span>
-        {open ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: tieColor }} /> : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: tieColor }} />}
-      </button>
-      {open && (
-        <div className={`px-4 py-3 text-sm leading-relaxed border-t ${border} ${textMuted}`}>
-          {block.body}
-        </div>
-      )}
+    <div className={`rounded-xl border ${border} overflow-hidden divide-y`} style={{ borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+      {items.map((item) => {
+        const isOpen = !!openItems[item.id]
+        return (
+          <div key={item.id}>
+            <button
+              className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold ${textBase} transition-colors text-left`}
+              style={{ backgroundColor: isOpen ? tieColor + "18" : "transparent" }}
+              onClick={() => toggle(item.id)}
+            >
+              <span>{item.title}</span>
+              {isOpen
+                ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: tieColor }} />
+                : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: tieColor }} />
+              }
+            </button>
+            {isOpen && (
+              <div className={`px-4 py-3 text-sm leading-relaxed border-t ${border} ${textMuted} whitespace-pre-wrap`}>
+                {item.body}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

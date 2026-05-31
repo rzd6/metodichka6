@@ -553,8 +553,6 @@ export function AdminSection() {
         {currentUser && (
           <SectionsManagementTab
             currentUser={{ id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role, vkAccessToken: "", secondaryRole: currentUser.secondaryRole, reportTag: currentUser.reportTag }}
-            isCollapsed={isCollapsed}
-            setIsCollapsed={setIsCollapsed}
           />
         )}
       </div>
