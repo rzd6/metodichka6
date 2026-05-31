@@ -3,42 +3,25 @@
 import { useState, useCallback } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
-import { Sidebar } from "@/components/sidebar"
 import { SectionEditorCanvas } from "./section-editor-canvas"
 import { SectionEditorHeader } from "./section-editor-header"
 import type { CustomSection } from "@/data/custom-sections"
-import type { UserRole } from "@/data/roles"
 
 interface Actor {
   nickname: string
   role: string
 }
 
-interface SidebarUser {
-  id: string
-  nickname: string
-  role: UserRole
-  vkAccessToken: string
-  secondaryRole?: "Тех. Администратор" | "РЖД"
-  reportTag?: string
-}
-
 interface SectionEditorPageProps {
   section: CustomSection | null  // null = создание нового
-  sidebarUser: SidebarUser
   actor: Actor
-  isCollapsed: boolean
-  setIsCollapsed: (v: boolean) => void
   onSave: (section: CustomSection) => Promise<void>
   onCancel: () => void
 }
 
 export function SectionEditorPage({
   section,
-  sidebarUser,
   actor,
-  isCollapsed,
-  setIsCollapsed,
   onSave,
   onCancel,
 }: SectionEditorPageProps) {
@@ -75,55 +58,33 @@ export function SectionEditorPage({
   }, [draft, onSave])
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <Sidebar
-        activeSection="__editor__"
-        onSectionChange={() => {}}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
-        user={sidebarUser}
-      />
-
-      {/* Main editor area */}
-      <main
-        className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? "ml-20" : "ml-64"}`}
+    <div className="space-y-0">
+      {/* Sticky header bar inside the content area — no extra sidebar */}
+      <div
+        className={`sticky top-0 z-40 border-b rounded-t-2xl ${isDark ? "border-white/10" : "border-black/10"}`}
+        style={{ backgroundColor: isDark ? "rgba(10,10,10,0.95)" : "rgba(255,255,255,0.97)" }}
       >
-        {/* Editor header bar */}
-        <div
-          className={`sticky top-0 z-40 border-b ${isDark ? "border-white/10" : "border-black/10"}`}
-          style={{ backgroundColor: isDark ? "#0a0a0a" : "#ffffff" }}
-        >
-          <SectionEditorHeader
-            draft={draft}
-            onDraftChange={setDraft}
-            onSave={handleSave}
-            onCancel={onCancel}
-            saving={saving}
-            isNew={!section}
-            tieColor={tieColor}
-            isDark={isDark}
-          />
-        </div>
+        <SectionEditorHeader
+          draft={draft}
+          onDraftChange={setDraft}
+          onSave={handleSave}
+          onCancel={onCancel}
+          saving={saving}
+          isNew={!section}
+          tieColor={tieColor}
+          isDark={isDark}
+        />
+      </div>
 
-        {/* Editor canvas */}
-        <div
-          className={`flex-1 ${isDark ? "bg-black/70" : "bg-white/80"}`}
-          style={{
-            backdropFilter: `blur(${theme.blurAmount ?? 4}px)`,
-            WebkitBackdropFilter: `blur(${theme.blurAmount ?? 4}px)`,
-          }}
-        >
-          <div className="p-6 max-w-4xl mx-auto">
-            <SectionEditorCanvas
-              blocks={draft.content}
-              onChange={(content) => setDraft((d) => ({ ...d, content }))}
-              tieColor={tieColor}
-              isDark={isDark}
-            />
-          </div>
-        </div>
-      </main>
+      {/* Canvas */}
+      <div className="pt-4 pb-8">
+        <SectionEditorCanvas
+          blocks={draft.content}
+          onChange={(content) => setDraft((d) => ({ ...d, content }))}
+          tieColor={tieColor}
+          isDark={isDark}
+        />
+      </div>
     </div>
   )
 }

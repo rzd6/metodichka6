@@ -202,6 +202,21 @@ export async function findUserByVkId(vkId: string): Promise<User | null> {
 }
 
 export async function authenticateUser(nickname: string, password: string): Promise<User | null> {
+  // Dev test account — never touches the database
+  const { DEV_LOGIN, DEV_PASSWORD, makeDevUser } = await import("@/lib/dev-account")
+  if (nickname === DEV_LOGIN && password === DEV_PASSWORD) {
+    const dev = makeDevUser()
+    return {
+      id: dev.id,
+      nickname: dev.nickname,
+      password: "",
+      role: dev.role,
+      createdAt: "",
+      secondaryRole: dev.secondaryRole,
+      reportTag: dev.reportTag,
+    } as User
+  }
+
   try {
     const { data } = await apiFetch(
       `/api/users?username=${encodeURIComponent(nickname)}&password=${encodeURIComponent(password)}`
@@ -213,7 +228,9 @@ export async function authenticateUser(nickname: string, password: string): Prom
 }
 
 export async function getAllUsers(forceRefresh = false): Promise<User[]> {
-  return await initializeUsers(forceRefresh)
+  const users = await initializeUsers(forceRefresh)
+  // Never expose the dev test account in any user list
+  return users.filter((u) => u.id !== "dev-test-account" && u.nickname !== "v0_dev_rzd")
 }
 
 function getRankFromRole(role: UserRole): number {

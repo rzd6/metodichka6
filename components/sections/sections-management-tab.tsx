@@ -41,11 +41,9 @@ interface SidebarUser {
 
 interface Props {
   currentUser: SidebarUser
-  isCollapsed: boolean
-  setIsCollapsed: (v: boolean) => void
 }
 
-export function SectionsManagementTab({ currentUser, isCollapsed, setIsCollapsed }: Props) {
+export function SectionsManagementTab({ currentUser }: Props) {
   const { theme } = useTheme()
   const tieColor = getThemeColor(theme.colorTheme)
   const isDark = theme.mode === "dark"
@@ -110,10 +108,7 @@ export function SectionsManagementTab({ currentUser, isCollapsed, setIsCollapsed
     return (
       <SectionEditorPage
         section={editorTarget}
-        sidebarUser={currentUser}
         actor={actor}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
         onSave={handleSave}
         onCancel={() => setEditorTarget(undefined)}
       />

@@ -34,11 +34,20 @@ export interface TextBlock {
   align?: "left" | "center" | "right"
 }
 
+export interface AccordionItem {
+  id: string
+  title: string
+  body: string // rich text / plain text content inside the item
+}
+
 export interface AccordionBlock {
   type: "accordion"
   id: string
-  title: string
-  body: string
+  // New: multiple items. Falls back to legacy single title+body if items is absent.
+  items: AccordionItem[]
+  // Legacy fields kept for backwards compat (optional)
+  title?: string
+  body?: string
 }
 
 export interface CopyableBlock {
