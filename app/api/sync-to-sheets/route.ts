@@ -137,7 +137,7 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
     },
   })
 
-  // Строка с названием станции (строка 1): слияние + жёлтый текст
+  // Строка с названием станции (строка 1): слияние + красный фон + белый жирный (как подзаголовок)
   requests.push({
     mergeCells: {
       range: { sheetId, startRowIndex: 1, endRowIndex: 2, startColumnIndex: 0, endColumnIndex: colCount },
@@ -149,13 +149,21 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
       range: { sheetId, startRowIndex: 1, endRowIndex: 2 },
       cell: {
         userEnteredFormat: {
-          backgroundColor: COLORS.dark2,
-          textFormat: { bold: true, fontSize: 11, foregroundColor: COLORS.yellow },
+          backgroundColor: COLORS.red,
+          textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.white },
           horizontalAlignment: "LEFT",
           verticalAlignment: "MIDDLE",
         },
       },
       fields: "userEnteredFormat",
+    },
+  })
+  // Высота строки названия станции
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: 1, endIndex: 2 },
+      properties: { pixelSize: 36 },
+      fields: "pixelSize",
     },
   })
 
@@ -317,11 +325,8 @@ export async function POST(req: NextRequest) {
       // Строка 1: название станции
       rows.push([`Станция ${station.name}`])
 
-      // Строка 2: пустая разделитель
-      rows.push([""])
-
-      // Строка 3: заголовки колонок (headerRow = 3)
-      const headerRow = 3
+      // Строка 2: заголовки колонок (headerRow = 2)
+      const headerRow = 2
       rows.push(["Поезд", "Класс", "Направление", "Прибытие", "Отправление", "Путь"])
 
       // Строки данных
