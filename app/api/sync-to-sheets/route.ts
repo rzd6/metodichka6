@@ -100,8 +100,8 @@ async function ensureSheet(
 ): Promise<number> {
   const found = existingSheets.find((s: any) => s.properties?.title === sheetName)
   if (found) {
-    // Очищаем содержимое
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: `'${sheetName}'` })
+    // Очищаем только данные с A5+ (строки 1-4 — шапка, не трогаем)
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: `'${sheetName}'!A5:Z` })
     return found.properties!.sheetId!
   }
   const res = await sheets.spreadsheets.batchUpdate({
@@ -111,106 +111,27 @@ async function ensureSheet(
   return res.data.replies?.[0]?.addSheet?.properties?.sheetId ?? 0
 }
 
-// Строим форматирование для одного листа
-// Структура: строка 0 = название вокзала + часы МСК, строка 1 (headerRow=1) = заголовки колонок, строки 2+ = данные
-// colCount = 8: Поезд, Класс, Направление, Прибытие, Отправление, Путь, Опоздание, (Время МСК)
+// Строим форматирование для одного листа.
+// Строки 1-4 (индексы 0-3) — декоративная шапка, создана вручную, НЕ трогаем.
+// Единственное исключение: убираем видимые границы у строки 4 (индекс 3, красная).
+// Данные начинаются с A5 (индекс 4).
+// colCount = 8: № Поезда, Категория, Назначение, Прибытие, Отправление, Путь, Опоздание, (пусто)
 function buildFormatRequests(sheetId: number, headerRow: number, dataRows: number, colCount: number) {
   const requests: any[] = []
 
-  // ── Строка 0: название вокзала (col 0..5) + "ВРЕМЯ МСК" (col 6) + формула (col 7) ──────
+  // ── Строка 4 (индекс 3): убрать видимые границы у красной строки заголовков ──
+  const noBorder = { style: "NONE" }
   requests.push({
-    mergeCells: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 6 },
-      mergeType: "MERGE_ALL",
-    },
-  })
-  requests.push({
-    repeatCell: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 6 },
-      cell: {
-        userEnteredFormat: {
-          backgroundColor: COLORS.dark1,
-          textFormat: { bold: true, fontSize: 14, foregroundColor: COLORS.white },
-          horizontalAlignment: "LEFT",
-          verticalAlignment: "MIDDLE",
-        },
-      },
-      fields: "userEnteredFormat",
-    },
-  })
-  // col 6: подпись "ВРЕМЯ МСК"
-  requests.push({
-    repeatCell: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 6, endColumnIndex: 7 },
-      cell: {
-        userEnteredFormat: {
-          backgroundColor: COLORS.dark1,
-          textFormat: { bold: true, fontSize: 10, foregroundColor: COLORS.lightGray },
-          horizontalAlignment: "RIGHT",
-          verticalAlignment: "MIDDLE",
-          wrapStrategy: "WRAP",
-        },
-      },
-      fields: "userEnteredFormat",
-    },
-  })
-  // col 7: само время МСК
-  requests.push({
-    repeatCell: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 7, endColumnIndex: 8 },
-      cell: {
-        userEnteredFormat: {
-          backgroundColor: COLORS.dark3,
-          numberFormat: { type: "TIME", pattern: "hh:mm" },
-          textFormat: { bold: true, fontSize: 18, foregroundColor: COLORS.yellow },
-          horizontalAlignment: "CENTER",
-          verticalAlignment: "MIDDLE",
-          borders: {
-            top:    { style: "SOLID", width: 2, color: COLORS.lightGray },
-            bottom: { style: "SOLID", width: 2, color: COLORS.lightGray },
-            left:   { style: "SOLID", width: 2, color: COLORS.lightGray },
-            right:  { style: "SOLID", width: 2, color: COLORS.lightGray },
-          },
-        },
-      },
-      fields: "userEnteredFormat",
-    },
-  })
-  // Высота строки 0
-  requests.push({
-    updateDimensionProperties: {
-      range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
-      properties: { pixelSize: 52 },
-      fields: "pixelSize",
+    updateBorders: {
+      range: { sheetId, startRowIndex: 3, endRowIndex: 4, startColumnIndex: 0, endColumnIndex: colCount },
+      top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+      innerHorizontal: noBorder, innerVertical: noBorder,
     },
   })
 
-  // ── Строка 1 (headerRow): заголовки колонок — красный фон ─────────────
-  requests.push({
-    repeatCell: {
-      range: { sheetId, startRowIndex: headerRow, endRowIndex: headerRow + 1 },
-      cell: {
-        userEnteredFormat: {
-          backgroundColor: COLORS.red,
-          textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.white },
-          horizontalAlignment: "CENTER",
-          verticalAlignment: "MIDDLE",
-        },
-      },
-      fields: "userEnteredFormat",
-    },
-  })
-  requests.push({
-    updateDimensionProperties: {
-      range: { sheetId, dimension: "ROWS", startIndex: headerRow, endIndex: headerRow + 1 },
-      properties: { pixelSize: 36 },
-      fields: "pixelSize",
-    },
-  })
-
-  // ── Строки данных ────────────────────────────────────────────────────────
+  // ── Строки данных (начиная с A5, индекс 4) ──────────────────────────────
   for (let i = 0; i < dataRows; i++) {
-    const rowIdx = headerRow + 1 + i
+    const rowIdx = 4 + i  // A5 = index 4
     const isEven = i % 2 === 0
 
     // Фон строки + базовый шрифт
@@ -258,18 +179,18 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
     })
   }
 
-  // Высота строк данных
+  // Высота строк данных (A5+)
   if (dataRows > 0) {
     requests.push({
       updateDimensionProperties: {
-        range: { sheetId, dimension: "ROWS", startIndex: headerRow + 1, endIndex: headerRow + 1 + dataRows },
+        range: { sheetId, dimension: "ROWS", startIndex: 4, endIndex: 4 + dataRows },
         properties: { pixelSize: 40 },
         fields: "pixelSize",
       },
     })
   }
 
-  // ── Ширины колонок: Поезд, Класс, Направление, Прибытие, Отправление, Путь, Опоздание, Время МСК ──
+  // ── Ширины колонок: № Поезда, Категория, Назначение, Прибытие, Отправление, Путь, Опоздание ──
   const colWidths = [90, 90, 250, 120, 130, 80, 100, 110]
   colWidths.slice(0, colCount).forEach((px, i) => {
     requests.push({
@@ -281,10 +202,10 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
     })
   })
 
-  // ── Заморозить 2 строки (название вокзала + заголовки колонок) ──────────
+  // ── Заморозить 4 строки (шапка + строка заголовков колонок) ─────────────
   requests.push({
     updateSheetProperties: {
-      properties: { sheetId, gridProperties: { frozenRowCount: headerRow + 1 } },
+      properties: { sheetId, gridProperties: { frozenRowCount: 4 } },
       fields: "gridProperties.frozenRowCount",
     },
   })
@@ -348,19 +269,16 @@ export async function POST(req: NextRequest) {
         return false
       })
 
-      // Строки 0 и 1 — декоративная шапка, создана вручную в таблице, НЕ перезаписываем.
-      // Начинаем запись с A3 (индекс 2): строка заголовков колонок + строки данных.
-      const dataStartRow = 2  // A3 = row index 2
-      const headerRow = dataStartRow  // строка заголовков колонок (A3)
+      // Строки 1-4 в таблице (индексы 0-3) — шапка, сделана вручную, НЕ перезаписываем.
+      // Данные пишем начиная с A5 (индекс 4).
+      // headerRow = 3 — индекс красной строки заголовков (строка 4), используется для форматирования.
+      const headerRow = 3
       const colCount = 8  // № Поезда, Категория, Назначение, Прибытие, Отправление, Путь, Опоздание, (пусто)
 
-      // Строим строки начиная с A3
+      // Строим строки данных начиная с A5 (без строки заголовков — она уже есть в таблице)
       const rows: (string | number)[][] = []
 
-      // Строка A3 (headerRow): заголовки колонок
-      rows.push(["№ Поезда", "Категория", "Назначение", "Прибытие", "Отправление", "Путь", "Опоздание", ""])
-
-      // Строки данных (только занятые рейсы), начиная с A4
+      // Строки данных (только занятые рейсы), начиная с A5
       for (const s of stationShifts) {
         const { arrival, departure, platform } = getStationTimes(s, station.key)
         const abbr = (s.class as string) === "Пассажирский" ? "ПАСС"
@@ -380,10 +298,10 @@ export async function POST(req: NextRequest) {
         ])
       }
 
-      // Записываем данные начиная с A3 (USER_ENTERED для формул, если понадобятся)
+      // Записываем данные начиная с A5 (строки 1-4 — шапка, не трогаем)
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `'${station.name}'!A3`,
+        range: `'${station.name}'!A5`,
         valueInputOption: "USER_ENTERED",
         requestBody: { values: rows },
       })
@@ -392,7 +310,8 @@ export async function POST(req: NextRequest) {
       const metaAfter = await sheets.spreadsheets.get({ spreadsheetId, includeGridData: false })
       const sheetAfter = (metaAfter.data.sheets ?? []).find((sh: any) => sh.properties?.sheetId === sheetId)
       const actualRowCount = sheetAfter?.properties?.gridProperties?.rowCount ?? 1000
-      const usedRows = headerRow + 1 + stationShifts.length
+      // Данные с A5 (индекс 4), headerRow=3 не включаем — он уже есть в шапке
+      const usedRows = 4 + stationShifts.length
 
       if (actualRowCount > usedRows) {
         deleteRowsRequests.push({
