@@ -46,7 +46,7 @@ function MainContentInner() {
     return () => window.removeEventListener("customBgUpdated", loadCustomBg)
   }, [])
 
-  // Poll global tech mode from Supabase every 10 seconds
+  // Fetch global tech mode once on page load
   useEffect(() => {
     const fetchTechMode = async () => {
       try {
@@ -59,7 +59,6 @@ function MainContentInner() {
     }
 
     fetchTechMode()
-    const interval = setInterval(fetchTechMode, 10000)
 
     // Also listen for local tech mode toggle events from settings modal
     const handleTechModeChange = (e: Event) => {
@@ -71,7 +70,6 @@ function MainContentInner() {
     window.addEventListener("techModeChanged", handleTechModeChange)
 
     return () => {
-      clearInterval(interval)
       window.removeEventListener("techModeChanged", handleTechModeChange)
     }
   }, [])
