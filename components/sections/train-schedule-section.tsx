@@ -572,10 +572,13 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
 
         {/* Rows — only claimed, time-filtered */}
         {boardRows.length === 0 ? (
-          <div className="py-10 text-center text-white/40 text-sm" style={{ background: boardBg }}>
+          <div
+            className="py-10 text-center text-sm"
+            style={{ background: boardBg, color: "rgba(255,255,255,0.35)" }}
+          >
             {shifts.filter((s) => s.direction === activeDirection).length === 0
-              ? "На выбранную дату нет занятых рейсов в этом направлении."
-              : "Все рейсы этого направления уже отправились."}
+              ? "На данный момент рейсов не запланировано"
+              : "Все рейсы этого направления уже отправились"}
           </div>
         ) : (
           boardRows.map(({ train, shift, arrival, departure, platform }, idx) => {
@@ -638,8 +641,8 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
           </div>
 
           {trains.length === 0 ? (
-            <p className="px-5 py-6 text-white/30 text-sm italic">
-              База рейсов пуста. Обратитесь к Старшему Составу.
+            <p className="px-5 py-6 text-white/30 text-sm">
+              На данный момент рейсов не запланировано
             </p>
           ) : (
             <div>
@@ -911,7 +914,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
 
           {/* Trains list grouped by direction */}
           {trains.length === 0 ? (
-            <p className="text-center py-8 text-white/40 text-sm">База рейсов пуста</p>
+            <p className="text-center py-8 text-white/40 text-sm">На данный момент рейсов не запланировано</p>
           ) : (
             <div className="divide-y divide-[#2a3040]">
               {[
