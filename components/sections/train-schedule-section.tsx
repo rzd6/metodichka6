@@ -207,20 +207,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   const [shiftDate, setShiftDate] = useState(getMoscowDateISO())
   const [deleteShiftTarget, setDeleteShiftTarget] = useState<TrainShift | null>(null)
 
-  // Language toggle: RU / EN, fade every 20s — only for passenger board
-  const [lang, setLang] = useState<"ru" | "en">("ru")
-  const [langVisible, setLangVisible] = useState(true)
-  useEffect(() => {
-    const toggle = () => {
-      setLangVisible(false)
-      setTimeout(() => {
-        setLang((l) => (l === "ru" ? "en" : "ru"))
-        setLangVisible(true)
-      }, 600)
-    }
-    const id = setInterval(toggle, 20_000)
-    return () => clearInterval(id)
-  }, [])
+  const langVisible = true
 
   // Moscow clock
   const [moscowTime, setMoscowTime] = useState(getMoscowTime())
@@ -264,38 +251,20 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   useEffect(() => { loadTrains() }, [loadTrains])
   useEffect(() => { loadShifts() }, [loadShifts])
 
-  // ---- Language strings (only for passenger board) ----
+  // ---- Строки интерфейса (только RU) ----
   const T = {
-    ru: {
-      scheduleTitle: (date: string) => `РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ НА ${formatDateRu(date).toUpperCase()}`,
-      arrivalsTitle: "Прибытие и отправление поездов",
-      stationLabel: (dir: DirectionTab) => dir === "mirny-privolzhsk" ? "Станция Мирный" : "Станция Приволжск",
-      trainNum: "Номер поезда",
-      category: "Категория",
-      destination: "Назначение",
-      arrival: "Прибытие",
-      departure: "Отправление",
-      track: "Путь",
-      driver: "Машинист",
-      moscowTime: "Московское\nвремя",
-    },
-    en: {
-      scheduleTitle: (date: string) => {
-        const d = new Date(date + "T12:00:00")
-        return `SCHEDULE FOR ${d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, ".")}`
-      },
-      arrivalsTitle: "Arrivals & Departures",
-      stationLabel: (dir: DirectionTab) => dir === "mirny-privolzhsk" ? "Station Mirny" : "Station Privolzhsk",
-      trainNum: "Train",
-      category: "Class",
-      destination: "Destination",
-      arrival: "Arrival",
-      departure: "Departure",
-      track: "Track",
-      driver: "Driver",
-      moscowTime: "Moscow\ntime",
-    },
-  }[lang]
+    scheduleTitle: (date: string) => `РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ НА ${formatDateRu(date).toUpperCase()}`,
+    arrivalsTitle: "Прибытие и отправление поездов",
+    stationLabel: (dir: DirectionTab) => dir === "mirny-privolzhsk" ? "Станция Мирный" : "Станция Приволжск",
+    trainNum: "Номер поезда",
+    category: "Категория",
+    destination: "Назначение",
+    departure: "Отправление",
+    arrival: "Прибытие",
+    track: "Путь",
+    driver: "Машинист",
+    moscowTime: "Московское\nвремя",
+  }
 
   const isLiveMode = shiftDate === getMoscowDateISO()
 
@@ -564,9 +533,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                   : { background: "#252b3b", color: "rgba(255,255,255,0.55)" }
               }
             >
-              <span className="transition-opacity duration-500" style={{ opacity: langVisible ? 1 : 0 }}>
-                {lang === "ru" ? tab.label : (tab.id === "mirny-privolzhsk" ? "Mirny — Privolzhsk" : "Privolzhsk — Mirny")}
-              </span>
+              {tab.label}
             </button>
           ))}
         </div>
@@ -574,17 +541,11 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         {/* Inner header with clock */}
         <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${borderClr}` }}>
           <div>
-            <p className="text-white font-bold text-base transition-opacity duration-500" style={{ opacity: langVisible ? 1 : 0 }}>
-              {T.arrivalsTitle}
-            </p>
-            <p className="text-white/50 text-xs mt-0.5 transition-opacity duration-500" style={{ opacity: langVisible ? 1 : 0 }}>
-              {T.stationLabel(activeDirection)}
-            </p>
+            <p className="text-white font-bold text-base">{T.arrivalsTitle}</p>
+            <p className="text-white/50 text-xs mt-0.5">{T.stationLabel(activeDirection)}</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-white/50 text-xs text-right leading-tight whitespace-pre-line transition-opacity duration-500" style={{ opacity: langVisible ? 1 : 0 }}>
-              {T.moscowTime}
-            </span>
+            <span className="text-white/50 text-xs text-right leading-tight whitespace-pre-line">{T.moscowTime}</span>
             <div
               className="text-white font-bold text-xl px-3 py-1 rounded"
               style={{ background: "#252b3b", border: `1px solid ${borderClr}`, fontVariantNumeric: "tabular-nums" }}
@@ -594,13 +555,13 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
           </div>
         </div>
 
-        {/* Column headers */}
+        {/* Column headers: Отправление перед Прибытием */}
         <div
           className="grid text-white text-sm font-semibold px-5 py-2.5"
-          style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px 180px 48px", background: headerBg }}
+          style={{ gridTemplateColumns: "72px 90px 1fr 120px 110px 64px 180px 48px", background: headerBg }}
         >
-          {[T.trainNum, T.category, T.destination, T.arrival, T.departure, T.track, T.driver, ""].map((h, i) => (
-            <span key={i} className="transition-opacity duration-500 text-center first:text-left" style={{ opacity: langVisible ? 1 : 0 }}>
+          {[T.trainNum, T.category, T.destination, T.departure, T.arrival, T.track, T.driver, ""].map((h, i) => (
+            <span key={i} className="text-center first:text-left">
               {h}
             </span>
           ))}
@@ -616,29 +577,28 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         ) : (
           boardRows.map(({ train, shift, arrival, departure, platform }, idx) => {
             const dirLabel = activeDirection === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
-            const dirLabelEn = activeDirection === "mirny-privolzhsk" ? "Mirny — Privolzhsk" : "Privolzhsk — Mirny"
             const rowBg = idx % 2 === 0 ? rowEvenBg : rowOddBg
             const abbr = CLASS_ABBR[train.class] ?? train.class
+            // Путь отображается как "ПАСС" + номер пути (1/3 или 2/4)
+            const trackLabel = `${abbr} ${platform}`
             return (
               <div
                 key={train.id}
                 className="grid items-center px-5 py-3 text-sm"
-                style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px 180px 48px", background: rowBg, borderBottom: `1px solid ${borderClr}` }}
+                style={{ gridTemplateColumns: "72px 90px 1fr 120px 110px 64px 180px 48px", background: rowBg, borderBottom: `1px solid ${borderClr}` }}
               >
                 <span className="text-xl font-extrabold" style={{ color: "#f5c518" }}>{train.train_number}</span>
-                <span className="font-bold text-white/90 uppercase text-xs tracking-wide transition-opacity duration-500 text-center" style={{ opacity: langVisible ? 1 : 0 }}>
-                  {lang === "ru" ? abbr : abbr}
-                </span>
-                <span className="font-semibold text-center transition-opacity duration-500" style={{ color: "#f5c518", opacity: langVisible ? 1 : 0 }}>
-                  {lang === "ru" ? dirLabel : dirLabelEn}
-                </span>
-                <span className="font-bold text-white text-base text-center" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {arrival ?? <span className="text-white/30 text-lg font-bold">—</span>}
-                </span>
+                <span className="font-bold text-white/90 uppercase text-xs tracking-wide text-center">{abbr}</span>
+                <span className="font-semibold text-center" style={{ color: "#f5c518" }}>{dirLabel}</span>
+                {/* Отправление первым */}
                 <span className="font-bold text-white text-base text-center" style={{ fontVariantNumeric: "tabular-nums" }}>
                   {departure ?? <span className="text-white/30 text-lg font-bold">—</span>}
                 </span>
-                <span className="font-bold text-white/80 text-base text-center">{platform}</span>
+                {/* Прибытие вторым */}
+                <span className="font-bold text-white text-base text-center" style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {arrival ?? <span className="text-white/30 text-lg font-bold">—</span>}
+                </span>
+                <span className="font-bold text-white/80 text-sm text-center">{trackLabel}</span>
                 <div className="text-center">
                   <span className="text-white/90 text-sm font-medium">{shift.claimed_by_nickname}</span>
                 </div>
@@ -694,13 +654,14 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                     {/* Column header row */}
                     <div
                       className="grid text-white/60 text-[11px] font-semibold uppercase tracking-wide px-5 py-1.5"
-                      style={{ gridTemplateColumns: "56px 72px 1fr 90px 100px 56px 1fr", background: "#181c28", borderBottom: `1px solid ${borderClr}` }}
+                      style={{ gridTemplateColumns: "56px 72px 1fr 100px 100px 90px 80px 1fr", background: "#181c28", borderBottom: `1px solid ${borderClr}` }}
                     >
                       <span>Номер</span>
-                      <span>Категория</span>
+                      <span>Кат.</span>
                       <span>Маршрут</span>
-                      <span className="text-center">Прибытие</span>
+                      <span className="text-center">Отпр. депо</span>
                       <span className="text-center">Отправление</span>
+                      <span className="text-center">Прибытие</span>
                       <span className="text-center">Путь</span>
                       <span className="text-center">Машинист</span>
                     </div>
@@ -713,13 +674,15 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       const depotOffset = dir === "mirny-privolzhsk" ? -3 : -5
                       const depotDepart = addMinutes(train.depart_start, depotOffset)
                       const rowBg = idx % 2 === 0 ? rowEvenBg : rowOddBg
+                      // Путь: "ПАСС 1", "ТУР 2" и т.п.
+                      const trackLabel = `${abbr} ${train.platform_start}`
 
                       return (
                         <div
                           key={train.id}
                           className="grid items-center px-5 py-2.5 text-sm"
                           style={{
-                            gridTemplateColumns: "56px 72px 1fr 90px 100px 56px 1fr",
+                            gridTemplateColumns: "56px 72px 1fr 100px 100px 90px 80px 1fr",
                             background: rowBg,
                             borderBottom: `1px solid ${borderClr}`,
                             opacity: isClaimed && !isMe ? 0.7 : 1,
@@ -738,18 +701,23 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                             {dir === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"}
                           </span>
 
-                          {/* Arrival (from depot perspective = depart_start minus offset for "arrival at station") */}
-                          <span className="text-center text-sm font-bold text-white/70" style={{ fontVariantNumeric: "tabular-nums" }}>
-                            {train.arrive_end || <span className="text-white/25">—</span>}
+                          {/* Отправление из депо */}
+                          <span className="text-center text-sm font-bold" style={{ color: "#f5c518", fontVariantNumeric: "tabular-nums" }}>
+                            {depotDepart}
                           </span>
 
-                          {/* Departure (passenger departure) */}
+                          {/* Отправление пассажирское — первым */}
                           <span className="text-center text-sm font-bold text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
                             {train.depart_start || <span className="text-white/30">—</span>}
                           </span>
 
-                          {/* Platform */}
-                          <span className="text-center font-bold text-white/80">{train.platform_start}</span>
+                          {/* Прибытие — вторым */}
+                          <span className="text-center text-sm font-bold text-white/70" style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {train.arrive_end || <span className="text-white/25">—</span>}
+                          </span>
+
+                          {/* Путь: ПАСС/ТУР + номер */}
+                          <span className="text-center text-xs font-bold text-white/80">{trackLabel}</span>
 
                           {/* Driver / claim button */}
                           <div className="text-center">

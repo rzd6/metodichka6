@@ -27,7 +27,9 @@ function getAuth() {
 }
 
 function formatDateRu(iso: string): string {
-  const [y, m, d] = iso.split("-")
+  // iso может прийти как "2026-06-01" или как "2026-06-01T00:00:00.000Z"
+  const clean = iso.slice(0, 10) // берём только YYYY-MM-DD
+  const [y, m, d] = clean.split("-")
   return `${d}.${m}.${y}`
 }
 
@@ -364,8 +366,8 @@ export async function POST(req: NextRequest) {
 
     const sheetUrls: string[] = []
     const allFormatRequests: any[] = []
-    // Для удаления пустых строк — собираем после получения актуального rowCount
-    const deleteRowsRequests: any[] = []
+    // Для закраски пустых строк — собираем после получения актуального rowCount
+    const extraFormatRequests: any[] = []
 
     for (const station of STATION_SHEETS) {
       const sheetId = await ensureSheet(sheets, spreadsheetId, station.name, existingSheets)
@@ -427,21 +429,28 @@ export async function POST(req: NextRequest) {
         requestBody: { values: rows },
       })
 
-      // Получаем актуальный rowCount ПОСЛЕ записи данных (Google мог расширить лист)
+      // Получаем актуальный rowCount ПОСЛЕ записи данных
       const metaAfter = await sheets.spreadsheets.get({ spreadsheetId, includeGridData: false })
       const sheetAfter = (metaAfter.data.sheets ?? []).find((sh: any) => sh.properties?.sheetId === sheetId)
       const actualRowCount = sheetAfter?.properties?.gridProperties?.rowCount ?? 1000
       const usedRows = headerRow + 1 + stationShifts.length
 
+      // Вместо удаления — закрашиваем пустые строки тёмным цветом (без текста)
       if (actualRowCount > usedRows) {
-        deleteRowsRequests.push({
-          deleteDimension: {
+        extraFormatRequests.push({
+          repeatCell: {
             range: {
               sheetId,
-              dimension: "ROWS",
-              startIndex: usedRows,
-              endIndex: actualRowCount,
+              startRowIndex: usedRows,
+              endRowIndex: Math.min(actualRowCount, usedRows + 50),
             },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: COLORS.dark1,
+                textFormat: { foregroundColor: COLORS.dark1, fontSize: 1 },
+              },
+            },
+            fields: "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat",
           },
         })
       }
@@ -461,11 +470,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Удаляем пустые строки снизу (отдельным батчем после форматирования)
-    if (deleteRowsRequests.length > 0) {
+    // Закрашиваем пустые строки снизу тёмным (отдельным батчем)
+    if (extraFormatRequests.length > 0) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
-        requestBody: { requests: deleteRowsRequests },
+        requestBody: { requests: extraFormatRequests },
       })
     }
 
