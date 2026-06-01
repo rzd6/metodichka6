@@ -3,15 +3,10 @@ import { google } from "googleapis"
 import { GoogleAuth } from "google-auth-library"
 import { Pool } from "pg"
 
-let pool: Pool | null = null
 function getPool(): Pool {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING,
-      max: 3,
-    })
-  }
-  return pool
+  const connectionString = process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING
+  if (!connectionString) throw new Error("Не задана переменная POSTGRES_URL или POSTGRES_URL_NON_POOLING")
+  return new Pool({ connectionString, max: 3 })
 }
 
 const SERVICE_ACCOUNT_EMAIL = "rzd6-metodichka@rzd-metodichka.iam.gserviceaccount.com"
@@ -19,229 +14,189 @@ const SERVICE_ACCOUNT_EMAIL = "rzd6-metodichka@rzd-metodichka.iam.gserviceaccoun
 function getAuth() {
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
   if (!privateKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY не задан")
-
-  // Normalize escaped newlines that come from env var storage
-  const normalizedKey = privateKey.replace(/\\n/g, "\n")
-
-  const auth = new GoogleAuth({
+  return new GoogleAuth({
     credentials: {
       client_email: SERVICE_ACCOUNT_EMAIL,
-      // google-auth-library converts PKCS#1 → PKCS#8 internally, avoiding ERR_OSSL_UNSUPPORTED
-      private_key: normalizedKey,
+      private_key: privateKey.replace(/\\n/g, "\n"),
     },
     scopes: [
       "https://www.googleapis.com/auth/spreadsheets",
       "https://www.googleapis.com/auth/drive",
     ],
   })
-  return auth
 }
 
-// Ensure spreadsheet exists and is shared (or create new)
-async function ensureSpreadsheet(sheets: ReturnType<typeof google.sheets>, drive: ReturnType<typeof google.drive>, date: string): Promise<string> {
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID
-  if (spreadsheetId) return spreadsheetId
-
-  // Create new spreadsheet
-  const created = await sheets.spreadsheets.create({
-    requestBody: {
-      properties: { title: `Расписание поездов РЖД6` },
-    },
-  })
-  const newId = created.data.spreadsheetId!
-
-  // Make it accessible for anyone with link (viewer)
-  await drive.permissions.create({
-    fileId: newId,
-    requestBody: { role: "reader", type: "anyone" },
-  })
-
-  return newId
-}
-
-function addMinutes(time: string | null | undefined, mins: number): string {
-  if (!time) return "—"
-  const [h, m] = time.split(":").map(Number)
-  const total = h * 60 + m + mins
-  const hh = Math.floor(((total % 1440) + 1440) % 1440 / 60).toString().padStart(2, "0")
-  const mm = (((total % 1440) + 1440) % 1440 % 60).toString().padStart(2, "0")
-  return `${hh}:${mm}`
-}
-
-function formatDateSheet(iso: string): string {
+function formatDateRu(iso: string): string {
   const [y, m, d] = iso.split("-")
   return `${d}.${m}.${y}`
 }
 
-// POST /api/sync-to-sheets  { date: "YYYY-MM-DD" }
-export async function POST(req: NextRequest) {
-  try {
-    const { date } = await req.json()
-    const shiftDate = date || new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Moscow" })
+// Цвета в формате Google Sheets (0-1)
+const COLORS = {
+  dark1: { red: 0.078, green: 0.094, blue: 0.125 },   // #141830 — самый тёмный
+  dark2: { red: 0.102, green: 0.122, blue: 0.176 },   // #1A1F2D — тёмный
+  dark3: { red: 0.133, green: 0.157, blue: 0.22 },    // #222838 — светлее
+  red:   { red: 0.753, green: 0.224, blue: 0.169 },   // #C03929 — красный заголовок
+  yellow: { red: 0.961, green: 0.773, blue: 0.094 },  // #F5C518 — жёлтый
+  white: { red: 1, green: 1, blue: 1 },
+  lightGray: { red: 0.88, green: 0.88, blue: 0.88 },
+}
 
-    const db = getPool()
+// Три фиксированных листа по станциям
+const STATION_SHEETS = [
+  { name: "Мирный",     key: "mirny" },
+  { name: "Невский",    key: "nevsky" },
+  { name: "Приволжск",  key: "privolzhsk" },
+]
 
-    // Load all trains
-    const trainRes = await db.query("SELECT * FROM trains ORDER BY train_number ASC")
-    const trains: any[] = trainRes.rows
+/**
+ * Для каждой станции формируем строки расписания:
+ * показываем только прибытие и отправление для этой станции.
+ *
+ * Логика по направлениям:
+ *  mirny-privolzhsk:
+ *    Мирный    → depart_start (только отправление, прибытие нет)
+ *    Невский   → arrive_middle / depart_middle
+ *    Приволжск → arrive_end (только прибытие, отправления нет)
+ *
+ *  privolzhsk-mirny:
+ *    Приволжск → depart_start (только отправление)
+ *    Невский   → arrive_middle / depart_middle
+ *    Мирный    → arrive_end (только прибытие)
+ */
+function getStationTimes(
+  train: any,
+  stationKey: string
+): { arrival: string; departure: string; platform: number } {
+  const dir = train.direction as string
 
-    // Load shifts for date
-    const shiftRes = await db.query(
-      `SELECT ts.*, t.direction, t.class, t.depart_start, t.arrive_middle,
-              t.depart_middle, t.arrive_end, t.platform_start, t.platform_middle, t.platform_end
-       FROM train_shifts ts
-       JOIN trains t ON t.id = ts.train_id
-       WHERE ts.shift_date = $1
-       ORDER BY ts.train_number ASC`,
-      [shiftDate]
-    )
-    const shifts: any[] = shiftRes.rows
+  if (dir === "mirny-privolzhsk") {
+    if (stationKey === "mirny")     return { arrival: "—", departure: train.depart_start || "—", platform: train.platform_start || 1 }
+    if (stationKey === "nevsky")    return { arrival: train.arrive_middle || "—", departure: train.depart_middle || "—", platform: train.platform_middle || 1 }
+    if (stationKey === "privolzhsk") return { arrival: train.arrive_end || "—", departure: "—", platform: train.platform_end || 1 }
+  }
 
-    const auth = getAuth()
-    const sheets = google.sheets({ version: "v4", auth })
-    const drive = google.drive({ version: "v3", auth })
+  if (dir === "privolzhsk-mirny") {
+    if (stationKey === "privolzhsk") return { arrival: "—", departure: train.depart_start || "—", platform: train.platform_start || 1 }
+    if (stationKey === "nevsky")    return { arrival: train.arrive_middle || "—", departure: train.depart_middle || "—", platform: train.platform_middle || 1 }
+    if (stationKey === "mirny")    return { arrival: train.arrive_end || "—", departure: "—", platform: train.platform_end || 1 }
+  }
 
-    const spreadsheetId = await ensureSpreadsheet(sheets, drive, shiftDate)
+  return { arrival: "—", departure: "—", platform: 1 }
+}
 
-    const dateLabel = formatDateSheet(shiftDate)
-    const sheetTitle = `Расписание ${dateLabel}`
+function directionLabel(direction: string): string {
+  if (direction === "mirny-privolzhsk") return "Мирный — Приволжск"
+  if (direction === "privolzhsk-mirny") return "Приволжск — Мирный"
+  return direction
+}
 
-    // Get existing sheets
-    const meta = await sheets.spreadsheets.get({ spreadsheetId })
-    const existingSheets = meta.data.sheets ?? []
-    const existing = existingSheets.find((s: any) => s.properties?.title === sheetTitle)
+// Гарантируем что лист с нужным именем существует, возвращаем его sheetId
+async function ensureSheet(
+  sheets: ReturnType<typeof google.sheets>,
+  spreadsheetId: string,
+  sheetName: string,
+  existingSheets: any[]
+): Promise<number> {
+  const found = existingSheets.find((s: any) => s.properties?.title === sheetName)
+  if (found) {
+    // Очищаем содержимое
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: `'${sheetName}'` })
+    return found.properties!.sheetId!
+  }
+  const res = await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: { requests: [{ addSheet: { properties: { title: sheetName } } }] },
+  })
+  return res.data.replies?.[0]?.addSheet?.properties?.sheetId ?? 0
+}
 
-    let sheetId: number
+// Строим форматирование для одного листа
+function buildFormatRequests(sheetId: number, headerRow: number, dataRows: number, colCount: number) {
+  const requests: any[] = []
 
-    if (existing) {
-      sheetId = existing.properties!.sheetId!
-      // Clear the sheet
-      await sheets.spreadsheets.values.clear({
-        spreadsheetId,
-        range: `'${sheetTitle}'`,
-      })
-    } else {
-      // Add new sheet
-      const addReq = await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [{ addSheet: { properties: { title: sheetTitle } } }],
+  // Заголовок (строка 0): слияние + тёмный + белый жирный
+  requests.push({
+    mergeCells: {
+      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: colCount },
+      mergeType: "MERGE_ALL",
+    },
+  })
+  requests.push({
+    repeatCell: {
+      range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+      cell: {
+        userEnteredFormat: {
+          backgroundColor: COLORS.dark1,
+          textFormat: { bold: true, fontSize: 13, foregroundColor: COLORS.white },
+          horizontalAlignment: "CENTER",
+          verticalAlignment: "MIDDLE",
         },
-      })
-      sheetId = (addReq.data.replies?.[0]?.addSheet?.properties?.sheetId) ?? 0
-    }
-
-    // Build rows
-    // Section 1: Мирный → Приволжск (1/3)
-    const mp = trains.filter((t) => t.direction === "mirny-privolzhsk")
-    // Section 2: Приволжск → Мирный (2/4)
-    const pm = trains.filter((t) => t.direction === "privolzhsk-mirny")
-
-    const rows: (string | number)[][] = []
-
-    rows.push([`РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ НА ${dateLabel}`])
-    rows.push([])
-
-    // --- МИРНЫЙ → ПРИВОЛЖСК ---
-    rows.push(["МИРНЫЙ — ПРИВОЛЖСК (1/3)"])
-    rows.push([
-      "Номер поезда",
-      "Категория",
-      "Направление",
-      "Прибытие",
-      "Отправление",
-      "Путь (ПАСС)",
-      "Отпр. из депо",
-      "Прибытие на конечную",
-      "Машинист",
-    ])
-
-    if (mp.length === 0) {
-      rows.push(["Рейсы отсутствуют"])
-    } else {
-      for (const t of mp) {
-        const shift = shifts.find((s) => s.train_number === t.train_number)
-        const departDepot = addMinutes(t.depart_start, -3) // -3 мин от отправления Мирный
-        const arriveEnd = t.arrive_end || "—"
-        rows.push([
-          t.train_number,
-          "ПАСС",
-          "Мирный — Приволжск",
-          "—",
-          t.depart_start || "—",
-          t.platform_start || 1,
-          departDepot,
-          arriveEnd,
-          shift ? shift.claimed_by_nickname : "—",
-        ])
-      }
-    }
-
-    rows.push([])
-
-    // --- ПРИВОЛЖСК → МИРНЫЙ ---
-    rows.push(["ПРИВОЛЖСК — МИРНЫЙ (2/4)"])
-    rows.push([
-      "Номер поезда",
-      "Категория",
-      "Направление",
-      "Прибытие",
-      "Отправление",
-      "Путь (ПАСС)",
-      "Отпр. из депо",
-      "Прибытие на конечную",
-      "Машинист",
-    ])
-
-    if (pm.length === 0) {
-      rows.push(["Рейсы отсутствуют"])
-    } else {
-      for (const t of pm) {
-        const shift = shifts.find((s) => s.train_number === t.train_number)
-        const departDepot = addMinutes(t.depart_start, -5) // -5 мин от отправления Приволжск
-        const arriveEnd = t.arrive_end || "—"
-        rows.push([
-          t.train_number,
-          "ПАСС",
-          "Приволжск — Мирный",
-          "—",
-          t.depart_start || "—",
-          t.platform_start || 2,
-          departDepot,
-          arriveEnd,
-          shift ? shift.claimed_by_nickname : "—",
-        ])
-      }
-    }
-
-    rows.push([])
-    rows.push([`Обновлено: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} (МСК)`])
-
-    // Write rows
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `'${sheetTitle}'!A1`,
-      valueInputOption: "RAW",
-      requestBody: { values: rows },
-    })
-
-    // Format: header row merge + bold + colors
-    const formatRequests: any[] = []
-
-    // Title row: merge A1:I1 + bold + dark background
-    formatRequests.push({
-      mergeCells: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 9 },
-        mergeType: "MERGE_ALL",
       },
-    })
-    formatRequests.push({
+      fields: "userEnteredFormat",
+    },
+  })
+
+  // Строка с названием станции (строка 1): слияние + красный фон + белый жирный (как подзаголовок)
+  requests.push({
+    mergeCells: {
+      range: { sheetId, startRowIndex: 1, endRowIndex: 2, startColumnIndex: 0, endColumnIndex: colCount },
+      mergeType: "MERGE_ALL",
+    },
+  })
+  requests.push({
+    repeatCell: {
+      range: { sheetId, startRowIndex: 1, endRowIndex: 2 },
+      cell: {
+        userEnteredFormat: {
+          backgroundColor: COLORS.red,
+          textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.white },
+          horizontalAlignment: "LEFT",
+          verticalAlignment: "MIDDLE",
+        },
+      },
+      fields: "userEnteredFormat",
+    },
+  })
+  // Высота строки названия станции
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: 1, endIndex: 2 },
+      properties: { pixelSize: 36 },
+      fields: "pixelSize",
+    },
+  })
+
+  // Строка заголовка колонок (headerRow): красный фон + белый жирный
+  requests.push({
+    repeatCell: {
+      range: { sheetId, startRowIndex: headerRow, endRowIndex: headerRow + 1 },
+      cell: {
+        userEnteredFormat: {
+          backgroundColor: COLORS.red,
+          textFormat: { bold: true, fontSize: 10, foregroundColor: COLORS.white },
+          horizontalAlignment: "CENTER",
+          verticalAlignment: "MIDDLE",
+        },
+      },
+      fields: "userEnteredFormat",
+    },
+  })
+
+  // Строки данных: чередующийся фон + номер поезда жёлтый + направление жёлтое
+  for (let i = 0; i < dataRows; i++) {
+    const rowIdx = headerRow + 1 + i
+    const isEven = i % 2 === 0
+
+    // Фон строки
+    requests.push({
       repeatCell: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+        range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1 },
         cell: {
           userEnteredFormat: {
-            backgroundColor: { red: 0.102, green: 0.122, blue: 0.176 },
-            textFormat: { bold: true, fontSize: 13, foregroundColor: { red: 1, green: 1, blue: 1 } },
+            backgroundColor: isEven ? COLORS.dark2 : COLORS.dark3,
+            textFormat: { fontSize: 11, foregroundColor: COLORS.lightGray },
+            verticalAlignment: "MIDDLE",
             horizontalAlignment: "CENTER",
           },
         },
@@ -249,132 +204,173 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Section headers + column headers
-    const sectionRows = [2, mp.length + 5] // 0-indexed row indices for section title rows
-    // Мирный→Приволжск section header at row 2 (0-indexed)
-    const mpSectionRow = 2
-    const mpHeaderRow = 3
-    const pmSectionRow = mp.length + 5
-    const pmHeaderRow = mp.length + 6
-
-    for (const sr of [mpSectionRow, pmSectionRow]) {
-      formatRequests.push({
-        mergeCells: {
-          range: { sheetId, startRowIndex: sr, endRowIndex: sr + 1, startColumnIndex: 0, endColumnIndex: 9 },
-          mergeType: "MERGE_ALL",
-        },
-      })
-      formatRequests.push({
-        repeatCell: {
-          range: { sheetId, startRowIndex: sr, endRowIndex: sr + 1 },
-          cell: {
-            userEnteredFormat: {
-              backgroundColor: { red: 0.149, green: 0.122, blue: 0.173 },
-              textFormat: { bold: true, fontSize: 11, foregroundColor: { red: 0.961, green: 0.773, blue: 0.094 } },
-              horizontalAlignment: "LEFT",
-            },
+    // Колонка 0 (Поезд) — жёлтый жирный
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 0, endColumnIndex: 1 },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.yellow },
+            horizontalAlignment: "CENTER",
           },
-          fields: "userEnteredFormat",
         },
-      })
-    }
-
-    // Column header rows: red background
-    for (const hr of [mpHeaderRow, pmHeaderRow]) {
-      formatRequests.push({
-        repeatCell: {
-          range: { sheetId, startRowIndex: hr, endRowIndex: hr + 1 },
-          cell: {
-            userEnteredFormat: {
-              backgroundColor: { red: 0.753, green: 0.224, blue: 0.169 },
-              textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
-            },
-          },
-          fields: "userEnteredFormat",
-        },
-      })
-    }
-
-    // Train number cells: yellow text
-    const mpDataStart = mpHeaderRow + 1
-    const mpDataEnd = mpDataStart + mp.length
-    const pmDataStart = pmHeaderRow + 1
-    const pmDataEnd = pmDataStart + pm.length
-
-    for (const [start, end] of [[mpDataStart, mpDataEnd], [pmDataStart, pmDataEnd]]) {
-      // Train number col (A) yellow
-      formatRequests.push({
-        repeatCell: {
-          range: { sheetId, startRowIndex: start, endRowIndex: end, startColumnIndex: 0, endColumnIndex: 1 },
-          cell: {
-            userEnteredFormat: {
-              textFormat: { bold: true, fontSize: 12, foregroundColor: { red: 0.961, green: 0.773, blue: 0.094 } },
-            },
-          },
-          fields: "userEnteredFormat",
-        },
-      })
-      // Direction col (C) yellow
-      formatRequests.push({
-        repeatCell: {
-          range: { sheetId, startRowIndex: start, endRowIndex: end, startColumnIndex: 2, endColumnIndex: 3 },
-          cell: {
-            userEnteredFormat: {
-              textFormat: { bold: true, foregroundColor: { red: 0.961, green: 0.773, blue: 0.094 } },
-            },
-          },
-          fields: "userEnteredFormat",
-        },
-      })
-      // Odd/even row alternating backgrounds
-      for (let r = start; r < end; r++) {
-        const isEven = (r - start) % 2 === 0
-        formatRequests.push({
-          repeatCell: {
-            range: { sheetId, startRowIndex: r, endRowIndex: r + 1 },
-            cell: {
-              userEnteredFormat: {
-                backgroundColor: isEven
-                  ? { red: 0.078, green: 0.094, blue: 0.125 }
-                  : { red: 0.102, green: 0.122, blue: 0.176 },
-                textFormat: { foregroundColor: { red: 0.9, green: 0.9, blue: 0.9 } },
-              },
-            },
-            fields: "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.foregroundColor",
-          },
-        })
-      }
-    }
-
-    // Set column widths
-    const colWidths = [80, 80, 200, 100, 110, 100, 110, 150, 180]
-    colWidths.forEach((px, i) => {
-      formatRequests.push({
-        updateDimensionProperties: {
-          range: { sheetId, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
-          properties: { pixelSize: px },
-          fields: "pixelSize",
-        },
-      })
-    })
-
-    // Freeze header row
-    formatRequests.push({
-      updateSheetProperties: {
-        properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
-        fields: "gridProperties.frozenRowCount",
+        fields: "userEnteredFormat.textFormat,userEnteredFormat.horizontalAlignment",
       },
     })
 
-    if (formatRequests.length > 0) {
+    // Колонка 2 (Направление) — жёлтый жирный
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 2, endColumnIndex: 3 },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, foregroundColor: COLORS.yellow },
+            horizontalAlignment: "LEFT",
+          },
+        },
+        fields: "userEnteredFormat.textFormat,userEnteredFormat.horizontalAlignment",
+      },
+    })
+  }
+
+  // Ширины колонок: Поезд, Класс, Направление, Прибытие, Отправление, Путь
+  const colWidths = [80, 80, 220, 100, 110, 80]
+  colWidths.forEach((px, i) => {
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
+        properties: { pixelSize: px },
+        fields: "pixelSize",
+      },
+    })
+  })
+
+  // Высота строки заголовка колонок
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: headerRow, endIndex: headerRow + 1 },
+      properties: { pixelSize: 32 },
+      fields: "pixelSize",
+    },
+  })
+
+  // Высота строк данных
+  if (dataRows > 0) {
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "ROWS", startIndex: headerRow + 1, endIndex: headerRow + 1 + dataRows },
+        properties: { pixelSize: 36 },
+        fields: "pixelSize",
+      },
+    })
+  }
+
+  // Заморозить первые 3 строки (заголовок + станция + колонки)
+  requests.push({
+    updateSheetProperties: {
+      properties: { sheetId, gridProperties: { frozenRowCount: headerRow + 1 } },
+      fields: "gridProperties.frozenRowCount",
+    },
+  })
+
+  return requests
+}
+
+// POST /api/sync-to-sheets  { date: "YYYY-MM-DD" }
+export async function POST(req: NextRequest) {
+  try {
+    const { date } = await req.json()
+    const shiftDate = date || new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Moscow" })
+    const dateLabel = formatDateRu(shiftDate)
+
+    const db = getPool()
+
+    // Все поезда
+    const trainRes = await db.query("SELECT * FROM trains ORDER BY train_number ASC")
+    const trains: any[] = trainRes.rows
+
+    await db.end()
+
+    const auth = getAuth()
+    const sheets = google.sheets({ version: "v4", auth })
+
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID
+    if (!spreadsheetId) throw new Error("GOOGLE_SHEET_ID не задан")
+
+    // Получаем список существующих листов
+    const meta = await sheets.spreadsheets.get({ spreadsheetId })
+    const existingSheets = meta.data.sheets ?? []
+
+    const sheetUrls: string[] = []
+    const allFormatRequests: any[] = []
+
+    for (const station of STATION_SHEETS) {
+      const sheetId = await ensureSheet(sheets, spreadsheetId, station.name, existingSheets)
+
+      // Поезда которые проходят через эту станцию
+      const stationTrains = trains.filter((t) => {
+        const dir = t.direction
+        if (station.key === "mirny")     return dir === "mirny-privolzhsk" || dir === "privolzhsk-mirny"
+        if (station.key === "nevsky")    return dir === "mirny-privolzhsk" || dir === "privolzhsk-mirny"
+        if (station.key === "privolzhsk") return dir === "mirny-privolzhsk" || dir === "privolzhsk-mirny"
+        return false
+      })
+
+      // Строим строки
+      const rows: (string | number)[][] = []
+
+      // Строка 0: заголовок
+      rows.push([`РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ — ${dateLabel}`])
+
+      // Строка 1: название станции
+      rows.push([`Станция ${station.name}`])
+
+      // Строка 2: заголовки колонок (headerRow = 2)
+      const headerRow = 2
+      rows.push(["Поезд", "Класс", "Направление", "Прибытие", "Отправление", "Путь"])
+
+      // Строки данных
+      for (const t of stationTrains) {
+        const { arrival, departure, platform } = getStationTimes(t, station.key)
+        rows.push([
+          t.train_number,
+          "ПАСС",
+          directionLabel(t.direction),
+          arrival,
+          departure,
+          platform,
+        ])
+      }
+
+      // Записываем данные
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `'${station.name}'!A1`,
+        valueInputOption: "RAW",
+        requestBody: { values: rows },
+      })
+
+      // Собираем запросы форматирования
+      const fmtRequests = buildFormatRequests(sheetId, headerRow, stationTrains.length, 6)
+      allFormatRequests.push(...fmtRequests)
+
+      sheetUrls.push(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${sheetId}`)
+    }
+
+    // Применяем всё форматирование одним батчем
+    if (allFormatRequests.length > 0) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
-        requestBody: { requests: formatRequests },
+        requestBody: { requests: allFormatRequests },
       })
     }
 
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${sheetId}`
-    return NextResponse.json({ success: true, spreadsheetId, sheetUrl })
+    return NextResponse.json({
+      success: true,
+      spreadsheetId,
+      sheetUrls,
+      message: `Обновлены листы: Мирный, Невский, Приволжск`,
+    })
   } catch (err: any) {
     console.error("[sync-to-sheets]", err)
     return NextResponse.json({ error: err.message }, { status: 500 })
