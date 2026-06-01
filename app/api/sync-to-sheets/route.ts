@@ -112,23 +112,21 @@ async function ensureSheet(
 }
 
 // Строим форматирование для одного листа
+// Структура: строка 0 = название вокзала + часы МСК, строка 1 (headerRow=1) = заголовки колонок, строки 2+ = данные
+// colCount = 8: Поезд, Класс, Направление, Прибытие, Отправление, Путь, Опоздание, (Время МСК)
 function buildFormatRequests(sheetId: number, headerRow: number, dataRows: number, colCount: number) {
   const requests: any[] = []
 
-  // ── Строка 0: РАСПИСАНИЕ ... | ВРЕМЯ МСК | [время] ────────────────────
-  // colCount = 7: col0..4 = заголовок расписания, col5 = "ВРЕМЯ МСК", col6 = формула времени
-
-  // Объединяем col 0..4 под заголовок расписания
+  // ── Строка 0: название вокзала (col 0..5) + "ВРЕМЯ МСК" (col 6) + формула (col 7) ──────
   requests.push({
     mergeCells: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 5 },
+      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 6 },
       mergeType: "MERGE_ALL",
     },
   })
-  // Форматируем объединённую ячейку заголовка (col 0..4)
   requests.push({
     repeatCell: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 5 },
+      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 6 },
       cell: {
         userEnteredFormat: {
           backgroundColor: COLORS.dark1,
@@ -140,10 +138,10 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
       fields: "userEnteredFormat",
     },
   })
-  // col 5: подпись "ВРЕМЯ МСК" — белый/серый мелкий
+  // col 6: подпись "ВРЕМЯ МСК"
   requests.push({
     repeatCell: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 5, endColumnIndex: 6 },
+      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 6, endColumnIndex: 7 },
       cell: {
         userEnteredFormat: {
           backgroundColor: COLORS.dark1,
@@ -156,10 +154,10 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
       fields: "userEnteredFormat",
     },
   })
-  // col 6: само время МСК — крупный жёлтый + рамка + числовой формат "10:14"
+  // col 7: само время МСК
   requests.push({
     repeatCell: {
-      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 6, endColumnIndex: 7 },
+      range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 7, endColumnIndex: 8 },
       cell: {
         userEnteredFormat: {
           backgroundColor: COLORS.dark3,
@@ -182,41 +180,12 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
   requests.push({
     updateDimensionProperties: {
       range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
-      properties: { pixelSize: 48 },
+      properties: { pixelSize: 52 },
       fields: "pixelSize",
     },
   })
 
-  // ── Строка 1: название станции (курсив + отступ) ──────────────────────
-  requests.push({
-    mergeCells: {
-      range: { sheetId, startRowIndex: 1, endRowIndex: 2, startColumnIndex: 0, endColumnIndex: colCount },
-      mergeType: "MERGE_ALL",
-    },
-  })
-  requests.push({
-    repeatCell: {
-      range: { sheetId, startRowIndex: 1, endRowIndex: 2 },
-      cell: {
-        userEnteredFormat: {
-          backgroundColor: COLORS.dark3,
-          textFormat: { bold: true, italic: true, fontSize: 13, foregroundColor: COLORS.white },
-          horizontalAlignment: "LEFT",
-          verticalAlignment: "MIDDLE",
-        },
-      },
-      fields: "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment",
-    },
-  })
-  requests.push({
-    updateDimensionProperties: {
-      range: { sheetId, dimension: "ROWS", startIndex: 1, endIndex: 2 },
-      properties: { pixelSize: 38 },
-      fields: "pixelSize",
-    },
-  })
-
-  // ── Строка 2 (headerRow): заголовки колонок — красный фон ─────────────
+  // ── Строка 1 (headerRow): заголовки колонок — красный фон ─────────────
   requests.push({
     repeatCell: {
       range: { sheetId, startRowIndex: headerRow, endRowIndex: headerRow + 1 },
@@ -300,8 +269,8 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
     })
   }
 
-  // ── Ширины колонок: Поезд, Класс, Направление, Прибытие, Отправление, Путь, (Время МСК) ──
-  const colWidths = [90, 90, 250, 120, 130, 80, 110]
+  // ── Ширины колонок: Поезд, Класс, Направление, Прибытие, Отправление, Путь, Опоздание, Время МСК ──
+  const colWidths = [90, 90, 250, 120, 130, 80, 100, 110]
   colWidths.slice(0, colCount).forEach((px, i) => {
     requests.push({
       updateDimensionProperties: {
@@ -312,7 +281,7 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
     })
   })
 
-  // ── Заморозить 3 строки (заголовок + станция + колонки) ─────────────────
+  // ── Заморозить 2 строки (название вокзала + заголовки колонок) ──────────
   requests.push({
     updateSheetProperties: {
       properties: { sheetId, gridProperties: { frozenRowCount: headerRow + 1 } },
@@ -379,26 +348,22 @@ export async function POST(req: NextRequest) {
         return false
       })
 
-      const headerRow = 2
-      const colCount = 7  // Поезд, Класс, Направление, Прибытие, Отправление, Путь, Время МСК
+      const headerRow = 1
+      const colCount = 8  // Поезд, Класс, Направление, Прибытие, Отправление, Путь, Опоздание, Время МСК
 
       // Строим строки
       const rows: (string | number)[][] = []
 
-      // Строка 0: заголовок (col 0..4) + "ВРЕМЯ МСК" (col 5) + формула времени (col 6)
-      // Формула ВРЕМЯ() обновляется автоматически при пересчёте, numberFormat покажет "10:14"
+      // Строка 0: название вокзала (col 0..5) + "ВРЕМЯ МСК" (col 6) + формула времени (col 7)
       rows.push([
-        `РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ — ${dateLabel}`,
-        "", "", "", "",
+        `Вокзал ${station.name}`,
+        "", "", "", "", "",
         "ВРЕМЯ\nМСК",
         `=ВРЕМЯ(ЧАС(ТДАТА());МИНУТЫ(ТДАТА());0)`,
       ])
 
-      // Строка 1: название станции с отступом через пробелы (3 пробела)
-      rows.push([`   Станция ${station.name}`])
-
-      // Строка 2: заголовки колонок
-      rows.push(["Поезд", "Класс", "Направление", "Прибытие", "Отправление", "Путь", ""])
+      // Строка 1 (headerRow): заголовки колонок
+      rows.push(["№ Поезда", "Категория", "Назначение", "Прибытие", "Отправление", "Путь", "Опоздание", ""])
 
       // Строки данных (только занятые рейсы)
       for (const s of stationShifts) {
@@ -415,6 +380,7 @@ export async function POST(req: NextRequest) {
           arrival,
           departure,
           platform,
+          0,   // Опоздание — по умолчанию 0
           "",
         ])
       }
