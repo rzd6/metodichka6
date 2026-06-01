@@ -112,7 +112,7 @@ async function ensureSheet(
 }
 
 // Строим форматирование для одного листа
-function buildFormatRequests(sheetId: number, headerRow: number, dataRows: number, colCount: number, totalSheetRows: number) {
+function buildFormatRequests(sheetId: number, headerRow: number, dataRows: number, colCount: number) {
   const requests: any[] = []
 
   // ── Строка 0: РАСПИСАНИЕ ... | ВРЕМЯ МСК | [время] ────────────────────
@@ -156,21 +156,22 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
       fields: "userEnteredFormat",
     },
   })
-  // col 6: само время МСК — крупный жёлтый + рамка
+  // col 6: само время МСК — крупный жёлтый + рамка + числовой формат "10:14"
   requests.push({
     repeatCell: {
       range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 6, endColumnIndex: 7 },
       cell: {
         userEnteredFormat: {
           backgroundColor: COLORS.dark3,
+          numberFormat: { type: "TIME", pattern: "hh:mm" },
           textFormat: { bold: true, fontSize: 18, foregroundColor: COLORS.yellow },
           horizontalAlignment: "CENTER",
           verticalAlignment: "MIDDLE",
           borders: {
-            top:    { style: "SOLID", color: COLORS.lightGray },
-            bottom: { style: "SOLID", color: COLORS.lightGray },
-            left:   { style: "SOLID", color: COLORS.lightGray },
-            right:  { style: "SOLID", color: COLORS.lightGray },
+            top:    { style: "SOLID", width: 2, color: COLORS.lightGray },
+            bottom: { style: "SOLID", width: 2, color: COLORS.lightGray },
+            left:   { style: "SOLID", width: 2, color: COLORS.lightGray },
+            right:  { style: "SOLID", width: 2, color: COLORS.lightGray },
           },
         },
       },
@@ -202,10 +203,9 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
           textFormat: { bold: true, italic: true, fontSize: 13, foregroundColor: COLORS.white },
           horizontalAlignment: "LEFT",
           verticalAlignment: "MIDDLE",
-          // padding через обёртку невозможна нативно, поэтому значение ячейки будет с пробелами
         },
       },
-      fields: "userEnteredFormat",
+      fields: "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment",
     },
   })
   requests.push({
@@ -300,21 +300,6 @@ function buildFormatRequests(sheetId: number, headerRow: number, dataRows: numbe
     })
   }
 
-  // ── Удаляем лишние строки снизу (убираем пустое пространство) ───────────
-  const usedRows = headerRow + 1 + dataRows  // сколько строк реально используем
-  if (totalSheetRows > usedRows) {
-    requests.push({
-      deleteDimension: {
-        range: {
-          sheetId,
-          dimension: "ROWS",
-          startIndex: usedRows,
-          endIndex: totalSheetRows,
-        },
-      },
-    })
-  }
-
   // ── Ширины колонок: Поезд, Класс, Направление, Прибытие, Отправление, Путь, (Время МСК) ──
   const colWidths = [90, 90, 250, 120, 130, 80, 110]
   colWidths.slice(0, colCount).forEach((px, i) => {
@@ -379,6 +364,8 @@ export async function POST(req: NextRequest) {
 
     const sheetUrls: string[] = []
     const allFormatRequests: any[] = []
+    // Для удаления пустых строк — собираем после получения актуального rowCount
+    const deleteRowsRequests: any[] = []
 
     for (const station of STATION_SHEETS) {
       const sheetId = await ensureSheet(sheets, spreadsheetId, station.name, existingSheets)
@@ -399,15 +386,16 @@ export async function POST(req: NextRequest) {
       const rows: (string | number)[][] = []
 
       // Строка 0: заголовок (col 0..4) + "ВРЕМЯ МСК" (col 5) + формула времени (col 6)
+      // Формула ВРЕМЯ() обновляется автоматически при пересчёте, numberFormat покажет "10:14"
       rows.push([
         `РАСПИСАНИЕ ДВИЖЕНИЯ ПОЕЗДОВ — ${dateLabel}`,
         "", "", "", "",
-        "ВРЕМЯ МСК",
-        `=TEXT(NOW(),"HH:mm")`,
+        "ВРЕМЯ\nМСК",
+        `=ВРЕМЯ(ЧАС(ТДАТА());МИНУТЫ(ТДАТА());0)`,
       ])
 
-      // Строка 1: название станции с отступом через пробелы (имитация отступа)
-      rows.push([`        Станция ${station.name}`])
+      // Строка 1: название станции с отступом через пробелы (3 пробела)
+      rows.push([`   Станция ${station.name}`])
 
       // Строка 2: заголовки колонок
       rows.push(["Поезд", "Класс", "Направление", "Прибытие", "Отправление", "Путь", ""])
@@ -431,11 +419,7 @@ export async function POST(req: NextRequest) {
         ])
       }
 
-      // Сколько строк сейчас на листе (нужно для deleteDimension)
-      const existingSheet = existingSheets.find((sh: any) => sh.properties?.title === station.name)
-      const currentRowCount = existingSheet?.properties?.gridProperties?.rowCount ?? 1000
-
-      // Записываем данные (формулу нужно передать через USER_ENTERED)
+      // Записываем данные (USER_ENTERED нужен для формулы)
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range: `'${station.name}'!A1`,
@@ -443,18 +427,45 @@ export async function POST(req: NextRequest) {
         requestBody: { values: rows },
       })
 
+      // Получаем актуальный rowCount ПОСЛЕ записи данных (Google мог расширить лист)
+      const metaAfter = await sheets.spreadsheets.get({ spreadsheetId, includeGridData: false })
+      const sheetAfter = (metaAfter.data.sheets ?? []).find((sh: any) => sh.properties?.sheetId === sheetId)
+      const actualRowCount = sheetAfter?.properties?.gridProperties?.rowCount ?? 1000
+      const usedRows = headerRow + 1 + stationShifts.length
+
+      if (actualRowCount > usedRows) {
+        deleteRowsRequests.push({
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: usedRows,
+              endIndex: actualRowCount,
+            },
+          },
+        })
+      }
+
       // Собираем запросы форматирования
-      const fmtRequests = buildFormatRequests(sheetId, headerRow, stationShifts.length, colCount, currentRowCount)
+      const fmtRequests = buildFormatRequests(sheetId, headerRow, stationShifts.length, colCount)
       allFormatRequests.push(...fmtRequests)
 
       sheetUrls.push(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${sheetId}`)
     }
 
-    // Применяем всё форматирование одним батчем
+    // Применяем форматирование
     if (allFormatRequests.length > 0) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
         requestBody: { requests: allFormatRequests },
+      })
+    }
+
+    // Удаляем пустые строки снизу (отдельным батчем после форматирования)
+    if (deleteRowsRequests.length > 0) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests: deleteRowsRequests },
       })
     }
 
