@@ -118,8 +118,8 @@ async function ensureSheet(
 ): Promise<number> {
   const found = existingSheets.find((s: any) => s.properties?.title === sheetName)
   if (found) {
-    // Очищаем только данные с B5+ (строки 1-4 и столбец A — шапка, не трогаем)
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: `'${sheetName}'!B5:Z` })
+    // Не очищаем через clear — данные перезапишутся через values.update,
+    // а лишние строки удалятся через deleteRowsRequests ниже.
     return found.properties!.sheetId!
   }
   const res = await sheets.spreadsheets.batchUpdate({
@@ -209,13 +209,7 @@ export async function POST(req: NextRequest) {
     const shiftDate = date || new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Moscow" })
     const dateLabel = formatDateRu(shiftDate)
 
-    console.log("[v0] sync-to-sheets start, date:", shiftDate)
-    console.log("[v0] POSTGRES_URL:", process.env.POSTGRES_URL ? "SET len=" + process.env.POSTGRES_URL.length : "NOT SET")
-    console.log("[v0] GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY:", process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ? "SET len=" + process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.length : "NOT SET")
-    console.log("[v0] GOOGLE_SHEET_ID:", process.env.GOOGLE_SHEET_ID ? "SET" : "NOT SET")
-
     const db = getPool()
-    console.log("[v0] DB pool created")
 
     // Только занятые рейсы на выбранную дату + данные поезда
     const shiftRes = await db.query(
@@ -235,11 +229,9 @@ export async function POST(req: NextRequest) {
     )
     const claimedShifts: any[] = shiftRes.rows
 
-    console.log("[v0] DB query done, rows:", claimedShifts.length)
     await db.end()
 
     const auth = getAuth()
-    console.log("[v0] GoogleAuth created")
     const sheets = google.sheets({ version: "v4", auth })
 
     const spreadsheetId = process.env.GOOGLE_SHEET_ID
