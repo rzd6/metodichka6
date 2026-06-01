@@ -348,24 +348,19 @@ export async function POST(req: NextRequest) {
         return false
       })
 
-      const headerRow = 1
-      const colCount = 8  // Поезд, Класс, Направление, Прибытие, Отправление, Путь, Опоздание, Время МСК
+      // Строки 0 и 1 — декоративная шапка, создана вручную в таблице, НЕ перезаписываем.
+      // Начинаем запись с A3 (индекс 2): строка заголовков колонок + строки данных.
+      const dataStartRow = 2  // A3 = row index 2
+      const headerRow = dataStartRow  // строка заголовков колонок (A3)
+      const colCount = 8  // № Поезда, Категория, Назначение, Прибытие, Отправление, Путь, Опоздание, (пусто)
 
-      // Строим строки
+      // Строим строки начиная с A3
       const rows: (string | number)[][] = []
 
-      // Строка 0: название вокзала (col 0..5) + "ВРЕМЯ МСК" (col 6) + формула времени (col 7)
-      rows.push([
-        `Вокзал ${station.name}`,
-        "", "", "", "", "",
-        "ВРЕМЯ\nМСК",
-        `=ВРЕМЯ(ЧАС(ТДАТА());МИНУТЫ(ТДАТА());0)`,
-      ])
-
-      // Строка 1 (headerRow): заголовки колонок
+      // Строка A3 (headerRow): заголовки колонок
       rows.push(["№ Поезда", "Категория", "Назначение", "Прибытие", "Отправление", "Путь", "Опоздание", ""])
 
-      // Строки данных (только занятые рейсы)
+      // Строки данных (только занятые рейсы), начиная с A4
       for (const s of stationShifts) {
         const { arrival, departure, platform } = getStationTimes(s, station.key)
         const abbr = (s.class as string) === "Пассажирский" ? "ПАСС"
@@ -385,10 +380,10 @@ export async function POST(req: NextRequest) {
         ])
       }
 
-      // Записываем данные (USER_ENTERED нужен для формулы)
+      // Записываем данные начиная с A3 (USER_ENTERED для формул, если понадобятся)
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `'${station.name}'!A1`,
+        range: `'${station.name}'!A3`,
         valueInputOption: "USER_ENTERED",
         requestBody: { values: rows },
       })
