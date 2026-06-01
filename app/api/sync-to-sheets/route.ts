@@ -118,8 +118,8 @@ async function ensureSheet(
 ): Promise<number> {
   const found = existingSheets.find((s: any) => s.properties?.title === sheetName)
   if (found) {
-    // Очищаем только данные с B5+ (строки 1-4 и столбец A — шапка, не трогаем)
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: `'${sheetName}'!B5:Z` })
+    // Не очищаем через clear — данные перезапишутся через values.update,
+    // а лишние строки удалятся через deleteRowsRequests ниже.
     return found.properties!.sheetId!
   }
   const res = await sheets.spreadsheets.batchUpdate({
@@ -286,19 +286,39 @@ export async function POST(req: NextRequest) {
         ])
       }
 
-      // Записываем данные с B5. RAW — чтобы строки "18:22" не превращались в числа
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `'${station.name}'!B5`,
-        valueInputOption: "RAW",
-        requestBody: { values: rows },
-      })
+      // Получаем текущий rowCount листа чтобы понять нужно ли расширять
+      const currentSheet = existingSheets.find((sh: any) => sh.properties?.sheetId === sheetId)
+      const currentRowCount = currentSheet?.properties?.gridProperties?.rowCount ?? 0
+      const neededRows = 4 + rows.length  // шапка 4 строки + строки данных
 
-      // Получаем актуальный rowCount ПОСЛЕ записи данных (Google мог расширить лист)
-      const metaAfter = await sheets.spreadsheets.get({ spreadsheetId, includeGridData: false })
-      const sheetAfter = (metaAfter.data.sheets ?? []).find((sh: any) => sh.properties?.sheetId === sheetId)
-      const actualRowCount = sheetAfter?.properties?.gridProperties?.rowCount ?? 1000
-      // Данные с A5 (индекс 4), headerRow=3 не включаем — он уже есть в шапке
+      // Расширяем лист если строк не хватает
+      if (currentRowCount < neededRows) {
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: {
+            requests: [{
+              appendDimension: {
+                sheetId,
+                dimension: "ROWS",
+                length: neededRows - currentRowCount,
+              },
+            }],
+          },
+        })
+      }
+
+      // Записываем данные с B5. RAW — чтобы строки "18:22" не превращались в числа
+      if (rows.length > 0) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `'${station.name}'!B5`,
+          valueInputOption: "RAW",
+          requestBody: { values: rows },
+        })
+      }
+
+      // Удаляем лишние строки ниже данных
+      const actualRowCount = Math.max(currentRowCount, neededRows)
       const usedRows = 4 + stationShifts.length
 
       if (actualRowCount > usedRows) {
