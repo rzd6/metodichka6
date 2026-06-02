@@ -183,8 +183,7 @@ function buildFormatRequests(
     const delay = delays[i] ?? 0
     const isDelayed = delay > 0
 
-    const rowBg = isDelayed ? COLORS.yellow : (isEven ? COLORS.dark2 : COLORS.dark3)
-    const textColor = isDelayed ? { red: 0.1, green: 0.1, blue: 0.1 } : COLORS.lightGray
+    const rowBg = isEven ? COLORS.dark2 : COLORS.dark3
 
     // Фон строки + базовый шрифт (A–H включительно, столбец 0–colEnd)
     requests.push({
@@ -193,7 +192,7 @@ function buildFormatRequests(
         cell: {
           userEnteredFormat: {
             backgroundColor: rowBg,
-            textFormat: { bold: true, fontSize: 12, foregroundColor: textColor },
+            textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.lightGray },
             verticalAlignment: "MIDDLE",
             horizontalAlignment: "CENTER",
           },
@@ -202,7 +201,7 @@ function buildFormatRequests(
       },
     })
 
-    // Столбец B (colIndex 1) — № Поезда, жёлтый/тёмный крупный
+    // Столбец B (colIndex 1) — № Поезда, жёлтый крупный
     requests.push({
       repeatCell: {
         range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 1, endColumnIndex: 2 },
@@ -211,7 +210,7 @@ function buildFormatRequests(
             textFormat: {
               bold: true,
               fontSize: 14,
-              foregroundColor: isDelayed ? { red: 0.1, green: 0.1, blue: 0.1 } : COLORS.yellow,
+              foregroundColor: COLORS.yellow,
             },
             horizontalAlignment: "CENTER",
           },
@@ -220,7 +219,7 @@ function buildFormatRequests(
       },
     })
 
-    // Столбец D (colIndex 3) — Назначение, жёлтый/тёмный, выравнивание по левому краю
+    // Столбец D (colIndex 3) — Назначение, жёлтый, выравнивание по левому краю
     requests.push({
       repeatCell: {
         range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 3, endColumnIndex: 4 },
@@ -229,9 +228,27 @@ function buildFormatRequests(
             textFormat: {
               bold: true,
               fontSize: 12,
-              foregroundColor: isDelayed ? { red: 0.1, green: 0.1, blue: 0.1 } : COLORS.yellow,
+              foregroundColor: COLORS.yellow,
             },
             horizontalAlignment: "LEFT",
+          },
+        },
+        fields: "userEnteredFormat.textFormat,userEnteredFormat.horizontalAlignment",
+      },
+    })
+
+    // Столбец H (colIndex 7) — Опоздание: только цвет текста меняется на жёлтый если есть задержка
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 7, endColumnIndex: 8 },
+        cell: {
+          userEnteredFormat: {
+            textFormat: {
+              bold: true,
+              fontSize: 12,
+              foregroundColor: isDelayed ? COLORS.yellow : { red: 0.4, green: 0.4, blue: 0.4 },
+            },
+            horizontalAlignment: "CENTER",
           },
         },
         fields: "userEnteredFormat.textFormat,userEnteredFormat.horizontalAlignment",
@@ -338,7 +355,7 @@ export async function POST(req: NextRequest) {
             arrival,                  // E — Прибытие (строка "HH:MM" или "—")
             departure,                // F — Отправление
             platform,                 // G — Путь
-            s.delay_minutes ?? 0,     // H — Опоздание
+            (s.delay_minutes ?? 0) > 0 ? `+${s.delay_minutes}` : "—", // H — Опоздание
           ])
         }
       }

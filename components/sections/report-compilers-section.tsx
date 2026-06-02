@@ -279,7 +279,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           reports: [
             `r [${callSign}] Приняли ${lowerLoco}-${locomotiveNumber} №${flightNumber}, заполнили документацию.`,
             `r [${callSign}] Убираем башмаки, откручиваем ручной, продуваем тормозную магистраль.`,
-            `r [${callSign}] Магистраль продули, башмаки убрали, состав готов к выезду на линию.${assistantText}`,
+            `r [${callSign}] ��агистраль продули, башмаки убрали, состав готов к выезду на линию.${assistantText}`,
             `r [${callSign}] Вижу ЧМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Приволжск…`,
             `r [${callSign}] ...пл. Жуковский без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Ч жёлтый мигающий.`,
@@ -506,7 +506,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
             `cr Заполнили документацию. Магистраль продули, башмаки убрали, состав готов к выезду на линию.`,
             `tr ${passNumber} Понятно, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
-            `tr ${passNumber} Заполнили документацию. Магистраль продули, башмаки убрали, ожидайте отправления.`,
+            `tr ${passNumber} Заполнили документацию. Магистраль прод��ли, башмаки убрали, ожидайте отправления.`,
             `cr Принято.`,
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Приволжск готов, ЧМ1 лунно-белый.`,
             `cr Принято, выполняю!`,
@@ -845,11 +845,15 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
   }
 
   const updateSegmentDelay = async (id: string, value: number) => {
-    setSegments((prev) => prev.map((s) => s.id === id ? { ...s, delayMinutes: value } : s))
+    let maxDelay = value
+    setSegments((prev) => {
+      const updated = prev.map((s) => s.id === id ? { ...s, delayMinutes: value } : s)
+      // Вычисляем максимальное опоздание среди всех перегонов по актуальному состоянию
+      maxDelay = Math.max(...updated.map((s) => s.delayMinutes))
+      return updated
+    })
     // Если выбран рейс — сохраняем максимальное опоздание из всех перегонов в БД + синхронизируем таблицу
     if (selectedShiftId) {
-      // Вычисляем максимальное опоздание среди всех перегонов (с учётом текущего изменения)
-      const maxDelay = Math.max(value, ...segments.filter((s) => s.id !== id).map((s) => s.delayMinutes))
       try {
         await apiFetch("/api/train-shifts", {
           method: "PATCH",
