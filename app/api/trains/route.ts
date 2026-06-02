@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
     const res = await db.query("SELECT * FROM trains ORDER BY train_number ASC")
     return NextResponse.json({ data: res.rows })
   } catch (err: any) {
+    console.log("[v0] GET /api/trains error:", err.message, err.stack)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
