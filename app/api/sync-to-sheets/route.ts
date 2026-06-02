@@ -143,15 +143,6 @@ function buildFormatRequests(
 ) {
   const requests: any[] = []
 
-  // Всегда сначала снимаем все объединения в зоне данных (строки 5+),
-  // чтобы предыдущее состояние "Рейсов нет" не ломало разметку новых строк.
-  const unmergeEndRow = isEmpty ? 5 : 4 + Math.max(dataRows, 1)
-  requests.push({
-    unmergeCells: {
-      range: { sheetId, startRowIndex: 4, endRowIndex: unmergeEndRow + 1, startColumnIndex: 1, endColumnIndex: 1 + dataColCount },
-    },
-  })
-
   if (isEmpty) {
     // Одна объединённая строка «Рейсов нет»
     requests.push({
@@ -390,6 +381,19 @@ export async function POST(req: NextRequest) {
           },
         })
       }
+
+      // Сначала снимаем все объединения в зоне данных (строки 5+),
+      // чтобы предыдущее "Рейсов нет" не ломало запись новых строк.
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [{
+            unmergeCells: {
+              range: { sheetId, startRowIndex: 4, endRowIndex: 4 + Math.max(rows.length, 1) + 1, startColumnIndex: 1, endColumnIndex: 1 + colCount },
+            },
+          }],
+        },
+      })
 
       // Записываем данные с B5. RAW — чтобы строки "18:22" не превращались в числа
       // rows уже содержит либо строки данных, либо одну строку "нет рейсов"
