@@ -4,11 +4,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
-import { Copy, AlertCircle, Train, MapPin, Settings, User, Hash, Check, Clock, ChevronDown, ChevronUp } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Copy, AlertCircle, Train, MapPin, Settings, User, Hash, Check, Clock, ChevronDown, ChevronUp, Calendar } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import type { UserRole } from "@/data/users"
 
 // Структура: перегон содержит строки докладов
 interface ReportSegment {
@@ -20,7 +21,52 @@ interface ReportSegment {
   isLastSegment?: boolean
 }
 
-export function ReportCompilerSection() {
+interface ClaimedShift {
+  id: string
+  train_number: number
+  direction: string
+  class: string
+  depart_start: string | null
+  arrive_end: string | null
+  shift_date: string
+  delay_minutes: number
+}
+
+interface ReportCompilerSectionProps {
+  userRole?: UserRole
+  userNickname?: string
+}
+
+function getMoscowDateISO(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Moscow" })
+}
+
+async function apiFetch(path: string, options?: RequestInit) {
+  const res = await fetch(path, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
+  })
+  return res.json()
+}
+
+export function ReportCompilerSection({ userRole, userNickname }: ReportCompilerSectionProps) {
+  // Рейсы пользователя (из расписания)
+  const [myShifts, setMyShifts] = useState<ClaimedShift[]>([])
+  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null)
+
+  const loadMyShifts = useCallback(async () => {
+    if (!userNickname) return
+    const date = getMoscowDateISO()
+    const { data } = await apiFetch(`/api/train-shifts?date=${date}&with_trains=1`)
+    if (Array.isArray(data)) {
+      setMyShifts(data.filter((s: any) => s.claimed_by_nickname === userNickname))
+    }
+  }, [userNickname])
+
+  useEffect(() => { loadMyShifts() }, [loadMyShifts])
+
+  const selectedShift = myShifts.find((s) => s.id === selectedShiftId) ?? null
+
   const [selectedDirection, setSelectedDirection] = useState<string | null>(null)
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [selectedLocomotive, setSelectedLocomotive] = useState<string | null>(null)
@@ -153,7 +199,7 @@ export function ReportCompilerSection() {
     const isDNC = selectedType === "Рейс с ДНЦ"
     const assistantText = assistantName.length > 0 ? ` Помощник: ${assistantName}.` : ""
 
-    if (selectedDirection === "Приволжск-М��рный") {
+    if (selectedDirection === "Приволжск-М����рный") {
       if (isDNC) {
         const isMachinist = selectedRole === "Машинист"
         const machinistName = isMachinist ? dispatcherName : "Фамилия"
@@ -237,6 +283,40 @@ export function ReportCompilerSection() {
             `r [${callSign}] Вижу ЧМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Приволжск…`,
             `r [${callSign}] ...пл. Жуковский без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Ч жёлтый мигающий.`,
+            `r [${callSign}] Прибыли под посадку на 1 путь ст. Приволжск. Интервал: 1 минута.${assistantText}`,
+          ],
+        })
+        segs.push({
+          id: "seg-priv-nevsky",
+          title: "Перегон: Приволжск → Невский",
+          delayMinutes: 0,
+          reports: [
+            `r [${callSign}] Вижу, Ч1 два жёлтых, верхний мигающий, отправляемся со ст. Приволжск на перегон до ст. Невский…`,
+            `r [${callSign}] ...пл. Азино без остановки.${assistantText}`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Ч зелёный.`,
+            `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 1 минута.${assistantText}`,
+          ],
+        })
+        segs.push({
+          id: "seg-nevsky-mirny",
+          title: "Перегон: Невский → Мирный",
+          delayMinutes: 0,
+          reports: [
+            `r [${callSign}] Вижу Ч1 зелёный, отправляемся со ст. Невский на перегон до ст. Мирный…`,
+            `r [${callSign}] ...пл. 47 км. без остановки.${assistantText}`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу, Ч жёлтый.`,
+            `r [${callSign}] Прибыли на 2 путь ст. Мирный. Интервал: 1 минута.${assistantText}`,
+          ],
+        })
+        segs.push({
+          id: "seg-mirny-depot",
+          title: "Перегон: Мирный → Депо",
+          delayMinutes: 0,
+          isLastSegment: true,
+          reports: [
+            `r [${callSign}] Вижу ЧМ2 лунно-белый, отправляемся со ст. Мирный на канаву №2 ТЧЭ-1.${assistantText}`,
+            `r [${callSign}] Прибыли в депо на канаву №2. Закрепляем локомотив.`,
+            `r [${callSign}] Состав закреплён двумя тормозными башмаками: один с чётной стороны, один с нечётной и одним ручным тормозом.${assistantText}`,
           ],
         })
         segs.push({
@@ -358,8 +438,9 @@ export function ReportCompilerSection() {
             `r [${callSign}] Приняли ${lowerLoco}-${locomotiveNumber} №${flightNumber}, заполнили документацию.`,
             `r [${callSign}] Убираем башмаки, откручиваем ручной, продуваем тормозную магистраль.`,
             `r [${callSign}] Магистраль продули, башмаки убрали, состав готов к выезду на линию.${assistantText}`,
-            `r [${callSign}] Вижу НМ1 лунно-белый, выезжаем под посадку на 1 путь ст. Мирный.${assistantText}`,
+            `r [${callSign}] Вижу НМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Мирный.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу Н зелёный.`,
+            `r [${callSign}] Прибыли под посадку на 1 путь ст. Мирный. Интервал: 1 минута.${assistantText}`,
           ],
         })
         segs.push({
@@ -367,10 +448,10 @@ export function ReportCompilerSection() {
           title: "Перегон: Мирный → Невский",
           delayMinutes: 0,
           reports: [
-            `r [${callSign}] Прибыли под посадку на 1 путь ст. Мирный. Интервал: 1 минута.${assistantText}`,
             `r [${callSign}] Вижу Н1 зелёный, отправляемся со ст. Мирный на перегон до ст. Невский,..`,
             `r [${callSign}]...О.П. 47км без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Н два жёлтых, верхний мигающий.`,
+            `r [${callSign}] Прибыли на 4 путь ст. Невский. Интервал: 1 минута.${assistantText}`,
           ],
         })
         segs.push({
@@ -378,11 +459,10 @@ export function ReportCompilerSection() {
           title: "Перегон: Невский → Приволжск",
           delayMinutes: 0,
           reports: [
-            `r [${callSign}] Прибываем на 4 путь ст. Невский.${assistantText}`,
-            `r [${callSign}] Прибыли на 4 путь ст. Невский. Интервал: 1 минута.${assistantText}`,
             `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,
             `r [${callSign}]...пл. Азино без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Н два жёлтых, верхний мигающий.`,
+            `r [${callSign}] Прибыли на 2 путь ст. Приволжск. Интервал: 1 минута.${assistantText}`,
           ],
         })
         segs.push({
@@ -391,8 +471,6 @@ export function ReportCompilerSection() {
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
-            `r [${callSign}] Прибываем на 2 путь ст. Приволжск.${assistantText}`,
-            `r [${callSign}] Прибыли на 2 путь ст. Приволжск. Интервал: 1 минута.${assistantText}`,
             `r [${callSign}] Вижу Н2 зелёный, отправляемся со ст. Приволжск на перегон до депо ТЧЭ-1,..`,
             `r [${callSign}]...пл. Жуковский без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к депо ТЧЭ-1, вижу НМ2 лунно-белый.`,
@@ -497,6 +575,7 @@ export function ReportCompilerSection() {
             `r [${callSign}] Вижу ЧМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Приволжск…`,
             `r [${callSign}] ...пл. Жуковский без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Ч жёлтый мигающий.`,
+            `r [${callSign}] Прибыли под посадку на 1 путь ст. Приволжск. Интервал: 3 минуты.${assistantText}`,
           ],
         })
         segs.push({
@@ -504,11 +583,10 @@ export function ReportCompilerSection() {
           title: "Перегон: Приволжск → Невский",
           delayMinutes: 0,
           reports: [
-            `r [${callSign}] Прибываем под посадку на 1 путь ст. Приволжск.${assistantText}`,
-            `r [${callSign}] Прибыли под посадку на 1 путь ст. Приволжск. Интервал: 3 минуты.${assistantText}`,
             `r [${callSign}] Вижу, Ч1 два жёлтых, верхний мигающий, отправляемся со ст. Приволжск на перегон до ст. Невский…`,
             `r [${callSign}] ...пл. Азино без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Ч зелёный.`,
+            `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 3 минуты.${assistantText}`,
           ],
         })
         segs.push({
@@ -516,11 +594,10 @@ export function ReportCompilerSection() {
           title: "Перегон: Невский → Мирный",
           delayMinutes: 0,
           reports: [
-            `r [${callSign}] Прибываем на 1 путь ст. Невский.${assistantText}`,
-            `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 3 минуты.${assistantText}`,
             `r [${callSign}] Вижу Ч1 зелёный, отправляемся со ст. Невский на перегон до ст. Мирный…`,
             `r [${callSign}] ...пл. 47 км. без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу, Ч жёлтый.`,
+            `r [${callSign}] Прибыли на 2 путь ст. Мирный. Интервал: 3 минуты.${assistantText}`,
           ],
         })
         segs.push({
@@ -529,8 +606,6 @@ export function ReportCompilerSection() {
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
-            `r [${callSign}] Прибываем на 2 путь ст. Мирный.${assistantText}`,
-            `r [${callSign}] Прибыли на 2 путь ст. Мирный. Интервал: 3 минуты.${assistantText}`,
             `r [${callSign}] Вижу ЧМ2 лунно-белый, отправляемся со ст. Мирный на канаву №2 ТЧЭ-1.${assistantText}`,
             `r [${callSign}] Прибыли в депо на канаву №2. Закрепляем локомотив.`,
             `r [${callSign}] Состав закреплён двумя тормозными башмаками: один с чётной стороны, один с нечётной и одним ручным тормозом.${assistantText}`,
@@ -618,10 +693,9 @@ export function ReportCompilerSection() {
             `r [${callSign}] Приняли ${lowerLoco}-${locomotiveNumber} №${flightNumber}, заполнили документацию.`,
             `r [${callSign}] Убираем башмаки, откручиваем ручной, продуваем тормозную магистраль.`,
             `r [${callSign}] Магистраль продули, башмаки убрали, состав готов к выезду на линию.${assistantText}`,
-            `r [${callSign}] Вижу НМ1 лунно-белый, выезжаем под посадку на 1 путь ст. Мирный.${assistantText}`,
+            `r [${callSign}] Вижу НМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Мирный.${assistantText}`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу Н зелёный.`,
             `r [${callSign}] Прибыли под посадку на 1 путь ст. Мирный. Интервал: 3 минуты.${assistantText}`,
-            `r [${callSign}] Вижу Н1 зелёный, отправляемся со ст. Мирный на перегон до ст. Невский,..`,
-            `r [${callSign}]...О.П. 47км без остановки.${assistantText}`,
           ],
         })
         segs.push({
@@ -629,11 +703,10 @@ export function ReportCompilerSection() {
           title: "Перегон: Мирный → Невский",
           delayMinutes: 0,
           reports: [
+            `r [${callSign}] Вижу Н1 зелёный, отправляемся со ст. Мирный на перегон до ст. Невский,..`,
+            `r [${callSign}]...О.П. 47км без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Н два жёлтых, верхний мигающий.`,
-            `r [${callSign}] Прибываем на 4 путь ст. Невский.${assistantText}`,
             `r [${callSign}] Прибыли на 4 путь ст. Невский. Интервал: 3 минуты.${assistantText}`,
-            `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,
-            `r [${callSign}]...пл. Азино без остановки.${assistantText}`,
           ],
         })
         segs.push({
@@ -641,11 +714,10 @@ export function ReportCompilerSection() {
           title: "Перегон: Невский → Приволжск",
           delayMinutes: 0,
           reports: [
+            `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,
+            `r [${callSign}]...пл. Азино без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Н два жёлтых, верхний мигающий.`,
-            `r [${callSign}] Прибываем на 2 путь ст. Приволжск.${assistantText}`,
             `r [${callSign}] Прибыли на 2 путь ст. Приволжск. Интервал: 3 минуты.${assistantText}`,
-            `r [${callSign}] Вижу Н2 зелёный, отправляемся со ст. Приволжск на перегон до депо ТЧЭ-1,..`,
-            `r [${callSign}]...пл. Жуковский без остановки.${assistantText}`,
           ],
         })
         segs.push({
@@ -772,8 +844,26 @@ export function ReportCompilerSection() {
     })
   }
 
-  const updateSegmentDelay = (id: string, value: number) => {
+  const updateSegmentDelay = async (id: string, value: number) => {
     setSegments((prev) => prev.map((s) => s.id === id ? { ...s, delayMinutes: value } : s))
+    // Если выбран рейс — сохраняем максимальное опоздание из всех перегонов в БД + синхронизируем таблицу
+    if (selectedShiftId) {
+      // Вычисляем максимальное опоздание среди всех перегонов (с учётом текущего изменения)
+      const maxDelay = Math.max(value, ...segments.filter((s) => s.id !== id).map((s) => s.delayMinutes))
+      try {
+        await apiFetch("/api/train-shifts", {
+          method: "PATCH",
+          body: JSON.stringify({ id: selectedShiftId, delay_minutes: maxDelay }),
+        })
+        // Синхронизируем Google Sheets
+        await apiFetch("/api/sync-to-sheets", {
+          method: "POST",
+          body: JSON.stringify({ date: getMoscowDateISO() }),
+        })
+      } catch {
+        // silent
+      }
+    }
   }
 
   const isTechSelected = selectedCategory === "ТЕХ"
@@ -800,6 +890,73 @@ export function ReportCompilerSection() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8 pt-8">
+
+          {/* Выбор рейса из расписания */}
+          {userNickname && myShifts.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-5 h-5" style={{ color: getTieColor() }} />
+                <Label className={`text-lg font-semibold ${isDark ? "text-white" : "text-black"}`}>
+                  Мой рейс сегодня
+                </Label>
+              </div>
+              <div className={`space-y-2 p-4 rounded-xl ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
+                {/* Без рейса */}
+                <button
+                  onClick={() => setSelectedShiftId(null)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
+                    selectedShiftId === null
+                      ? isDark ? "bg-white/10 shadow-lg" : "bg-black/10 shadow-lg"
+                      : isDark ? "hover:bg-white/5" : "hover:bg-black/5"
+                  }`}
+                  style={selectedShiftId === null ? { borderLeft: `4px solid ${getTieColor()}`, paddingLeft: "calc(0.75rem)" } : {}}
+                >
+                  <span className={`text-sm font-medium ${isDark ? "text-white/70" : "text-gray-600"}`}>
+                    Без привязки к рейсу
+                  </span>
+                </button>
+                {myShifts.map((shift) => {
+                  const isSelected = selectedShiftId === shift.id
+                  const dirLabel = shift.direction === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
+                  return (
+                    <button
+                      key={shift.id}
+                      onClick={() => setSelectedShiftId(shift.id)}
+                      className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
+                        isSelected
+                          ? isDark ? "bg-white/10 shadow-lg" : "bg-black/10 shadow-lg"
+                          : isDark ? "hover:bg-white/5" : "hover:bg-black/5"
+                      }`}
+                      style={isSelected ? { borderLeft: `4px solid ${getTieColor()}`, paddingLeft: "calc(0.75rem)" } : {}}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-extrabold" style={{ color: "#f5c518" }}>
+                          {shift.train_number}
+                        </span>
+                        <div>
+                          <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-black"}`}>
+                            {dirLabel}
+                          </div>
+                          <div className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>
+                            {shift.depart_start ? `Отпр. ${shift.depart_start}` : ""}
+                            {shift.arrive_end ? ` — Приб. ${shift.arrive_end}` : ""}
+                          </div>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <Check className="w-4 h-4 flex-shrink-0" style={{ color: getTieColor() }} />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedShift && (
+                <p className={`text-xs ${isDark ? "text-white/40" : "text-gray-500"}`}>
+                  Опоздание в перегонах будет автоматически отправлено в расписание и Google Таблицу
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Категория */}
           <div className="space-y-4">
@@ -1013,9 +1170,8 @@ export function ReportCompilerSection() {
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        {/* Поле опоздания — только для перегонов прибывающих на станцию (не в депо).
-                            Перегоны Депо→Станция начала и Станция→Депо конца не имеют опоздания. */}
-                        {!seg.id.endsWith("-depot") && !seg.id.startsWith("seg-depot-") && (
+                        {/* Поле опоздания — для всех перегонов кроме последнего (возврат в депо) */}
+                        {!seg.isLastSegment && (
                           <div
                             className="flex items-center gap-2"
                             onClick={(e) => e.stopPropagation()}
@@ -1043,7 +1199,7 @@ export function ReportCompilerSection() {
                     {/* Reports list */}
                     {isExpanded && (
                       <div className={`px-4 pb-3 pt-3 ${isDark ? "bg-[#0f1419]/60" : "bg-white"}`}>
-                        {seg.delayMinutes > 0 && !seg.id.endsWith("-depot") && !seg.id.startsWith("seg-depot-") && (
+                        {seg.delayMinutes > 0 && !seg.isLastSegment && (
                           <div className={`mb-3 px-3 py-2 rounded-lg text-xs font-semibold ${isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-600"}`}>
                             Опоздание: +{seg.delayMinutes} мин прибытия на ближайшую станцию
                           </div>
