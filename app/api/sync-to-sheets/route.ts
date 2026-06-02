@@ -355,7 +355,7 @@ export async function POST(req: NextRequest) {
             arrival,                  // E — Прибытие (строка "HH:MM" или "—")
             departure,                // F — Отправление
             platform,                 // G — Путь
-            (s.delay_minutes ?? 0) > 0 ? `+${s.delay_minutes}` : "—", // H — Опоздание
+            (s.delay_minutes ?? 0) > 0 ? s.delay_minutes : "—", // H — Опоздание
           ])
         }
       }

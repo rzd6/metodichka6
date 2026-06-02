@@ -52,7 +52,10 @@ async function apiFetch(path: string, options?: RequestInit) {
 export function ReportCompilerSection({ userRole, userNickname }: ReportCompilerSectionProps) {
   // Рейсы пользователя (из расписания)
   const [myShifts, setMyShifts] = useState<ClaimedShift[]>([])
-  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null)
+  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem("rc_selectedShiftId") ?? null
+  })
 
   const loadMyShifts = useCallback(async () => {
     if (!userNickname) return
@@ -64,6 +67,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
   }, [userNickname])
 
   useEffect(() => { loadMyShifts() }, [loadMyShifts])
+
+  // Persist state to localStorage so reports survive page refresh
+  useEffect(() => { localStorage.setItem("rc_selectedShiftId", selectedShiftId ?? "") }, [selectedShiftId])
+  useEffect(() => { localStorage.setItem("rc_segments", JSON.stringify(segments)) }, [segments])
+  useEffect(() => { localStorage.setItem("rc_generatedReports", JSON.stringify(generatedReports)) }, [generatedReports])
+  useEffect(() => { localStorage.setItem("rc_generatedWithType", generatedWithType ?? "") }, [generatedWithType])
+  useEffect(() => { localStorage.setItem("rc_generatedWithRole", generatedWithRole ?? "") }, [generatedWithRole])
 
   const selectedShift = myShifts.find((s) => s.id === selectedShiftId) ?? null
 
@@ -80,12 +90,24 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
   const [assistantName, setAssistantName] = useState("")
 
   // Для ТЕХ — генерируется единым списком
-  const [generatedReports, setGeneratedReports] = useState<string[]>([])
-  const [generatedWithType, setGeneratedWithType] = useState<string | null>(null)
-  const [generatedWithRole, setGeneratedWithRole] = useState<string | null>(null)
+  const [generatedReports, setGeneratedReports] = useState<string[]>(() => {
+    if (typeof window === "undefined") return []
+    try { return JSON.parse(localStorage.getItem("rc_generatedReports") ?? "[]") } catch { return [] }
+  })
+  const [generatedWithType, setGeneratedWithType] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem("rc_generatedWithType") ?? null
+  })
+  const [generatedWithRole, setGeneratedWithRole] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem("rc_generatedWithRole") ?? null
+  })
 
   // Для обычных рейсов — перегоны
-  const [segments, setSegments] = useState<ReportSegment[]>([])
+  const [segments, setSegments] = useState<ReportSegment[]>(() => {
+    if (typeof window === "undefined") return []
+    try { return JSON.parse(localStorage.getItem("rc_segments") ?? "[]") } catch { return [] }
+  })
   const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set())
 
   const [showNotification, setShowNotification] = useState(false)
@@ -391,7 +413,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 1 путь ст. Мирный, стоянка 1 минута.`,
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Невский готов, Н1 зелёный.`,
             `cr Принято! Выполняю.`,
-            `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Мирный на перегон до ст. Невский.`,
+            `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Мирный ��а перегон до ст. Невский.`,
           ],
         })
         segs.push({
@@ -422,7 +444,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 2 путь ст. Приволжск, стоянка 1 минута.`,
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут в депо ТЧЭ-1 готов, Н2 зелёный.`,
             `cr Принято! Выполняю.`,
-            `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Приволжск в депо ТЧЭ-1.`,
+            `r [��НЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Приволжск в депо ТЧЭ-1.`,
             `cr ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1. Рейс № ${flightNumber} окончен, локомотив сдан, машинист ${machinistName}!`,
             `tr ${passNumber} Понятно! Прибыли в ТЧЭ-1, рейс ${flightNumber} окончен, локомотив сдан.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1, рейс ${flightNumber} окончен, локомотив сдан.`,
@@ -506,7 +528,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
             `cr Заполнили документацию. Магистраль продули, башмаки убрали, состав готов к выезду на линию.`,
             `tr ${passNumber} Понятно, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
-            `tr ${passNumber} Заполнили документацию. Магистраль прод��ли, башмаки убрали, ожидайте отправления.`,
+            `tr ${passNumber} Заполнили документацию. Магистраль пр��д��ли, башмаки убрали, ожидайте отправления.`,
             `cr Принято.`,
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Приволжск готов, ЧМ1 лунно-белый.`,
             `cr Принято, выполняю!`,
@@ -1022,7 +1044,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             <Alert className={`border-l-4 rounded-xl ${isDark ? "bg-blue-500/10 border-blue-500 backdrop-blur-sm" : "bg-blue-50 border-blue-400"}`}>
               <AlertCircle className="h-5 w-5 text-blue-400" />
               <AlertDescription className={`text-base ${isDark ? "text-blue-200" : "text-blue-700"}`}>
-                <strong>Важно:</strong> Локомотив "Паровоз ЛВ" используется только для туристических рейсов, мероприятий или тестов.
+                <strong>Важно:</strong> Локомотив "Паровоз ЛВ" используется только для туристических рейсов, мероприятий или те��тов.
               </AlertDescription>
             </Alert>
           )}
