@@ -143,6 +143,15 @@ function buildFormatRequests(
 ) {
   const requests: any[] = []
 
+  // Всегда сначала снимаем все объединения в зоне данных (строки 5+),
+  // чтобы предыдущее состояние "Рейсов нет" не ломало разметку новых строк.
+  const unmergeEndRow = isEmpty ? 5 : 4 + Math.max(dataRows, 1)
+  requests.push({
+    unmergeCells: {
+      range: { sheetId, startRowIndex: 4, endRowIndex: unmergeEndRow + 1, startColumnIndex: 1, endColumnIndex: 1 + dataColCount },
+    },
+  })
+
   if (isEmpty) {
     // Одна объединённая строка «Рейсов нет»
     requests.push({
