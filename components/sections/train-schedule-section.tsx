@@ -856,7 +856,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                   Время
                   {trainForm.class === "Пассажирский" && <span className="ml-2 text-white/25">— отпр. из депо только 00/15/30/45</span>}
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {trainForm.direction === "mirny-privolzhsk" ? (
                     <>
                       <div className="space-y-1.5">
@@ -868,12 +868,15 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Отпр. Мирный</Label>
-                        <Input
-                          type="time"
-                          value={trainForm.depart_start}
-                          onChange={(e) => setTrainForm((f) => ({ ...f, depart_start: e.target.value }))}
-                          className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]"
-                        />
+                        <Input type="time" value={trainForm.depart_start} onChange={(e) => setTrainForm((f) => ({ ...f, depart_start: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Приб. Невский</Label>
+                        <Input type="time" value={trainForm.arrive_middle} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Отпр. Невский</Label>
+                        <Input type="time" value={trainForm.depart_middle} onChange={(e) => setTrainForm((f) => ({ ...f, depart_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Приб. Приволжск</Label>
@@ -887,6 +890,14 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                         <Label className="text-xs text-white/60">Путь в Мирном</Label>
                         <Input type="number" min={1} value={trainForm.platform_start} onChange={(e) => setTrainForm((f) => ({ ...f, platform_start: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Путь в Невском</Label>
+                        <Input type="number" min={1} value={trainForm.platform_middle} onChange={(e) => setTrainForm((f) => ({ ...f, platform_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Путь в Приволжске</Label>
+                        <Input type="number" min={1} value={trainForm.platform_end} onChange={(e) => setTrainForm((f) => ({ ...f, platform_end: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
                     </>
                   ) : (
                     <>
@@ -899,12 +910,15 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Отпр. Приволжск</Label>
-                        <Input
-                          type="time"
-                          value={trainForm.depart_start}
-                          onChange={(e) => setTrainForm((f) => ({ ...f, depart_start: e.target.value }))}
-                          className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]"
-                        />
+                        <Input type="time" value={trainForm.depart_start} onChange={(e) => setTrainForm((f) => ({ ...f, depart_start: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Приб. Невский</Label>
+                        <Input type="time" value={trainForm.arrive_middle} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Отпр. Невский</Label>
+                        <Input type="time" value={trainForm.depart_middle} onChange={(e) => setTrainForm((f) => ({ ...f, depart_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Приб. Мирный</Label>
@@ -917,6 +931,14 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Путь в Приволжске</Label>
                         <Input type="number" min={1} value={trainForm.platform_start} onChange={(e) => setTrainForm((f) => ({ ...f, platform_start: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Путь в Невском</Label>
+                        <Input type="number" min={1} value={trainForm.platform_middle} onChange={(e) => setTrainForm((f) => ({ ...f, platform_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-white/60">Путь в Мирном</Label>
+                        <Input type="number" min={1} value={trainForm.platform_end} onChange={(e) => setTrainForm((f) => ({ ...f, platform_end: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                     </>
                   )}
@@ -966,11 +988,62 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                         <div key={train.id} className="px-5 py-3" style={{ background: rowBg }}>
                           {isEditing ? (
                             <div className="space-y-3">
-                              <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div className="space-y-1.5">
                                   <Label className="text-xs text-white/60">Номер</Label>
                                   <Input type="number" min={1} value={ef.train_number ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, train_number: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                                 </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Категория</Label>
+                                  <Select value={ef.class ?? train.class} onValueChange={(v) => setEditForm((f) => ({ ...f, class: v }))}>
+                                    <SelectTrigger className="h-7 text-sm bg-white/5 border-white/10 text-white">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {ALL_CLASSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">
+                                    Отпр. депо
+                                    {currentClass === "Пассажирский" && <span className="ml-1 text-white/30">(00/15/30/45)</span>}
+                                  </Label>
+                                  <Input type="time" value={ef.depart_depot ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, depart_depot: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Отпр. {startStation}</Label>
+                                  <Input type="time" value={ef.depart_start ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, depart_start: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Приб. Невский</Label>
+                                  <Input type="time" value={ef.arrive_middle ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, arrive_middle: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Отпр. Невский</Label>
+                                  <Input type="time" value={ef.depart_middle ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, depart_middle: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Приб. {endStation}</Label>
+                                  <Input type="time" value={ef.arrive_end ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, arrive_end: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Приб. депо</Label>
+                                  <Input type="time" value={ef.arrive_depot ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, arrive_depot: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Путь в {startStation === "Мирный" ? "Мирном" : "Приволжске"}</Label>
+                                  <Input type="number" min={1} value={ef.platform_start ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_start: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Путь в Невском</Label>
+                                  <Input type="number" min={1} value={ef.platform_middle ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_middle: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-white/60">Путь в {endStation === "Мирный" ? "Мирном" : "Приволжске"}</Label>
+                                  <Input type="number" min={1} value={ef.platform_end ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_end: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
+                                </div>
+                              </div>
                                 <div className="space-y-1.5">
                                   <Label className="text-xs text-white/60">Категория</Label>
                                   <Select value={ef.class ?? train.class} onValueChange={(v) => setEditForm((f) => ({ ...f, class: v }))}>
@@ -1050,6 +1123,18 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                                   <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Отпр. {startStation}</span>
                                   <span className="font-mono font-semibold text-white">{train.depart_start || "—"}</span>
                                 </div>
+                                {(train.arrive_middle || train.depart_middle) && (
+                                  <>
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Приб. Невский</span>
+                                      <span className="font-mono font-semibold text-white">{train.arrive_middle || "—"}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Отпр. Невский</span>
+                                      <span className="font-mono font-semibold text-white">{train.depart_middle || "—"}</span>
+                                    </div>
+                                  </>
+                                )}
                                 <div className="flex flex-col">
                                   <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Приб. {endStation}</span>
                                   <span className="font-mono font-semibold text-white">{train.arrive_end || "—"}</span>
@@ -1059,9 +1144,21 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                                   <span className="font-mono font-semibold text-white">{train.arrive_depot || "—"}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Путь</span>
+                                  <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Путь {startStation === "Мирный" ? "Мирный" : "Приволжск"}</span>
                                   <span className="font-mono font-semibold text-white">{train.platform_start}</span>
                                 </div>
+                                {train.platform_middle > 0 && (
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Путь Невский</span>
+                                    <span className="font-mono font-semibold text-white">{train.platform_middle}</span>
+                                  </div>
+                                )}
+                                {train.platform_end > 0 && (
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">Путь {endStation === "Мирный" ? "Мирный" : "Приволжск"}</span>
+                                    <span className="font-mono font-semibold text-white">{train.platform_end}</span>
+                                  </div>
+                                )}
                               </div>
                             </>
                           )}
