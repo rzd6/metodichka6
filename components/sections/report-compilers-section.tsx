@@ -305,52 +305,20 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `r [${callSign}] Вижу ЧМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Приволжск…`,
             `r [${callSign}] ...пл. Жуковский без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Ч жёлтый мигающий.`,
-            `r [${callSign}] Прибыли под посадку на 1 путь ст. Приволжск. Интервал: 1 минута.${assistantText}`,
-          ],
-        })
-        segs.push({
-          id: "seg-priv-nevsky",
-          title: "Перегон: Приволжск → Невский",
-          delayMinutes: 0,
-          reports: [
-            `r [${callSign}] Вижу, Ч1 два жёлтых, верхний мигающий, отправляемся со ст. Приволжск на перегон до ст. Невский…`,
-            `r [${callSign}] ...пл. Азино без остановки.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Ч зелёный.`,
-            `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 1 минута.${assistantText}`,
-          ],
-        })
-        segs.push({
-          id: "seg-nevsky-mirny",
-          title: "Перегон: Невский → Мирный",
-          delayMinutes: 0,
-          reports: [
-            `r [${callSign}] Вижу Ч1 зелёный, отправляемся со ст. Невский на перегон до ст. Мирный…`,
-            `r [${callSign}] ...пл. 47 км. без остановки.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу, Ч жёлтый.`,
-            `r [${callSign}] Прибыли на 2 путь ст. Мирный. Интервал: 1 минута.${assistantText}`,
-          ],
-        })
-        segs.push({
-          id: "seg-mirny-depot",
-          title: "Перегон: Мирный → Депо",
-          delayMinutes: 0,
-          isLastSegment: true,
-          reports: [
-            `r [${callSign}] Вижу ЧМ2 лунно-белый, отправляемся со ст. Мирный на канаву №2 ТЧЭ-1.${assistantText}`,
-            `r [${callSign}] Прибыли в депо на канаву №2. Закрепляем локомотив.`,
-            `r [${callSign}] Состав закреплён двумя тормозными башмаками: один с чётной стороны, один с нечётной и одним ручным тормозом.${assistantText}`,
-          ],
-        })
-        segs.push({
-          id: "seg-priv-nevsky",
-          title: "Перегон: Приволжск → Невский",
-          delayMinutes: 0,
-          reports: [
             `r [${callSign}] Прибываем под посадку на 1 путь ст. Приволжск.${assistantText}`,
             `r [${callSign}] Прибыли под посадку на 1 путь ст. Приволжск. Интервал: 1 минута.${assistantText}`,
+          ],
+        })
+        segs.push({
+          id: "seg-priv-nevsky",
+          title: "Перегон: Приволжск → Невский",
+          delayMinutes: 0,
+          reports: [
             `r [${callSign}] Вижу, Ч1 два жёлтых, верхний мигающий, отправляемся со ст. Приволжск на перегон до ст. Невский…`,
             `r [${callSign}] ...пл. Азино без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Ч зелёный.`,
+            `r [${callSign}] Прибываем на 1 путь ст. Невский.${assistantText}`,
+            `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 1 минута.${assistantText}`,
           ],
         })
         segs.push({
@@ -358,11 +326,11 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           title: "Перегон: Невский → Мирный",
           delayMinutes: 0,
           reports: [
-            `r [${callSign}] Прибываем на 1 путь ст. Невский.${assistantText}`,
-            `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 1 минута.${assistantText}`,
             `r [${callSign}] Вижу Ч1 зелёный, отправляемся со ст. Невский на перегон до ст. Мирный…`,
             `r [${callSign}] ...пл. 47 км. без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу, Ч жёлтый.`,
+            `r [${callSign}] Прибываем на 2 путь ст. Мирный.${assistantText}`,
+            `r [${callSign}] Прибыли на 2 путь ст. Мирный. Интервал: 1 минута.${assistantText}`,
           ],
         })
         segs.push({
@@ -371,8 +339,6 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
-            `r [${callSign}] Прибываем на 2 путь ст. Мирный.${assistantText}`,
-            `r [${callSign}] Прибыли на 2 путь ст. Мирный. Интервал: 1 минута.${assistantText}`,
             `r [${callSign}] Вижу ЧМ2 лунно-белый, отправляемся со ст. Мирный на канаву №2 ТЧЭ-1.${assistantText}`,
             `r [${callSign}] Прибыли в депо на канаву №2. Закрепляем локомотив.`,
             `r [${callSign}] Состав закреплён двумя тормозными башмаками: один с чётной стороны, один с нечётной и одним ручным тормозом.${assistantText}`,
@@ -716,7 +682,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `r [${callSign}] Убираем башмаки, откручиваем ручной, продуваем тормозную магистраль.`,
             `r [${callSign}] Магистраль продули, башмаки убрали, состав готов к выезду на линию.${assistantText}`,
             `r [${callSign}] Вижу НМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Мирный.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу Н зелён��й.`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу Н зел��н��й.`,
             `r [${callSign}] Прибыли под посадку на 1 путь ст. Мирный. Интервал: 3 минуты.${assistantText}`,
           ],
         })
