@@ -140,7 +140,7 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "gov-wave":
         return <GovWaveSection />
       case "report-compiler":
-        return <ReportCompilerSection />
+        return <ReportCompilerSection userRole={userRole || "ЦдУД"} userNickname={userNickname} />
       case "admin":
         return <AdminSection />
       case "report-generation":

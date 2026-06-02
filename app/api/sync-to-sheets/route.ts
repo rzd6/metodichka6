@@ -133,17 +133,58 @@ async function ensureSheet(
 // Строки 1-4 (индексы 0-3), столбец A (индекс 0), ширины столбцов и заморозка — НЕ трогаем.
 // Данные начинаются с B5 (rowIndex=4, colIndex=1).
 // dataColCount = 7: № Поезда (B), Категория (C), Назначение (D), Прибытие (E), Отправление (F), Путь (G), Опоздание (H)
-function buildFormatRequests(sheetId: number, _headerRow: number, dataRows: number, dataColCount: number) {
+function buildFormatRequests(
+  sheetId: number,
+  _headerRow: number,
+  dataRows: number,
+  dataColCount: number,
+  isEmpty: boolean,
+  delays: number[]
+) {
   const requests: any[] = []
+
+  if (isEmpty) {
+    // Одна объединённая строка «Рейсов нет»
+    requests.push({
+      mergeCells: {
+        range: { sheetId, startRowIndex: 4, endRowIndex: 5, startColumnIndex: 1, endColumnIndex: 1 + dataColCount },
+        mergeType: "MERGE_ALL",
+      },
+    })
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: 4, endRowIndex: 5, startColumnIndex: 0, endColumnIndex: 1 + dataColCount },
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: COLORS.dark2,
+            textFormat: { bold: true, fontSize: 13, foregroundColor: COLORS.lightGray, italic: true },
+            verticalAlignment: "MIDDLE",
+            horizontalAlignment: "CENTER",
+          },
+        },
+        fields: "userEnteredFormat",
+      },
+    })
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "ROWS", startIndex: 4, endIndex: 5 },
+        properties: { pixelSize: 50 },
+        fields: "pixelSize",
+      },
+    })
+    return requests
+  }
 
   // ── Строки данных (B5+, rowIndex 4+, colIndex 1+) ───────────────────────
   for (let i = 0; i < dataRows; i++) {
     const rowIdx = 4 + i
     const isEven = i % 2 === 0
-    const colStart = 1                    // столбец B
     const colEnd   = 1 + dataColCount    // столбец I (не включительно)
+    const delay = delays[i] ?? 0
+    const isDelayed = delay > 0
 
-    const rowBg = isEven ? COLORS.dark2 : COLORS.dark3
+    const rowBg = isDelayed ? COLORS.yellow : (isEven ? COLORS.dark2 : COLORS.dark3)
+    const textColor = isDelayed ? { red: 0.1, green: 0.1, blue: 0.1 } : COLORS.lightGray
 
     // Фон строки + базовый шрифт (A–H включительно, столбец 0–colEnd)
     requests.push({
@@ -152,7 +193,7 @@ function buildFormatRequests(sheetId: number, _headerRow: number, dataRows: numb
         cell: {
           userEnteredFormat: {
             backgroundColor: rowBg,
-            textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.lightGray },
+            textFormat: { bold: true, fontSize: 12, foregroundColor: textColor },
             verticalAlignment: "MIDDLE",
             horizontalAlignment: "CENTER",
           },
@@ -161,13 +202,17 @@ function buildFormatRequests(sheetId: number, _headerRow: number, dataRows: numb
       },
     })
 
-    // Столбец B (colIndex 1) — № Поезда, жёлтый крупный
+    // Столбец B (colIndex 1) — № Поезда, жёлтый/тёмный крупный
     requests.push({
       repeatCell: {
         range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 1, endColumnIndex: 2 },
         cell: {
           userEnteredFormat: {
-            textFormat: { bold: true, fontSize: 14, foregroundColor: COLORS.yellow },
+            textFormat: {
+              bold: true,
+              fontSize: 14,
+              foregroundColor: isDelayed ? { red: 0.1, green: 0.1, blue: 0.1 } : COLORS.yellow,
+            },
             horizontalAlignment: "CENTER",
           },
         },
@@ -175,13 +220,17 @@ function buildFormatRequests(sheetId: number, _headerRow: number, dataRows: numb
       },
     })
 
-    // Столбец D (colIndex 3) — Назначение, жёлтый, выравнивание по левому краю
+    // Столбец D (colIndex 3) — Назначение, жёлтый/тёмный, выравнивание по левому краю
     requests.push({
       repeatCell: {
         range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 3, endColumnIndex: 4 },
         cell: {
           userEnteredFormat: {
-            textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.yellow },
+            textFormat: {
+              bold: true,
+              fontSize: 12,
+              foregroundColor: isDelayed ? { red: 0.1, green: 0.1, blue: 0.1 } : COLORS.yellow,
+            },
             horizontalAlignment: "LEFT",
           },
         },
@@ -216,7 +265,8 @@ export async function POST(req: NextRequest) {
     // Только занятые рейсы на выбранную дату + данные поезда
     const shiftRes = await db.query(
       `SELECT ts.*, t.direction, t.class, t.depart_start, t.arrive_middle, t.depart_middle,
-              t.arrive_end, t.platform_start, t.platform_middle, t.platform_end
+              t.arrive_end, t.platform_start, t.platform_middle, t.platform_end,
+              COALESCE(ts.delay_minutes, 0) AS delay_minutes
        FROM train_shifts ts
        JOIN trains t ON t.train_number = ts.train_number
        WHERE ts.shift_date = $1
@@ -270,28 +320,34 @@ export async function POST(req: NextRequest) {
       const rows: (string | number)[][] = []
 
       // Строки данных (только занятые рейсы), начиная с B5 (столбец A — декоративный)
-      for (const s of stationShifts) {
-        const { arrival, departure, platform } = getStationTimes(s, station.key)
-        const abbr = (s.class as string) === "Пассажирский" ? "ПАСС"
-          : (s.class as string) === "Скоростной" ? "СКОР"
-          : (s.class as string) === "Туристический" ? "ТУР"
-          : (s.class as string) === "Пригородный" ? "ПРИГ"
-          : "ПАСС"
-        rows.push([
-          s.train_number,           // B — № Поезда
-          abbr,                     // C — Категория
-          directionLabel(s.direction), // D — Назначение
-          arrival,                  // E — Прибытие (строка "HH:MM" или "—")
-          departure,                // F — Отправление
-          platform,                 // G — Путь
-          0,                        // H — Опоздание (0 по умолчанию)
-        ])
+      if (stationShifts.length === 0) {
+        // Нет рейсов — добавляем одну строку с объединёнными ячейками
+        rows.push(["Рейсов на данный период не запланировано", "", "", "", "", "", ""])
+      } else {
+        for (const s of stationShifts) {
+          const { arrival, departure, platform } = getStationTimes(s, station.key)
+          const abbr = (s.class as string) === "Пассажирский" ? "ПАСС"
+            : (s.class as string) === "Скоростной" ? "СКОР"
+            : (s.class as string) === "Туристический" ? "ТУР"
+            : (s.class as string) === "Пригородный" ? "ПРИГ"
+            : "ПАСС"
+          rows.push([
+            s.train_number,           // B — № Поезда
+            abbr,                     // C — Категория
+            directionLabel(s.direction), // D — Назначение
+            arrival,                  // E — Прибытие (строка "HH:MM" или "—")
+            departure,                // F — Отправление
+            platform,                 // G — Путь
+            s.delay_minutes ?? 0,     // H — Опоздание
+          ])
+        }
       }
 
       // Получаем текущий rowCount листа чтобы понять нужно ли расширять
       const currentSheet = existingSheets.find((sh: any) => sh.properties?.sheetId === sheetId)
       const currentRowCount = currentSheet?.properties?.gridProperties?.rowCount ?? 0
-      const neededRows = 4 + rows.length  // шапка 4 строки + строки данных
+      // шапка 4 строки + строки данных (минимум 1 для строки "нет рейсов")
+      const neededRows = 4 + Math.max(rows.length, 1)
 
       // Расширяем лист если строк не хватает
       if (currentRowCount < neededRows) {
@@ -310,18 +366,18 @@ export async function POST(req: NextRequest) {
       }
 
       // Записываем данные с B5. RAW — чтобы строки "18:22" не превращались в числа
-      if (rows.length > 0) {
-        await sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: `'${station.name}'!B5`,
-          valueInputOption: "RAW",
-          requestBody: { values: rows },
-        })
-      }
+      // rows уже содержит либо строки данных, либо одну строку "нет рейсов"
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `'${station.name}'!B5`,
+        valueInputOption: "RAW",
+        requestBody: { values: rows },
+      })
 
       // Удаляем лишние строки ниже данных
       const actualRowCount = Math.max(currentRowCount, neededRows)
-      const usedRows = 4 + stationShifts.length
+      // When empty: 1 "no trains" row; when data: stationShifts.length rows
+      const usedRows = 4 + (stationShifts.length === 0 ? 1 : stationShifts.length)
 
       if (actualRowCount > usedRows) {
         deleteRowsRequests.push({
@@ -337,7 +393,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Собираем запросы форматирования
-      const fmtRequests = buildFormatRequests(sheetId, headerRow, stationShifts.length, colCount)
+      const delays = stationShifts.map((s) => s.delay_minutes ?? 0)
+      const fmtRequests = buildFormatRequests(sheetId, headerRow, stationShifts.length, colCount, stationShifts.length === 0, delays)
       allFormatRequests.push(...fmtRequests)
 
       sheetUrls.push(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${sheetId}`)

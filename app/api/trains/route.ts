@@ -20,16 +20,21 @@ async function ensureTables() {
       train_number INTEGER UNIQUE NOT NULL,
       direction TEXT NOT NULL,
       class TEXT NOT NULL DEFAULT 'Скоростной',
+      depart_depot TEXT,
       depart_start TEXT,
       arrive_middle TEXT,
       depart_middle TEXT,
       arrive_end TEXT,
+      arrive_depot TEXT,
       platform_start INTEGER DEFAULT 1,
       platform_middle INTEGER DEFAULT 1,
       platform_end INTEGER DEFAULT 1,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `)
+  // Миграция для старых БД — добавляем колонки depot если их нет
+  await db.query(`ALTER TABLE trains ADD COLUMN IF NOT EXISTS depart_depot TEXT;`)
+  await db.query(`ALTER TABLE trains ADD COLUMN IF NOT EXISTS arrive_depot TEXT;`)
 }
 
 // GET /api/trains  — list all trains
@@ -61,18 +66,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       train_number, direction, class: trainClass,
-      depart_start, arrive_middle, depart_middle, arrive_end,
+      depart_depot, depart_start, arrive_middle, depart_middle, arrive_end, arrive_depot,
       platform_start, platform_middle, platform_end,
     } = body
 
     const res = await db.query(
       `INSERT INTO trains
-        (train_number, direction, class, depart_start, arrive_middle, depart_middle, arrive_end, platform_start, platform_middle, platform_end)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        (train_number, direction, class, depart_depot, depart_start, arrive_middle, depart_middle, arrive_end, arrive_depot, platform_start, platform_middle, platform_end)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (train_number) DO NOTHING
        RETURNING *`,
       [train_number, direction, trainClass ?? "Скоростной",
-        depart_start ?? null, arrive_middle ?? null, depart_middle ?? null, arrive_end ?? null,
+        depart_depot ?? null, depart_start ?? null, arrive_middle ?? null, depart_middle ?? null, arrive_end ?? null, arrive_depot ?? null,
         platform_start ?? 1, platform_middle ?? 1, platform_end ?? 1]
     )
     return NextResponse.json({ data: res.rows[0] ?? null })
