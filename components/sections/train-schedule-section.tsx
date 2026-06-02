@@ -46,6 +46,7 @@ interface TrainShift {
   claimed_by_nickname: string
   claimed_by_role: string
   shift_date: string
+  delay_minutes?: number
   created_at: string
   direction?: string
   class?: string
@@ -337,8 +338,8 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   // ---- Train DB actions ----
   const handleAddTrain = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (trainForm.depart_start && !validateDepartureTime(trainForm.depart_start, trainForm.class)) {
-      toast({ title: "Неверное время отправления", description: "Для пассажирских рейсов отправление должно быть в 00, 15, 30 или 45 минут", variant: "destructive" })
+    if (trainForm.depart_depot && !validateDepartureTime(trainForm.depart_depot, trainForm.class)) {
+      toast({ title: "Неверное время отправления из депо", description: "Для пассажирских рейсов отправление из депо должно быть в 00, 15, 30 или 45 минут", variant: "destructive" })
       return
     }
     setIsLoading(true)
@@ -349,10 +350,12 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
           train_number: parseInt(trainForm.train_number),
           direction: trainForm.direction,
           class: trainForm.class,
+          depart_depot: trainForm.depart_depot || null,
           depart_start: trainForm.depart_start || null,
           arrive_middle: trainForm.arrive_middle || null,
           depart_middle: trainForm.depart_middle || null,
           arrive_end: trainForm.arrive_end || null,
+          arrive_depot: trainForm.arrive_depot || null,
           platform_start: parseInt(trainForm.platform_start) || 1,
           platform_middle: parseInt(trainForm.platform_middle) || 1,
           platform_end: parseInt(trainForm.platform_end) || 1,
@@ -401,8 +404,8 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
 
   const handleEditSave = async (train: TrainRecord) => {
     const cls = editForm.class || train.class
-    if (editForm.depart_start && !validateDepartureTime(editForm.depart_start, cls)) {
-      toast({ title: "Неверное время отправления", description: "Для пассажирских рейсов — только 00, 15, 30 или 45 мин", variant: "destructive" })
+    if (editForm.depart_depot && !validateDepartureTime(editForm.depart_depot, cls)) {
+      toast({ title: "Неверное время отправления из депо", description: "Для пассажирских рейсов — только 00, 15, 30 или 45 мин", variant: "destructive" })
       return
     }
     setIsLoading(true)
@@ -411,10 +414,12 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
       if ("train_number" in editForm) updates.train_number = parseInt(editForm.train_number || "0")
       if ("direction" in editForm) updates.direction = editForm.direction
       if ("class" in editForm) updates.class = editForm.class
+      if ("depart_depot" in editForm) updates.depart_depot = editForm.depart_depot || null
       if ("depart_start" in editForm) updates.depart_start = editForm.depart_start || null
       if ("arrive_middle" in editForm) updates.arrive_middle = editForm.arrive_middle || null
       if ("depart_middle" in editForm) updates.depart_middle = editForm.depart_middle || null
       if ("arrive_end" in editForm) updates.arrive_end = editForm.arrive_end || null
+      if ("arrive_depot" in editForm) updates.arrive_depot = editForm.arrive_depot || null
       if ("platform_start" in editForm) updates.platform_start = parseInt(editForm.platform_start || "1")
       if ("platform_middle" in editForm) updates.platform_middle = parseInt(editForm.platform_middle || "1")
       if ("platform_end" in editForm) updates.platform_end = parseInt(editForm.platform_end || "1")
@@ -444,12 +449,12 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
       train_number: String(train.train_number),
       direction: train.direction,
       class: train.class,
-      depart_depot: "",
+      depart_depot: train.depart_depot || "",
       depart_start: train.depart_start || "",
       arrive_middle: train.arrive_middle || "",
       depart_middle: train.depart_middle || "",
       arrive_end: train.arrive_end || "",
-      arrive_depot: "",
+      arrive_depot: train.arrive_depot || "",
       platform_start: String(train.platform_start),
       platform_middle: String(train.platform_middle),
       platform_end: String(train.platform_end),
@@ -585,7 +590,10 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         ) : (
           boardRows.map(({ train, shift, arrival, departure, platform }, idx) => {
             const dirLabel = activeDirection === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
-            const rowBg = idx % 2 === 0 ? rowEvenBg : rowOddBg
+            const delay = shift.delay_minutes ?? 0
+            const isDelayed = delay > 0
+            const rowBg = isDelayed ? "#b8860b" : (idx % 2 === 0 ? rowEvenBg : rowOddBg)
+            const textClr = isDelayed ? "#1a1200" : undefined
             const abbr = CLASS_ABBR[train.class] ?? train.class
             return (
               <div
@@ -593,33 +601,38 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                 className="grid items-center px-5 py-3 text-sm"
                 style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px 90px 160px 48px", background: rowBg }}
               >
-                <span className="text-xl font-extrabold" style={{ color: "#f5c518" }}>{train.train_number}</span>
-                <span className="font-bold text-white/90 uppercase text-xs tracking-wide text-center">
+                <span className="text-xl font-extrabold" style={{ color: isDelayed ? "#1a1200" : "#f5c518" }}>{train.train_number}</span>
+                <span className="font-bold uppercase text-xs tracking-wide text-center" style={{ color: isDelayed ? "#1a1200" : "rgba(255,255,255,0.9)" }}>
                   {abbr}
                 </span>
-                <span className="font-semibold text-center" style={{ color: "#f5c518" }}>
+                <span className="font-semibold text-center" style={{ color: isDelayed ? "#1a1200" : "#f5c518" }}>
                   {dirLabel}
                 </span>
                 {/* Прибытие */}
-                <span className="font-bold text-white text-base text-center" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {train.arrive_end ? train.arrive_end : <span className="text-white/30 text-lg font-bold">—</span>}
+                <span className="font-bold text-base text-center" style={{ fontVariantNumeric: "tabular-nums", color: isDelayed ? "#1a1200" : "white" }}>
+                  {train.arrive_end ? train.arrive_end : <span style={{ opacity: 0.3 }}>—</span>}
                 </span>
-                {/* Отправление из депо */}
-                <span className="font-bold text-white text-base text-center" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {train.depart_start ? train.depart_start : <span className="text-white/30 text-lg font-bold">—</span>}
+                {/* Отправление */}
+                <span className="font-bold text-base text-center" style={{ fontVariantNumeric: "tabular-nums", color: isDelayed ? "#1a1200" : "white" }}>
+                  {train.depart_start ? train.depart_start : <span style={{ opacity: 0.3 }}>—</span>}
                 </span>
                 {/* ПАСС */}
-                <span className="font-bold text-white/80 text-base text-center">{abbr}</span>
+                <span className="font-bold text-base text-center" style={{ color: isDelayed ? "#1a1200" : "rgba(255,255,255,0.8)" }}>{abbr}</span>
                 {/* Опоздание */}
-                <span className="font-bold text-white text-base text-center">0</span>
+                <span className="font-bold text-base text-center" style={{ color: isDelayed ? "#1a1200" : "white" }}>
+                  {delay}
+                </span>
                 <div className="text-center">
-                  <span className="text-white/90 text-sm font-medium">{shift.claimed_by_nickname}</span>
+                  <span className="text-sm font-medium" style={{ color: isDelayed ? "#1a1200" : "rgba(255,255,255,0.9)" }}>
+                    {shift.claimed_by_nickname}
+                  </span>
                 </div>
                 <div className="flex justify-end">
                   {canRemoveShift(shift) && (
                     <button
                       onClick={() => setDeleteShiftTarget(shift)}
-                      className="w-7 h-7 flex items-center justify-center rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded transition-colors"
+                      style={{ color: isDelayed ? "#5a3000" : "#f87171" }}
                       title="Освободить рейс"
                     >
                       <UserX className="w-4 h-4" />
