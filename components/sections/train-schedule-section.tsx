@@ -622,7 +622,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                   className="font-bold text-base text-center"
                   style={{ color: isDelayed ? "#f5c518" : "rgba(255,255,255,0.35)" }}
                 >
-                  {isDelayed ? `+${delay}` : "—"}
+                  {isDelayed ? delay : "—"}
                 </span>
                 <div className="text-center">
                   <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.9)" }}>
@@ -734,7 +734,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
 
                           {/* Отпр. депо */}
                           <span className="text-center text-sm font-bold text-white/70" style={{ fontVariantNumeric: "tabular-nums" }}>
-                            {train.depart_depot || <span className="text-white/25">—</span>}
+                            {train.depart_depot || <span className="text-white/25">��</span>}
                           </span>
 
                           {/* Отправление (из стартовой станции) */}
