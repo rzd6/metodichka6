@@ -1032,60 +1032,19 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                                   <Input type="time" value={ef.arrive_depot ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, arrive_depot: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                                 </div>
                                 <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">Путь в {startStation === "Мирный" ? "Мирном" : "Приволжске"}</Label>
+                                  <Label className="text-xs text-white/60">Путь {startStation === "Мирный" ? "Мирный" : "Приволжск"}</Label>
                                   <Input type="number" min={1} value={ef.platform_start ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_start: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                                 </div>
                                 <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">Путь в Невском</Label>
+                                  <Label className="text-xs text-white/60">Путь Невский</Label>
                                   <Input type="number" min={1} value={ef.platform_middle ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_middle: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                                 </div>
                                 <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">Путь в {endStation === "Мирный" ? "Мирном" : "Приволжске"}</Label>
+                                  <Label className="text-xs text-white/60">Путь {endStation === "Мирный" ? "Мирный" : "Приволжск"}</Label>
                                   <Input type="number" min={1} value={ef.platform_end ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_end: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                                 </div>
                               </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">Категория</Label>
-                                  <Select value={ef.class ?? train.class} onValueChange={(v) => setEditForm((f) => ({ ...f, class: v }))}>
-                                    <SelectTrigger className="h-7 text-sm bg-white/5 border-white/10 text-white">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {ALL_CLASSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">
-                                    Отпр. депо
-                                    {currentClass === "Пассажирский" && <span className="ml-1 text-white/30">(00/15/30/45)</span>}
-                                  </Label>
-                                  <Input type="time" value={ef.depart_depot ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, depart_depot: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">
-                                    Отпр. {startStation}
-                                  </Label>
-                                  <Input
-                                    type="time"
-                                    value={ef.depart_start ?? ""}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, depart_start: e.target.value }))}
-                                    className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]"
-                                  />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">При��. {endStation}</Label>
-                                  <Input type="time" value={ef.arrive_end ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, arrive_end: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">Приб. депо</Label>
-                                  <Input type="time" value={ef.arrive_depot ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, arrive_depot: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs text-white/60">Путь</Label>
-                                  <Input type="number" min={1} value={ef.platform_start ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_start: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
-                                </div>
-                              </div>
+                            </div>
                               <div className="flex gap-2">
                                 <button onClick={() => handleEditSave(train)} disabled={isLoading} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-500 transition-colors disabled:opacity-50">
                                   <Check className="w-3.5 h-3.5" /> Сохранить
