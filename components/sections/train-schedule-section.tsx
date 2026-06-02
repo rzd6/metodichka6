@@ -592,8 +592,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
             const dirLabel = activeDirection === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
             const delay = shift.delay_minutes ?? 0
             const isDelayed = delay > 0
-            const rowBg = isDelayed ? "#b8860b" : (idx % 2 === 0 ? rowEvenBg : rowOddBg)
-            const textClr = isDelayed ? "#1a1200" : undefined
+            const rowBg = idx % 2 === 0 ? rowEvenBg : rowOddBg
             const abbr = CLASS_ABBR[train.class] ?? train.class
             return (
               <div
@@ -601,29 +600,32 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                 className="grid items-center px-5 py-3 text-sm"
                 style={{ gridTemplateColumns: "72px 90px 1fr 110px 120px 64px 90px 160px 48px", background: rowBg }}
               >
-                <span className="text-xl font-extrabold" style={{ color: isDelayed ? "#1a1200" : "#f5c518" }}>{train.train_number}</span>
-                <span className="font-bold uppercase text-xs tracking-wide text-center" style={{ color: isDelayed ? "#1a1200" : "rgba(255,255,255,0.9)" }}>
+                <span className="text-xl font-extrabold" style={{ color: "#f5c518" }}>{train.train_number}</span>
+                <span className="font-bold uppercase text-xs tracking-wide text-center" style={{ color: "rgba(255,255,255,0.9)" }}>
                   {abbr}
                 </span>
-                <span className="font-semibold text-center" style={{ color: isDelayed ? "#1a1200" : "#f5c518" }}>
+                <span className="font-semibold text-center" style={{ color: "#f5c518" }}>
                   {dirLabel}
                 </span>
                 {/* Прибытие */}
-                <span className="font-bold text-base text-center" style={{ fontVariantNumeric: "tabular-nums", color: isDelayed ? "#1a1200" : "white" }}>
+                <span className="font-bold text-base text-center" style={{ fontVariantNumeric: "tabular-nums", color: "white" }}>
                   {train.arrive_end ? train.arrive_end : <span style={{ opacity: 0.3 }}>—</span>}
                 </span>
                 {/* Отправление */}
-                <span className="font-bold text-base text-center" style={{ fontVariantNumeric: "tabular-nums", color: isDelayed ? "#1a1200" : "white" }}>
+                <span className="font-bold text-base text-center" style={{ fontVariantNumeric: "tabular-nums", color: "white" }}>
                   {train.depart_start ? train.depart_start : <span style={{ opacity: 0.3 }}>—</span>}
                 </span>
                 {/* ПАСС */}
-                <span className="font-bold text-base text-center" style={{ color: isDelayed ? "#1a1200" : "rgba(255,255,255,0.8)" }}>{abbr}</span>
-                {/* Опоздание */}
-                <span className="font-bold text-base text-center" style={{ color: isDelayed ? "#1a1200" : "white" }}>
-                  {delay}
+                <span className="font-bold text-base text-center" style={{ color: "rgba(255,255,255,0.8)" }}>{abbr}</span>
+                {/* Опоздание — только цифра меняет цвет на #f5c518 если есть опоздание */}
+                <span
+                  className="font-bold text-base text-center"
+                  style={{ color: isDelayed ? "#f5c518" : "rgba(255,255,255,0.35)" }}
+                >
+                  {isDelayed ? `+${delay}` : "—"}
                 </span>
                 <div className="text-center">
-                  <span className="text-sm font-medium" style={{ color: isDelayed ? "#1a1200" : "rgba(255,255,255,0.9)" }}>
+                  <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.9)" }}>
                     {shift.claimed_by_nickname}
                   </span>
                 </div>
@@ -632,7 +634,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                     <button
                       onClick={() => setDeleteShiftTarget(shift)}
                       className="w-7 h-7 flex items-center justify-center rounded transition-colors"
-                      style={{ color: isDelayed ? "#5a3000" : "#f87171" }}
+                      style={{ color: "#f87171" }}
                       title="Освободить рейс"
                     >
                       <UserX className="w-4 h-4" />
