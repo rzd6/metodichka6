@@ -1044,7 +1044,6 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                                   <Input type="number" min={1} value={ef.platform_end ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, platform_end: e.target.value }))} className="h-7 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                                 </div>
                               </div>
-                            </div>
                               <div className="flex gap-2">
                                 <button onClick={() => handleEditSave(train)} disabled={isLoading} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-500 transition-colors disabled:opacity-50">
                                   <Check className="w-3.5 h-3.5" /> Сохранить
