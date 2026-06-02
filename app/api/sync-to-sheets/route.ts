@@ -265,7 +265,8 @@ export async function POST(req: NextRequest) {
     // Только занятые рейсы на выбранную дату + данные поезда
     const shiftRes = await db.query(
       `SELECT ts.*, t.direction, t.class, t.depart_start, t.arrive_middle, t.depart_middle,
-              t.arrive_end, t.platform_start, t.platform_middle, t.platform_end
+              t.arrive_end, t.platform_start, t.platform_middle, t.platform_end,
+              COALESCE(ts.delay_minutes, 0) AS delay_minutes
        FROM train_shifts ts
        JOIN trains t ON t.train_number = ts.train_number
        WHERE ts.shift_date = $1

@@ -45,8 +45,9 @@ export async function GET(req: NextRequest) {
 
     if (withTrains) {
       const res = await db.query(
-        `SELECT ts.*, t.direction, t.class, t.depart_start, t.arrive_middle,
-                t.depart_middle, t.arrive_end, t.platform_start, t.platform_middle, t.platform_end
+        `SELECT ts.*, t.direction, t.class, t.depart_depot, t.depart_start, t.arrive_middle,
+                t.depart_middle, t.arrive_end, t.arrive_depot, t.platform_start, t.platform_middle, t.platform_end,
+                COALESCE(ts.delay_minutes, 0) AS delay_minutes
          FROM train_shifts ts
          JOIN trains t ON t.id = ts.train_id
          WHERE ts.shift_date = $1
