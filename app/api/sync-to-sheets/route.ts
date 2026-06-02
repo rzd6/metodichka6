@@ -143,13 +143,15 @@ function buildFormatRequests(sheetId: number, _headerRow: number, dataRows: numb
     const colStart = 1                    // столбец B
     const colEnd   = 1 + dataColCount    // столбец I (не включительно)
 
-    // Фон строки + базовый шрифт (B–H)
+    const rowBg = isEven ? COLORS.dark2 : COLORS.dark3
+
+    // Фон строки + базовый шрифт (A–H включительно, столбец 0–colEnd)
     requests.push({
       repeatCell: {
-        range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: colStart, endColumnIndex: colEnd },
+        range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: 0, endColumnIndex: colEnd },
         cell: {
           userEnteredFormat: {
-            backgroundColor: isEven ? COLORS.dark2 : COLORS.dark3,
+            backgroundColor: rowBg,
             textFormat: { bold: true, fontSize: 12, foregroundColor: COLORS.lightGray },
             verticalAlignment: "MIDDLE",
             horizontalAlignment: "CENTER",
