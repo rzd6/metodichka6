@@ -27,10 +27,12 @@ interface TrainRecord {
   train_number: number
   direction: string
   class: string
+  depart_depot: string | null
   depart_start: string | null
   arrive_middle: string | null
   depart_middle: string | null
   arrive_end: string | null
+  arrive_depot: string | null
   platform_start: number
   platform_middle: number
   platform_end: number
@@ -662,17 +664,19 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       </span>
                     </div>
 
-                    {/* Column header row: Номер, Категория, Маршрут, Отправление, Прибытие в депо, Путь, Машинист */}
+                    {/* Column header row: Номер, Категория, Маршрут, Отпр.депо, Отпр.станция, Приб.станция, Приб.депо, Путь, Машинист */}
                     <div
                       className="grid text-white/60 text-[11px] font-semibold uppercase tracking-wide px-5 py-1.5"
-                      style={{ gridTemplateColumns: "56px 72px 1fr 100px 110px 56px 1fr", background: "#181c28", borderBottom: `1px solid ${borderClr}` }}
+                      style={{ gridTemplateColumns: "56px 60px 1fr 80px 90px 90px 80px 44px 1fr", background: "#181c28", borderBottom: `1px solid ${borderClr}` }}
                     >
                       <span>Номер</span>
-                      <span>Категория</span>
+                      <span>Кат.</span>
                       <span>Маршрут</span>
+                      <span className="text-center">Отпр. депо</span>
                       <span className="text-center">Отправление</span>
-                      <span className="text-center">Приб. в депо</span>
-                      <span className="text-center">ПАСС</span>
+                      <span className="text-center">Прибытие</span>
+                      <span className="text-center">Приб. депо</span>
+                      <span className="text-center">Путь</span>
                       <span className="text-center">Машинист</span>
                     </div>
 
@@ -683,11 +687,10 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       const abbr = CLASS_ABBR[train.class] ?? train.class
                       // Время отправления из депо (для старта): depart_start - offset
                       // Прибытие в депо = arrive_end + offset (Мирный:3мин, Приволжск:5мин)
-                      const depotArrivalOffset = dir === "mirny-privolzhsk" ? 5 : 3
-                      const depotArrival = addMinutes(train.arrive_end, depotArrivalOffset)
+                      const depotArrival = train.arrive_depot || "—"
                       // Время отправления (пассажирское) = depart_start
                       const departureTime = train.depart_start
-                      // Если станция стартовая — показываем depart_start; ко��ечная — arrive_end есть
+                      // Если станция стартовая — показываем depart_start; конечная — arrive_end есть
                       const rowBg = idx % 2 === 0 ? rowEvenBg : rowOddBg
 
                       return (
@@ -825,37 +828,34 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
 
               <div className="space-y-1">
                 <p className="text-xs text-white/40 uppercase tracking-wide">
-                  Время (пассажирское)
-                  {trainForm.class === "Пассажирский" && <span className="ml-2 text-white/25">— отправление только 00/15/30/45</span>}
+                  Время
+                  {trainForm.class === "Пассажирский" && <span className="ml-2 text-white/25">— отпр. из депо только 00/15/30/45</span>}
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {trainForm.direction === "mirny-privolzhsk" ? (
                     <>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">Отпр. из депо</Label>
+                        <Label className="text-xs text-white/60">
+                          Отпр. депо
+                          {trainForm.class === "Пассажирский" && <span className="ml-1 text-white/30">(00/15/30/45)</span>}
+                        </Label>
                         <Input type="time" value={trainForm.depart_depot} onChange={(e) => setTrainForm((f) => ({ ...f, depart_depot: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">
-                          Отпр. Мирный
-                          {trainForm.class === "Пассажирский" && <span className="ml-1 text-white/30">(00/15/30/45)</span>}
-                        </Label>
+                        <Label className="text-xs text-white/60">Отпр. Мирный</Label>
                         <Input
                           type="time"
                           value={trainForm.depart_start}
                           onChange={(e) => setTrainForm((f) => ({ ...f, depart_start: e.target.value }))}
-                          className={`h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark] ${trainForm.depart_start && !validateDepartureTime(trainForm.depart_start, trainForm.class) ? "border-red-500" : ""}`}
+                          className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]"
                         />
-                        {trainForm.depart_start && !validateDepartureTime(trainForm.depart_start, trainForm.class) && (
-                          <p className="text-red-400 text-[10px]">Только 00, 15, 30, 45 мин</p>
-                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Приб. Приволжск</Label>
                         <Input type="time" value={trainForm.arrive_end} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_end: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">Приб. в депо</Label>
+                        <Label className="text-xs text-white/60">Приб. депо</Label>
                         <Input type="time" value={trainForm.arrive_depot} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_depot: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
@@ -866,30 +866,27 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                   ) : (
                     <>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">Отпр. из депо</Label>
+                        <Label className="text-xs text-white/60">
+                          Отпр. депо
+                          {trainForm.class === "Пассажирский" && <span className="ml-1 text-white/30">(00/15/30/45)</span>}
+                        </Label>
                         <Input type="time" value={trainForm.depart_depot} onChange={(e) => setTrainForm((f) => ({ ...f, depart_depot: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">
-                          Отпр. Приволжск
-                          {trainForm.class === "Пассажирский" && <span className="ml-1 text-white/30">(00/15/30/45)</span>}
-                        </Label>
+                        <Label className="text-xs text-white/60">Отпр. Приволжск</Label>
                         <Input
                           type="time"
                           value={trainForm.depart_start}
                           onChange={(e) => setTrainForm((f) => ({ ...f, depart_start: e.target.value }))}
-                          className={`h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark] ${trainForm.depart_start && !validateDepartureTime(trainForm.depart_start, trainForm.class) ? "border-red-500" : ""}`}
+                          className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]"
                         />
-                        {trainForm.depart_start && !validateDepartureTime(trainForm.depart_start, trainForm.class) && (
-                          <p className="text-red-400 text-[10px]">Только 00, 15, 30, 45 мин</p>
-                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-white/60">Приб. Мирный</Label>
                         <Input type="time" value={trainForm.arrive_end} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_end: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">Приб. в депо</Label>
+                        <Label className="text-xs text-white/60">Приб. депо</Label>
                         <Input type="time" value={trainForm.arrive_depot} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_depot: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">

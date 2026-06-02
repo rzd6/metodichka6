@@ -22,9 +22,14 @@ async function ensureTables() {
       claimed_by_nickname TEXT NOT NULL,
       claimed_by_role TEXT NOT NULL,
       shift_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      delay_minutes INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(train_number, shift_date)
     );
+  `)
+  // Добавляем колонку delay_minutes если её ещё нет (миграция для старых БД)
+  await db.query(`
+    ALTER TABLE train_shifts ADD COLUMN IF NOT EXISTS delay_minutes INTEGER NOT NULL DEFAULT 0;
   `)
 }
 
@@ -84,6 +89,26 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH /api/train-shifts — update delay_minutes for a shift
+export async function PATCH(req: NextRequest) {
+  try {
+    await ensureTables()
+    const db = getPool()
+    const body = await req.json()
+    const { id, delay_minutes } = body
+
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+
+    const res = await db.query(
+      `UPDATE train_shifts SET delay_minutes = $1 WHERE id = $2 RETURNING *`,
+      [delay_minutes ?? 0, id]
+    )
+    return NextResponse.json({ data: res.rows[0] ?? null })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
 // DELETE /api/train-shifts — release a shift
 export async function DELETE(req: NextRequest) {
   try {
@@ -115,7 +140,7 @@ export async function OPTIONS() {
 function corsHeaders(): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   }
 }
