@@ -153,7 +153,7 @@ export function ReportCompilerSection() {
     const isDNC = selectedType === "Рейс с ДНЦ"
     const assistantText = assistantName.length > 0 ? ` Помощник: ${assistantName}.` : ""
 
-    if (selectedDirection === "Приволжск-Мирный") {
+    if (selectedDirection === "Приволжск-М��рный") {
       if (isDNC) {
         const isMachinist = selectedRole === "Машинист"
         const machinistName = isMachinist ? dispatcherName : "Фамилия"
@@ -1013,8 +1013,9 @@ export function ReportCompilerSection() {
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        {/* Поле опоздания — только для не-последнего и не-depot перегонов (т.е. прибытие на промежуточную/конечную станцию) */}
-                        {!seg.id.includes("depot") && !seg.isLastSegment && (
+                        {/* Поле опоздания — только для перегонов прибывающих на станцию (не в депо).
+                            Перегоны Депо→Станция начала и Станция→Депо конца не имеют опоздания. */}
+                        {!seg.id.endsWith("-depot") && !seg.id.startsWith("seg-depot-") && (
                           <div
                             className="flex items-center gap-2"
                             onClick={(e) => e.stopPropagation()}
@@ -1030,42 +1031,19 @@ export function ReportCompilerSection() {
                               className={`w-16 h-7 text-sm text-center ${isDark ? "bg-white/5 border-white/10 text-white [color-scheme:dark]" : "bg-white border-gray-300 text-black"}`}
                             />
                             <span className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>мин</span>
+                            {seg.delayMinutes > 0 && (
+                              <span className="text-xs text-red-400 font-semibold">+{seg.delayMinutes} мин</span>
+                            )}
                           </div>
                         )}
                         {isExpanded ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
                       </div>
                     </button>
 
-                    {/* Опоздание для последнего перегона (конечная станция) */}
-                    {seg.isLastSegment && (
-                      <div
-                        className={`flex items-center gap-2 px-5 py-2 border-t ${isDark ? "border-white/5 bg-[#141820]" : "border-gray-100 bg-gray-50"}`}
-                      >
-                        <Clock className="w-4 h-4" style={{ color: getTieColor() }} />
-                        <span className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>
-                          Опоздание прибытия на конечную станцию:
-                        </span>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={60}
-                          value={seg.delayMinutes}
-                          onChange={(e) => updateSegmentDelay(seg.id, parseInt(e.target.value) || 0)}
-                          className={`w-16 h-7 text-sm text-center ${isDark ? "bg-white/5 border-white/10 text-white [color-scheme:dark]" : "bg-white border-gray-300 text-black"}`}
-                        />
-                        <span className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>мин</span>
-                        {seg.delayMinutes > 0 && (
-                          <span className="text-xs text-red-400 font-semibold ml-1">
-                            Опаздываем на {seg.delayMinutes} мин
-                          </span>
-                        )}
-                      </div>
-                    )}
-
                     {/* Reports list */}
                     {isExpanded && (
                       <div className={`px-4 pb-3 pt-3 ${isDark ? "bg-[#0f1419]/60" : "bg-white"}`}>
-                        {seg.delayMinutes > 0 && !seg.id.includes("depot") && (
+                        {seg.delayMinutes > 0 && !seg.id.endsWith("-depot") && !seg.id.startsWith("seg-depot-") && (
                           <div className={`mb-3 px-3 py-2 rounded-lg text-xs font-semibold ${isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-600"}`}>
                             Опоздание: +{seg.delayMinutes} мин прибытия на ближайшую станцию
                           </div>
