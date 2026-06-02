@@ -68,13 +68,6 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
 
   useEffect(() => { loadMyShifts() }, [loadMyShifts])
 
-  // Persist state to localStorage so reports survive page refresh
-  useEffect(() => { localStorage.setItem("rc_selectedShiftId", selectedShiftId ?? "") }, [selectedShiftId])
-  useEffect(() => { localStorage.setItem("rc_segments", JSON.stringify(segments)) }, [segments])
-  useEffect(() => { localStorage.setItem("rc_generatedReports", JSON.stringify(generatedReports)) }, [generatedReports])
-  useEffect(() => { localStorage.setItem("rc_generatedWithType", generatedWithType ?? "") }, [generatedWithType])
-  useEffect(() => { localStorage.setItem("rc_generatedWithRole", generatedWithRole ?? "") }, [generatedWithRole])
-
   const selectedShift = myShifts.find((s) => s.id === selectedShiftId) ?? null
 
   const [selectedDirection, setSelectedDirection] = useState<string | null>(null)
@@ -109,6 +102,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
     try { return JSON.parse(localStorage.getItem("rc_segments") ?? "[]") } catch { return [] }
   })
   const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set())
+
+  // Persist state to localStorage so reports survive page refresh
+  useEffect(() => { localStorage.setItem("rc_selectedShiftId", selectedShiftId ?? "") }, [selectedShiftId])
+  useEffect(() => { localStorage.setItem("rc_segments", JSON.stringify(segments)) }, [segments])
+  useEffect(() => { localStorage.setItem("rc_generatedReports", JSON.stringify(generatedReports)) }, [generatedReports])
+  useEffect(() => { localStorage.setItem("rc_generatedWithType", generatedWithType ?? "") }, [generatedWithType])
+  useEffect(() => { localStorage.setItem("rc_generatedWithRole", generatedWithRole ?? "") }, [generatedWithRole])
 
   const [showNotification, setShowNotification] = useState(false)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
@@ -605,7 +605,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           title: "Перегон: Приволжск → Невский",
           delayMinutes: 0,
           reports: [
-            `r [${callSign}] Вижу, Ч1 два жёлтых, верхний мигающий, отправляемся со ст. Приволжск на перегон до ст. Невский…`,
+            `r [${callSign}] Вижу, Ч1 два жёлтых, верхний мигающий, отправляемся со ст. Приволжск на перегон д�� ст. Невский…`,
             `r [${callSign}] ...пл. Азино без остановки.${assistantText}`,
             `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Ч зелёный.`,
             `r [${callSign}] Прибыли на 1 путь ст. Невский. Интервал: 3 минуты.${assistantText}`,
@@ -716,7 +716,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `r [${callSign}] Убираем башмаки, откручиваем ручной, продуваем тормозную магистраль.`,
             `r [${callSign}] Магистраль продули, башмаки убрали, состав готов к выезду на линию.${assistantText}`,
             `r [${callSign}] Вижу НМ1 лунно-белый, отправляемся из депо ТЧЭ-1 на перегон до ст. Мирный.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу Н зелёный.`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Мирный, вижу Н зелён��й.`,
             `r [${callSign}] Прибыли под посадку на 1 путь ст. Мирный. Интервал: 3 минуты.${assistantText}`,
           ],
         })
