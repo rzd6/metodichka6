@@ -537,10 +537,6 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
     sections.push({ id: "gov-wave", label: "Гос. волна" })
   }
 
-  if (canAccessReportGeneration(user.role, sr)) {
-    sections.push({ id: "report-generation", label: "Генерация отчётов" })
-  }
-
   if (canAccessReportCompiler(user.role, sr)) {
     sections.push({ id: "report-compiler", label: "Составитель докладов" })
   }
