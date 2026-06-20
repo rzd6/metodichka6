@@ -549,7 +549,9 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
     sections.push({ id: "rzd-website", label: "Официальные уведомления" })
   }
 
-  sections.push({ id: "train-schedule", label: "Расписание рейсов" })
+  if (user.role !== "ПТО") {
+    sections.push({ id: "train-schedule", label: "Расписание рейсов" })
+  }
 
   if (canAccessManagement(user.role, sr)) {
     sections.push({ id: "admin", label: "Управление" })
@@ -731,7 +733,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                     {isTechAdmin && !isCollapsed && (
                       <button
                         className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-white/10"
-                        title={cs.is_hidden ? "Сд��лать видимым" : "Скрыть раздел"}
+                        title={cs.is_hidden ? "Сделать видимым" : "Скрыть раздел"}
                         onClick={async (e) => {
                           e.stopPropagation()
                           await toggleCustomSectionVisibility(cs.id, !cs.is_hidden, { nickname: user.nickname, role: user.role }, cs.title)

@@ -481,7 +481,7 @@ export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionP
                 disabled={isLoading}
               >
                 <Plus className="w-5 h-5 mr-2" />
-                Новое ��ведомление
+                Новое уведомление
               </Button>
             </div>
           </CardHeader>
@@ -660,7 +660,7 @@ export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionP
                   </div>
                   <div className="space-y-2">
                     <p className="text-lg font-medium">
-                      {isDragging ? "Отпустите изображения для загрузки" : "Перета��ите изображения сюда"}
+                      {isDragging ? "Отпустите изображения для загрузки" : "Перетащите изображения сюда"}
                     </p>
                     <p className="text-sm text-muted-foreground">или</p>
                     <Button
