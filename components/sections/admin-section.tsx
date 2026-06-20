@@ -26,10 +26,12 @@ import {
   RefreshCw,
   Layers,
   History,
+  ClipboardList,
 } from "lucide-react"
 import { SectionsManagementTab } from "@/components/sections/sections-management-tab"
 import { SectionAuditTab } from "@/components/sections/section-audit-tab"
 import { BuiltinSectionsTab } from "@/components/sections/builtin-sections-tab"
+import { StaffAuditTab, logStaffAction } from "@/components/sections/staff-audit-tab"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -61,7 +63,7 @@ function getCurrentUser() {
 
 export function AdminSection() {
   const { theme } = useTheme()
-  const [activeTab, setActiveTab] = useState<"accounts" | "sections" | "audit" | "builtin">("accounts")
+  const [activeTab, setActiveTab] = useState<"accounts" | "sections" | "audit" | "builtin" | "staff-log">("accounts")
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
@@ -210,18 +212,42 @@ export function AdminSection() {
   }
 
   const handleToggleTechAdmin = async (user: User) => {
-    const newSecondaryRole = user.secondaryRole === "Тех. Администратор" ? undefined : "Тех. Администратор"
+    const isRemoving = user.secondaryRole === "Тех. Администратор"
+    const newSecondaryRole = isRemoving ? undefined : "Тех. Администратор"
     await updateUser(user.id, { secondaryRole: newSecondaryRole })
     const updatedUsers = await getAllUsers(true)
     setUsers(sortUsersByRole(updatedUsers))
+
+    if (currentUser) {
+      await logStaffAction(
+        isRemoving ? "secondary_remove" : "secondary_add",
+        { id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role },
+        { id: user.id, nickname: user.nickname },
+        isRemoving ? "Тех. Администратор" : undefined,
+        isRemoving ? undefined : "Тех. Администратор"
+      )
+    }
+
     window.dispatchEvent(new Event("userDataUpdated"))
   }
 
   const handleToggleRZD = async (user: User) => {
-    const newSecondaryRole = user.secondaryRole === "РЖД" ? undefined : "РЖД"
+    const isRemoving = user.secondaryRole === "РЖД"
+    const newSecondaryRole = isRemoving ? undefined : "РЖД"
     await updateUser(user.id, { secondaryRole: newSecondaryRole })
     const updatedUsers = await getAllUsers(true)
     setUsers(sortUsersByRole(updatedUsers))
+
+    if (currentUser) {
+      await logStaffAction(
+        isRemoving ? "secondary_remove" : "secondary_add",
+        { id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role },
+        { id: user.id, nickname: user.nickname },
+        isRemoving ? "РЖД" : undefined,
+        isRemoving ? undefined : "РЖД"
+      )
+    }
+
     window.dispatchEvent(new Event("userDataUpdated"))
   }
 
@@ -238,10 +264,21 @@ export function AdminSection() {
 
   const handleAddUser = async () => {
     if (newNickname && newPassword && canAddUser()) {
-      await addUser(newNickname, newPassword, newRole, newVkId || undefined)
+      const added = await addUser(newNickname, newPassword, newRole, newVkId || undefined)
       const updatedUsers = await getAllUsers()
       const sortedUsers = sortUsersByRole(updatedUsers)
       setUsers(sortedUsers)
+
+      if (currentUser && added) {
+        await logStaffAction(
+          "add",
+          { id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role },
+          { id: added.id, nickname: added.nickname },
+          undefined,
+          newRole
+        )
+      }
+
       setNewNickname("")
       setNewPassword("")
       setNewRole("ПТО")
@@ -262,11 +299,23 @@ export function AdminSection() {
 
   const confirmDeleteUser = async () => {
     if (!deleteConfirmUser) return
-    await deleteUser(deleteConfirmUser.id)
+    const target = deleteConfirmUser
+    await deleteUser(target.id)
     const updatedUsers = await getAllUsers()
     const sortedUsers = sortUsersByRole(updatedUsers)
     setUsers(sortedUsers)
     setDeleteConfirmUser(null)
+
+    if (currentUser) {
+      await logStaffAction(
+        "delete",
+        { id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role },
+        { id: target.id, nickname: target.nickname },
+        target.role,
+        undefined
+      )
+    }
+
     window.dispatchEvent(new Event("userDataUpdated"))
   }
 
@@ -409,6 +458,28 @@ export function AdminSection() {
       setUsers(sortedUsers)
       setEditingUser(null)
 
+      // Log role change if the role was actually changed
+      if (currentUser && editRole !== user.role) {
+        const ROLE_RANK: Record<string, number> = {
+          "Тех. Администратор": 10,
+          "Руководство": 9,
+          "Заместитель": 8,
+          "Старший Состав": 7,
+          "ЦдУД": 5,
+          "ПТО": 3,
+        }
+        const oldRank = ROLE_RANK[user.role] ?? 0
+        const newRank = ROLE_RANK[editRole] ?? 0
+        const action = newRank > oldRank ? "promote" : newRank < oldRank ? "demote" : "role_change"
+        await logStaffAction(
+          action,
+          { id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role },
+          { id: user.id, nickname: editNickname },
+          user.role,
+          editRole
+        )
+      }
+
       if (currentUser && currentUser.id === id) {
         const allUsers = await getAllUsers()
         const updatedUser = allUsers.find((u) => u.id === id)
@@ -540,6 +611,7 @@ export function AdminSection() {
             { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
             { id: "audit" as const, label: "Аудит разделов", icon: History },
+            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
               key={id}
@@ -570,6 +642,7 @@ export function AdminSection() {
             { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
             { id: "audit" as const, label: "Аудит разделов", icon: History },
+            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
               key={id}
@@ -599,6 +672,7 @@ export function AdminSection() {
             { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
             { id: "audit" as const, label: "Аудит разделов", icon: History },
+            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
               key={id}
@@ -616,6 +690,34 @@ export function AdminSection() {
     )
   }
 
+  if (activeTab === "staff-log" && isTechAdminUser) {
+    return (
+      <div className="space-y-3 opacity-95">
+        {/* Tab bar */}
+        <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
+          {[
+            { id: "accounts" as const, label: "Аккаунты", icon: Users },
+            { id: "sections" as const, label: "Разделы", icon: Layers },
+            { id: "builtin" as const, label: "Встроенные", icon: Wrench },
+            { id: "audit" as const, label: "Аудит разделов", icon: History },
+            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
+          ].map(({ id, label, icon: Ic }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={activeTab === id ? { backgroundColor: getTieColor(), color: "#fff" } : { color: theme.mode === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
+            >
+              <Ic className="w-4 h-4" />
+              <span className="hidden sm:block">{label}</span>
+            </button>
+          ))}
+        </div>
+        <StaffAuditTab tieColor={getTieColor()} isDark={theme.mode === "dark"} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3 opacity-95">
       {/* Tab bar — only for tech admins */}
@@ -626,6 +728,7 @@ export function AdminSection() {
             { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
             { id: "audit" as const, label: "Аудит разделов", icon: History },
+            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
               key={id}
@@ -650,13 +753,48 @@ export function AdminSection() {
         >
           <Users className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Управление аккаунтами
           </h2>
           <p className={`text-sm ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
             Управление правами доступа и учётными записями
           </p>
+          {/* Role count chips */}
+          {!isLoading && users.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {/* Total */}
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border"
+                style={{ borderColor: getTieColor() + "50", color: getTieColor(), backgroundColor: getTieColor() + "12" }}
+              >
+                <Users className="w-3 h-3" />
+                {users.length} всего
+              </span>
+              {/* Per-role counts — only show roles that have at least one user */}
+              {(
+                [
+                  "Руководство",
+                  "Заместитель",
+                  "Старший Состав",
+                  "ЦдУД",
+                  "ПТО",
+                  "Тех. Администратор",
+                ] as const
+              )
+                .map((role) => ({ role, count: users.filter((u) => u.role === role).length }))
+                .filter(({ count }) => count > 0)
+                .map(({ role, count }) => (
+                  <span
+                    key={role}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${theme.mode === "dark" ? "border-white/10 text-white/60 bg-white/5" : "border-gray-200 text-gray-600 bg-gray-50"}`}
+                  >
+                    {getRoleIcon(role, "sm")}
+                    <span>{count}</span>
+                  </span>
+                ))}
+            </div>
+          )}
         </div>
         <Button
           variant="outline"

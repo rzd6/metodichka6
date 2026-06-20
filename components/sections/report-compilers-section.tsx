@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import type { UserRole } from "@/data/users"
+import { ROLE_RANK } from "@/data/roles"
 
 // Структура: перегон содержит строки докладов
 interface ReportSegment {
@@ -146,7 +147,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
   }
 
   const generateReport = () => {
-    const isTech = selectedCategory === "ТЕХ"
+    const isTech = selectedCategory === "Технический"
     const isDNC = selectedType === "Рейс с ДНЦ"
 
     // ТЕХ требует только номер локомотива + тип
@@ -863,7 +864,8 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
     }
   }
 
-  const isTechSelected = selectedCategory === "ТЕХ"
+  const canSeeTech = ROLE_RANK[userRole ?? "ПТО"] >= ROLE_RANK["Старший Состав"]
+  const isTechSelected = selectedCategory === "Технический"
 
   return (
     <div className="space-y-6 opacity-95">
@@ -962,7 +964,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
               <Label className={`text-lg font-semibold ${isDark ? "text-white" : "text-black"}`}>Категория</Label>
             </div>
             <div className={`space-y-3 p-4 rounded-xl ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
-              {["Пассажирский", "Туристический", "ТЕХ"].map((cat) =>
+              {(["Пассажирский", "Туристический", ...(canSeeTech ? ["Технический"] : [])] as string[]).map((cat) =>
                 renderOptionButton(cat, selectedCategory, cat, "category"),
               )}
             </div>
