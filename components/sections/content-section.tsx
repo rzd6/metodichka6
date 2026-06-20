@@ -58,9 +58,9 @@ function SectionWrapper({ activeSection, children }: { activeSection: string; ch
   // Bug-report section renders its own button in its header
   const showButton = activeSection !== "bug-report"
   return (
-    <div className="relative">
+    <div className="space-y-4">
       {showButton && (
-        <div className="absolute top-0 right-0 z-10">
+        <div className="flex items-center justify-end">
           <BugReportButton sectionLabel={label} />
         </div>
       )}
