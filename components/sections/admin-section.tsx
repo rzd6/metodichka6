@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { getAllUsers, addUser, updateUser, deleteUser, isTechAdmin, type User } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
+import { BugReportButton } from "@/components/bug-report-button"
 import { ASSIGNABLE_ROLES, sortUsersByRole, type UserRole } from "@/data/users"
 import {
   Trash2,
@@ -796,19 +797,22 @@ export function AdminSection() {
             </div>
           )}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => loadUsers(true)}
-          disabled={isRefreshing || isLoading}
-          className={`h-8 px-3 text-xs ${theme.mode === "dark"
-            ? "border-white/10 bg-transparent text-white hover:bg-white/5"
-            : "border-gray-200 bg-transparent text-black hover:bg-gray-50"
-          }`}
-        >
-          <RefreshCw className={`w-3 h-3 mr-1.5 ${isRefreshing ? "animate-spin" : ""}`} />
-          Обновить
-        </Button>
+        <div className="flex items-center gap-2">
+          <BugReportButton sectionLabel="Управление" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadUsers(true)}
+            disabled={isRefreshing || isLoading}
+            className={`h-8 px-3 text-xs ${theme.mode === "dark"
+              ? "border-white/10 bg-transparent text-white hover:bg-white/5"
+              : "border-gray-200 bg-transparent text-black hover:bg-gray-50"
+            }`}
+          >
+            <RefreshCw className={`w-3 h-3 mr-1.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            Обновить
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
