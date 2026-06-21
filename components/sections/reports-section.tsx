@@ -5,6 +5,8 @@ import { contentData } from "@/data/content"
 import { Copy, Check, ChevronRight, FileText } from "lucide-react"
 import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 
 export function ReportsSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
@@ -25,7 +27,7 @@ export function ReportsSection() {
   }
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
+    clipboardCopy(text)
     setCopiedIndex(id)
     setTimeout(() => setCopiedIndex(null), 2000)
   }

@@ -13,6 +13,7 @@ import type { UserRole } from "@/data/users"
 import { ROLE_RANK } from "@/data/roles"
 import { BugReportButton } from "@/components/bug-report-button"
 import { Calendar } from "lucide-react"
+import { clipboardCopy } from "@/lib/clipboard"
 
 // Структура: перегон содержит строки докладов
 interface ReportSegment {
@@ -270,7 +271,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
         })
         segs.push({
           id: "seg-nevsky-mirny",
-          title: "Перегон: Невский → Мирный",
+          title: "Перегон: Невский → ��ирный",
           delayMinutes: 0,
           reports: [
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Мирный готов, Ч1 зелёный.`,
@@ -508,7 +509,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
             `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 1 путь ст. Приволжск, машинист ${machinistName}.`,
-            `tr ${passNumber} Понятно, прибыли под посадку на 1 путь ст. Приволжск, ожидайте 3 минуты.`,
+            `tr ${passNumber} Понятн��, прибыли под посадку на 1 путь ст. Приволжск, ожидайте 3 минуты.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 1 путь ст. Приволжск, стоянка 3 минуты.`,
           ],
         })
@@ -742,25 +743,8 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
   }
 
   const copyReport = (text: string, key: string) => {
-    const fallback = () => {
-      const el = document.createElement("textarea")
-      el.value = text
-      el.style.position = "fixed"
-      el.style.opacity = "0"
-      document.body.appendChild(el)
-      el.focus()
-      el.select()
-      document.execCommand("copy")
-      document.body.removeChild(el)
-      setCopiedKey(key)
-    }
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        setCopiedKey(key)
-      }).catch(fallback)
-    } else {
-      fallback()
-    }
+    clipboardCopy(text)
+    setCopiedKey(key)
   }
 
   const renderReportItem = (report: string, key: string, isOpposite: boolean, isNext = false) => {

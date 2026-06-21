@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { clipboardCopy } from "@/lib/clipboard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1616,7 +1617,7 @@ export function ReportGenerationSection() {
         if (!reportData.position || !reportData.fullName || !reportData.fullNameGenitive) {
           toast({
             title: "Ошибка",
-            description: "Заполните все обязательные поля",
+            description: "Зап��лните все обязательные поля",
             variant: "destructive",
           })
           return
@@ -1669,7 +1670,7 @@ export function ReportGenerationSection() {
   }
 
   const copyReportToClipboard = () => {
-    navigator.clipboard.writeText(generatedReportText)
+    clipboardCopy(generatedReportText)
     setIsCopied(true)
     setTimeout(() => setIsCopied(false), 2000)
     toast({

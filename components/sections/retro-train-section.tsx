@@ -7,6 +7,8 @@ import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 
 export function RetroTrainSection() {
   const { theme } = useTheme()
@@ -15,7 +17,7 @@ export function RetroTrainSection() {
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
+    clipboardCopy(text)
     setCopiedIndex(id)
   }
 
@@ -97,7 +99,7 @@ export function RetroTrainSection() {
         >
           <Train className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Ретропоезд «Провинция»
           </h2>
@@ -105,6 +107,7 @@ export function RetroTrainSection() {
             Информация о ретропоезде, составе бригады и правилах эксплуатации
           </p>
         </div>
+        <BugReportButton sectionLabel="Ретропоезд" />
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">
@@ -385,7 +388,7 @@ export function RetroTrainSection() {
                       Сотрудник ПТО
                     </h4>
                     <p className={`text-sm ${theme.mode === "dark" ? "text-white/60" : "text-gray-600"}`}>
-                      Техническое обслуживание в пути
+                      Техническое обсл��живание в пути
                     </p>
                   </div>
                   <div

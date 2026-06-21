@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import { clipboardCopy } from "@/lib/clipboard"
 import { Check, Copy, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
 import type { CustomSection, ContentBlock } from "@/data/custom-sections"
 import type { UserRole } from "@/data/users"
@@ -256,7 +257,7 @@ function AccordionBlock({ block, tieColor, isDark, border, textBase, textMuted }
 function CopyableBlock({ block, tieColor, isDark, border, textBase }: any) {
   const [copied, setCopied] = useState(false)
   const handleCopy = () => {
-    navigator.clipboard.writeText(block.value)
+    clipboardCopy(block.value)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }

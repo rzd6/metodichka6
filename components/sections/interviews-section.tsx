@@ -6,6 +6,8 @@ import { Copy, Check, Briefcase } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 import { formatReportText } from "@/lib/report-text"
 import type { UserGender } from "@/data/roles"
 import { getBuiltinOverrides } from "@/data/custom-sections"
@@ -38,7 +40,7 @@ export function InterviewsSection() {
   const formatLine = (text: string) => formatReportText(text, getUserReportPrefs())
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(formatLine(text))
+    clipboardCopy(formatLine(text))
     setCopiedIndex(id)
   }
 
@@ -120,7 +122,7 @@ export function InterviewsSection() {
         >
           <Briefcase className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Собеседования
           </h2>
@@ -128,6 +130,7 @@ export function InterviewsSection() {
             Этапы проведения собеседования
           </p>
         </div>
+        <BugReportButton sectionLabel="Собеседования" />
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">

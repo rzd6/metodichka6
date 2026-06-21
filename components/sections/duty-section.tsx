@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/theme-context"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
 
 export function DutySection() {
   const { theme } = useTheme()
@@ -148,7 +149,7 @@ export function DutySection() {
     },
     {
       name: "Зелёный квадратный щит",
-      description: "Разрешает повысить скорость до установленной после проследования щита всем составом",
+      description: "Разрешает по��ысить скорость до установленной после проследования щита всем составом",
       color: "#22c55e",
     },
     {
@@ -170,7 +171,7 @@ export function DutySection() {
         >
           <Clock className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Дежурство
           </h2>
@@ -178,6 +179,7 @@ export function DutySection() {
             Правила дежурства на переездах и станциях
           </p>
         </div>
+        <BugReportButton sectionLabel="Дежурство" />
       </div>
 
       {/* Rules for Crossings */}
