@@ -59,12 +59,12 @@ function SectionWrapper({ activeSection, children }: { activeSection: string; ch
   const showButton = activeSection !== "bug-report"
   return (
     <div className="space-y-4">
+      {children}
       {showButton && (
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end pt-2">
           <BugReportButton sectionLabel={label} />
         </div>
       )}
-      {children}
     </div>
   )
 }

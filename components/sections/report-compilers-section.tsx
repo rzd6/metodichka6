@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect, useCallback } from "react"
-import { Copy, AlertCircle, Train, MapPin, Settings, User, Hash, Check, Clock, ChevronDown, ChevronUp, Calendar } from "lucide-react"
+import { Copy, AlertCircle, Train, MapPin, Settings, User, Hash, Check, Clock, Calendar } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
@@ -102,11 +102,16 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
     if (typeof window === "undefined") return []
     try { return JSON.parse(localStorage.getItem("rc_segments") ?? "[]") } catch { return [] }
   })
-  const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set())
+  // Единое поле опоздания (вместо per-segment)
+  const [globalDelay, setGlobalDelay] = useState<number>(() => {
+    if (typeof window === "undefined") return 0
+    return parseInt(localStorage.getItem("rc_globalDelay") ?? "0") || 0
+  })
 
   // Persist state to localStorage so reports survive page refresh
   useEffect(() => { localStorage.setItem("rc_selectedShiftId", selectedShiftId ?? "") }, [selectedShiftId])
   useEffect(() => { localStorage.setItem("rc_segments", JSON.stringify(segments)) }, [segments])
+  useEffect(() => { localStorage.setItem("rc_globalDelay", String(globalDelay)) }, [globalDelay])
   useEffect(() => { localStorage.setItem("rc_generatedReports", JSON.stringify(generatedReports)) }, [generatedReports])
   useEffect(() => { localStorage.setItem("rc_generatedWithType", generatedWithType ?? "") }, [generatedWithType])
   useEffect(() => { localStorage.setItem("rc_generatedWithRole", generatedWithRole ?? "") }, [generatedWithRole])
@@ -191,10 +196,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
       setGeneratedReports([])
       setGeneratedWithType(null)
       setGeneratedWithRole(null)
-      // По умолчанию раскрываем первый перегон
-      if (newSegments.length > 0) {
-        setExpandedSegments(new Set([newSegments[0].id]))
-      }
+      setGlobalDelay(0)
     }
 
     // Сброс полей
@@ -709,7 +711,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           reports: [
             `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,
             `r [${callSign}]...пл. Азино без остановки.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Н два жёлтых, верхний мигающий.`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Н два жёлтых, ве��хний мигающий.`,
             `r [${callSign}] Прибываем на 2 путь ст. Приволжск.${assistantText}`,
             `r [${callSign}] Прибыли на 2 путь ст. Приволжск. Интервал: 3 минуты.${assistantText}`,
           ],
@@ -749,13 +751,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
       return (
         <div
           key={key}
-          className={`w-full p-3 rounded-xl border-2 text-left mb-2 opacity-50 ${isDark
+          className={`w-full px-4 py-3.5 rounded-xl border-2 text-left mb-2.5 opacity-50 ${isDark
             ? "bg-gradient-to-r from-[#0f1419]/40 to-[#0f1419]/30 border-white/5"
             : "bg-gradient-to-r from-gray-100/60 to-gray-50/40 border-gray-200/50"
           }`}
           style={{ borderLeftWidth: "4px", borderLeftColor: getTieColor() + "30" }}
         >
-          <code className={`block font-mono text-sm opacity-70 ${isDark ? "text-white/60" : "text-gray-600"}`}>{report}</code>
+          <code className={`block font-mono text-sm leading-relaxed opacity-70 ${isDark ? "text-white/60" : "text-gray-600"}`}>{report}</code>
         </div>
       )
     }
@@ -764,7 +766,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
       <button
         key={key}
         onClick={() => copyReport(report, key)}
-        className={`w-full p-3 rounded-xl border-2 text-left transition-all duration-200 group mb-2 ${isCopied
+        className={`w-full px-4 py-3.5 rounded-xl border-2 text-left transition-all duration-200 group mb-2.5 ${isCopied
           ? isDark
             ? "bg-gradient-to-r from-green-900/40 to-green-900/20 border-green-500/60"
             : "bg-gradient-to-r from-green-50 to-green-50/60 border-green-400"
@@ -778,7 +780,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
         }}
       >
         <div className="flex items-start justify-between gap-4">
-          <code className={`block font-mono text-sm flex-1 ${isCopied ? "text-green-500" : isDark ? "text-white/80" : "text-gray-800"}`}>
+          <code className={`block font-mono text-sm leading-relaxed flex-1 ${isCopied ? "text-green-500" : isDark ? "text-white/80" : "text-gray-800"}`}>
             {report}
           </code>
           <div
@@ -830,28 +832,14 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
     )
   }
 
-  const toggleSegment = (id: string) => {
-    setExpandedSegments((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
-
-  const updateSegmentDelay = async (id: string, value: number) => {
-    let maxDelay = value
-    setSegments((prev) => {
-      const updated = prev.map((s) => s.id === id ? { ...s, delayMinutes: value } : s)
-      // Вычисляем максимальное опоздание среди всех перегонов по актуальному состоянию
-      maxDelay = Math.max(...updated.map((s) => s.delayMinutes))
-      return updated
-    })
-    // Если выбран рейс — сохраняем максимальное опоздание из всех перегонов в БД + синхронизируем таблицу
+  const updateGlobalDelay = async (value: number) => {
+    setGlobalDelay(value)
+    // Если выбран рейс — сохраняем опоздание в БД + синхронизируем таблицу
     if (selectedShiftId) {
       try {
         await apiFetch("/api/train-shifts", {
           method: "PATCH",
-          body: JSON.stringify({ id: selectedShiftId, delay_minutes: maxDelay }),
+          body: JSON.stringify({ id: selectedShiftId, delay_minutes: value }),
         })
         // Синхронизируем Google Sheets
         await apiFetch("/api/sync-to-sheets", {
@@ -1140,78 +1128,57 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             </div>
           )}
 
-          {/* Обычный рейс — по перегонам */}
+          {/* Обычный рейс — плоский список докладов */}
           {segments.length > 0 && (
-            <div className="space-y-3 mt-8 pt-8 border-t-2" style={{ borderColor: getTieColor() + "30" }}>
-              <h3 className={`font-bold text-2xl mb-4 flex items-center gap-2 ${isDark ? "text-white" : "text-gray-900"}`}>
-                <Train className="w-8 h-8" />
-                <span>Доклады по перегонам</span>
-              </h3>
-              {segments.map((seg) => {
-                const isExpanded = expandedSegments.has(seg.id)
-                return (
-                  <div
-                    key={seg.id}
-                    className={`rounded-xl overflow-hidden border ${isDark ? "border-white/10" : "border-gray-200"}`}
-                  >
-                    {/* Segment header */}
-                    <button
-                      onClick={() => toggleSegment(seg.id)}
-                      className={`w-full flex items-center justify-between px-5 py-3.5 transition-colors ${isDark ? "bg-[#1a1f2e] hover:bg-[#222838]" : "bg-gray-50 hover:bg-gray-100"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getTieColor() }} />
-                        <span className={`font-bold text-sm uppercase tracking-wide ${isDark ? "text-white" : "text-gray-800"}`}>
-                          {seg.title}
-                        </span>
-                        <span className={`text-xs ${isDark ? "text-white/40" : "text-gray-400"}`}>
-                          {seg.reports.length} строк
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {/* Поле опоздания — для всех перегонов кроме последнего (возврат в депо) */}
-                        {!seg.isLastSegment && (
-                          <div
-                            className="flex items-center gap-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Clock className="w-4 h-4" style={{ color: getTieColor() }} />
-                            <span className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>Опоздание:</span>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={60}
-                              value={seg.delayMinutes}
-                              onChange={(e) => updateSegmentDelay(seg.id, parseInt(e.target.value) || 0)}
-                              className={`w-16 h-7 text-sm text-center ${isDark ? "bg-white/5 border-white/10 text-white [color-scheme:dark]" : "bg-white border-gray-300 text-black"}`}
-                            />
-                            <span className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>мин</span>
-                            {seg.delayMinutes > 0 && (
-                              <span className="text-xs text-red-400 font-semibold">+{seg.delayMinutes} мин</span>
-                            )}
-                          </div>
-                        )}
-                        {isExpanded ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
-                      </div>
-                    </button>
+            <div className="space-y-0 mt-8 pt-8 border-t-2" style={{ borderColor: getTieColor() + "30" }}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className={`font-bold text-2xl flex items-center gap-2 ${isDark ? "text-white" : "text-gray-900"}`}>
+                  <Train className="w-8 h-8" />
+                  <span>Доклады</span>
+                </h3>
+                {/* Опоздание — одно поле на весь рейс */}
+                <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${isDark ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-200"}`}>
+                  <Clock className="w-4 h-4 flex-shrink-0" style={{ color: getTieColor() }} />
+                  <span className={`text-sm font-medium ${isDark ? "text-white/70" : "text-gray-600"}`}>Опоздание:</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={globalDelay}
+                    onChange={(e) => updateGlobalDelay(parseInt(e.target.value) || 0)}
+                    className={`w-16 h-8 text-sm text-center ${isDark ? "bg-white/5 border-white/10 text-white [color-scheme:dark]" : "bg-white border-gray-300 text-black"}`}
+                  />
+                  <span className={`text-sm ${isDark ? "text-white/50" : "text-gray-500"}`}>мин</span>
+                  {globalDelay > 0 && (
+                    <span className="text-sm text-red-400 font-semibold">+{globalDelay} мин</span>
+                  )}
+                </div>
+              </div>
 
-                    {/* Reports list */}
-                    {isExpanded && (
-                      <div className={`px-4 pb-3 pt-3 ${isDark ? "bg-[#0f1419]/60" : "bg-white"}`}>
-                        {seg.delayMinutes > 0 && !seg.isLastSegment && (
-                          <div className={`mb-3 px-3 py-2 rounded-lg text-xs font-semibold ${isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-600"}`}>
-                            Опоздание: +{seg.delayMinutes} мин прибытия на ближайшую станцию
-                          </div>
-                        )}
-                        {seg.reports.map((report, idx) => {
-                          const key = `${seg.id}-${idx}`
-                          return renderReportItem(report, key, false)
-                        })}
-                      </div>
-                    )}
+              {segments.map((seg, segIdx) => (
+                <div key={seg.id} className="mb-4">
+                  {/* Заголовок перегона */}
+                  <div className={`flex items-center gap-3 px-4 py-2.5 mb-3 rounded-xl ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getTieColor() }} />
+                    <span className={`font-bold text-sm uppercase tracking-wide ${isDark ? "text-white" : "text-gray-800"}`}>
+                      {seg.title}
+                    </span>
+                    <span className={`text-xs ml-1 ${isDark ? "text-white/40" : "text-gray-400"}`}>
+                      {seg.reports.length} строк
+                    </span>
                   </div>
-                )
-              })}
+                  {/* Строки докладов */}
+                  {seg.reports.map((report, idx) => {
+                    const key = `${seg.id}-${idx}`
+                    const opposite = isOppositeRole(report)
+                    return renderReportItem(report, key, opposite)
+                  })}
+                  {/* Разделитель между перегонами (не после последнего) */}
+                  {segIdx < segments.length - 1 && (
+                    <div className="mt-3 mb-1 border-t" style={{ borderColor: getTieColor() + "20" }} />
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
