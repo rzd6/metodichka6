@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect, useCallback } from "react"
-import { Copy, AlertCircle, Train, MapPin, Settings, User, Hash, Check, Clock, Calendar } from "lucide-react"
+import { Copy, AlertCircle, Train, MapPin, Settings, User, Hash, Check, Clock } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
@@ -194,8 +194,8 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
 
       setSegments(newSegments)
       setGeneratedReports([])
-      setGeneratedWithType(null)
-      setGeneratedWithRole(null)
+      setGeneratedWithType(selectedType)
+      setGeneratedWithRole(selectedRole)
       setGlobalDelay(0)
     }
 
@@ -296,7 +296,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           ],
         })
       } else {
-        // Автономный Приволжск→Мирный
+        // Автономный ��риволжск→Мирный
         segs.push({
           id: "seg-depot-priv",
           title: "Перегон: Депо → Приволжск",
@@ -395,7 +395,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           title: "Перегон: Невский → Приволжск",
           delayMinutes: 0,
           reports: [
-            `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Приволжск готов, Н4 зелёный.`,
+            `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Приволжск готов, Н4 зелён��й.`,
             `cr Принято! Выполняю.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Невский на перегон до ст. Приволжск.`,
             `cr Диспетчер!`,
@@ -718,7 +718,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
         })
         segs.push({
           id: "seg-priv-depot",
-          title: "Перегон: Приволжск → Депо",
+          title: "Перего��: Приволжск → Депо",
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
@@ -740,8 +740,27 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
   }
 
   const copyReport = (text: string, key: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedKey(key)
+    const fallback = () => {
+      const el = document.createElement("textarea")
+      el.value = text
+      el.style.position = "fixed"
+      el.style.opacity = "0"
+      document.body.appendChild(el)
+      el.focus()
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey(null), 1500)
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedKey(key)
+        setTimeout(() => setCopiedKey(null), 1500)
+      }).catch(fallback)
+    } else {
+      fallback()
+    }
   }
 
   const renderReportItem = (report: string, key: string, isOpposite: boolean) => {
@@ -877,73 +896,6 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8 pt-8">
-
-          {/* Выбор рейса из расписания */}
-          {userNickname && myShifts.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-5 h-5" style={{ color: getTieColor() }} />
-                <Label className={`text-lg font-semibold ${isDark ? "text-white" : "text-black"}`}>
-                  Мой рейс сегодня
-                </Label>
-              </div>
-              <div className={`space-y-2 p-4 rounded-xl ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
-                {/* Без рейса */}
-                <button
-                  onClick={() => setSelectedShiftId(null)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
-                    selectedShiftId === null
-                      ? isDark ? "bg-white/10 shadow-lg" : "bg-black/10 shadow-lg"
-                      : isDark ? "hover:bg-white/5" : "hover:bg-black/5"
-                  }`}
-                  style={selectedShiftId === null ? { borderLeft: `4px solid ${getTieColor()}`, paddingLeft: "calc(0.75rem)" } : {}}
-                >
-                  <span className={`text-sm font-medium ${isDark ? "text-white/70" : "text-gray-600"}`}>
-                    Без привязки к рейсу
-                  </span>
-                </button>
-                {myShifts.map((shift) => {
-                  const isSelected = selectedShiftId === shift.id
-                  const dirLabel = shift.direction === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"
-                  return (
-                    <button
-                      key={shift.id}
-                      onClick={() => setSelectedShiftId(shift.id)}
-                      className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
-                        isSelected
-                          ? isDark ? "bg-white/10 shadow-lg" : "bg-black/10 shadow-lg"
-                          : isDark ? "hover:bg-white/5" : "hover:bg-black/5"
-                      }`}
-                      style={isSelected ? { borderLeft: `4px solid ${getTieColor()}`, paddingLeft: "calc(0.75rem)" } : {}}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-extrabold" style={{ color: "#f5c518" }}>
-                          {shift.train_number}
-                        </span>
-                        <div>
-                          <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-black"}`}>
-                            {dirLabel}
-                          </div>
-                          <div className={`text-xs ${isDark ? "text-white/50" : "text-gray-500"}`}>
-                            {shift.depart_start ? `Отпр. ${shift.depart_start}` : ""}
-                            {shift.arrive_end ? ` — Приб. ${shift.arrive_end}` : ""}
-                          </div>
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <Check className="w-4 h-4 flex-shrink-0" style={{ color: getTieColor() }} />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-              {selectedShift && (
-                <p className={`text-xs ${isDark ? "text-white/40" : "text-gray-500"}`}>
-                  Опоздание в перегонах будет автоматически отправлено в расписание и Google Таблицу
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Категория */}
           <div className="space-y-4">
@@ -1155,30 +1107,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
                 </div>
               </div>
 
-              {segments.map((seg, segIdx) => (
-                <div key={seg.id} className="mb-4">
-                  {/* Заголовок перегона */}
-                  <div className={`flex items-center gap-3 px-4 py-2.5 mb-3 rounded-xl ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getTieColor() }} />
-                    <span className={`font-bold text-sm uppercase tracking-wide ${isDark ? "text-white" : "text-gray-800"}`}>
-                      {seg.title}
-                    </span>
-                    <span className={`text-xs ml-1 ${isDark ? "text-white/40" : "text-gray-400"}`}>
-                      {seg.reports.length} строк
-                    </span>
-                  </div>
-                  {/* Строки докладов */}
-                  {seg.reports.map((report, idx) => {
-                    const key = `${seg.id}-${idx}`
-                    const opposite = isOppositeRole(report)
-                    return renderReportItem(report, key, opposite)
-                  })}
-                  {/* Разделитель между перегонами (не после последнего) */}
-                  {segIdx < segments.length - 1 && (
-                    <div className="mt-3 mb-1 border-t" style={{ borderColor: getTieColor() + "20" }} />
-                  )}
-                </div>
-              ))}
+              {segments.flatMap((seg) =>
+                seg.reports.map((report, idx) => {
+                  const key = `${seg.id}-${idx}`
+                  const opposite = isOppositeRole(report)
+                  return renderReportItem(report, key, opposite)
+                })
+              )}
             </div>
           )}
         </CardContent>
