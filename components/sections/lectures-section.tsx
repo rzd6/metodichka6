@@ -35,8 +35,23 @@ export function LecturesSection() {
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedIndex(id)
+    const fallback = () => {
+      const el = document.createElement("textarea")
+      el.value = text
+      el.style.position = "fixed"
+      el.style.opacity = "0"
+      document.body.appendChild(el)
+      el.focus()
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+      setCopiedIndex(id)
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => setCopiedIndex(id)).catch(fallback)
+    } else {
+      fallback()
+    }
   }
 
   const renderContent = (content: string[], lectureId: string) => {

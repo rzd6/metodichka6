@@ -20,7 +20,6 @@ import { RetroTrainSection } from "./retro-train-section"
 import { RZDWebsiteSection } from "./rzd-website-section"
 import { BugReportSection } from "./bug-report-section"
 import { TrainScheduleSection } from "./train-schedule-section"
-import { BugReportButton } from "@/components/bug-report-button"
 import { CustomSectionView } from "./custom-section-view"
 import { getCustomSections, type CustomSection } from "@/data/custom-sections"
 import type { UserRole } from "@/data/users"
@@ -54,19 +53,7 @@ interface ContentSectionProps {
 }
 
 function SectionWrapper({ activeSection, children }: { activeSection: string; children: React.ReactNode }) {
-  const label = SECTION_LABELS[activeSection] || activeSection
-  // Bug-report section renders its own button in its header
-  const showButton = activeSection !== "bug-report"
-  return (
-    <div className="relative">
-      {showButton && (
-        <div className="absolute top-0 right-0 z-10">
-          <BugReportButton sectionLabel={label} />
-        </div>
-      )}
-      {children}
-    </div>
-  )
+  return <>{children}</>
 }
 
 // Built-in section IDs — any activeSection NOT in this set is treated as a potential custom section

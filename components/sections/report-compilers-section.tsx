@@ -11,6 +11,8 @@ import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import type { UserRole } from "@/data/users"
 import { ROLE_RANK } from "@/data/roles"
+import { BugReportButton } from "@/components/bug-report-button"
+import { Calendar } from "lucide-react"
 
 // Структура: перегон содержит строки докладов
 interface ReportSegment {
@@ -751,19 +753,17 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
       document.execCommand("copy")
       document.body.removeChild(el)
       setCopiedKey(key)
-      setTimeout(() => setCopiedKey(null), 1500)
     }
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
         setCopiedKey(key)
-        setTimeout(() => setCopiedKey(null), 1500)
       }).catch(fallback)
     } else {
       fallback()
     }
   }
 
-  const renderReportItem = (report: string, key: string, isOpposite: boolean) => {
+  const renderReportItem = (report: string, key: string, isOpposite: boolean, isNext = false) => {
     const isCopied = copiedKey === key
 
     if (isOpposite) {
@@ -789,9 +789,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           ? isDark
             ? "bg-gradient-to-r from-green-900/40 to-green-900/20 border-green-500/60"
             : "bg-gradient-to-r from-green-50 to-green-50/60 border-green-400"
-          : isDark
-            ? "bg-gradient-to-r from-[#0f1419]/80 to-[#0f1419]/60 border-white/10 hover:border-white/30"
-            : "bg-gradient-to-r from-white/80 to-gray-50/60 border-gray-200 hover:border-gray-300"
+          : isNext
+            ? isDark
+              ? "bg-gradient-to-r from-[#0f1419]/80 to-[#0f1419]/60 border-white/40 shadow-md"
+              : "bg-gradient-to-r from-white to-gray-50/60 border-gray-400 shadow-md"
+            : isDark
+              ? "bg-gradient-to-r from-[#0f1419]/80 to-[#0f1419]/60 border-white/10 hover:border-white/30"
+              : "bg-gradient-to-r from-white/80 to-gray-50/60 border-gray-200 hover:border-gray-300"
         }`}
         style={{
           borderLeftWidth: "4px",
@@ -880,12 +884,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
         <div className="p-3 rounded-xl" style={{ background: `linear-gradient(135deg, ${getTieColor()}20, ${getTieColor()}10)` }}>
           <Settings className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>Составитель докладов</h2>
           <p className={`text-sm ${isDark ? "text-white/70" : "text-gray-600"}`}>
             Генератор докладов для рейсов на поезде
           </p>
         </div>
+        <BugReportButton sectionLabel="Составитель докладов" />
       </div>
 
       <Card className={`border-2 rounded-2xl overflow-hidden ${isDark ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}>
@@ -1002,6 +1007,34 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
                 placeholder="Введите номер рейса..."
                 className={`h-12 text-base ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-gray-300 text-black placeholder:text-gray-400"}`}
               />
+              {/* Быстрый выбор из расписания сегодняшнего дня */}
+              {userNickname && myShifts.length > 0 && (
+                <div className={`flex flex-wrap gap-2 pt-1`}>
+                  {myShifts.map((shift) => {
+                    const isActive = flightNumber === String(shift.train_number)
+                    return (
+                      <button
+                        key={shift.id}
+                        type="button"
+                        onClick={() => {
+                          setFlightNumber(isActive ? "" : String(shift.train_number))
+                          setSelectedShiftId(isActive ? null : shift.id)
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-150 ${isActive
+                          ? "border-transparent text-white"
+                          : isDark
+                            ? "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                            : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        }`}
+                        style={isActive ? { backgroundColor: getTieColor(), borderColor: getTieColor() } : {}}
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        {shift.train_number}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             {!isTechSelected && selectedType === "Рейс с ДНЦ" && (
@@ -1072,10 +1105,14 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
                 <span>Технический рейс — доклады</span>
               </h3>
               <div className="space-y-0">
-                {generatedReports.map((report, index) => {
-                  const isOpposite = isOppositeRole(report)
-                  return renderReportItem(report, `tech-${index}`, isOpposite)
-                })}
+                {(() => {
+                  const lastIdx = copiedKey?.startsWith("tech-") ? parseInt(copiedKey.replace("tech-", ""), 10) : -1
+                  return generatedReports.map((report, index) => {
+                    const isOpposite = isOppositeRole(report)
+                    const isNext = lastIdx >= 0 && index === lastIdx + 1
+                    return renderReportItem(report, `tech-${index}`, isOpposite, isNext)
+                  })
+                })()}
               </div>
             </div>
           )}
@@ -1107,13 +1144,18 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
                 </div>
               </div>
 
-              {segments.flatMap((seg) =>
-                seg.reports.map((report, idx) => {
-                  const key = `${seg.id}-${idx}`
+              {(() => {
+                // Flatten all (key, report) pairs for isNext computation
+                const allItems = segments.flatMap((seg) =>
+                  seg.reports.map((report, idx) => ({ key: `${seg.id}-${idx}`, report }))
+                )
+                const lastPos = copiedKey ? allItems.findIndex((it) => it.key === copiedKey) : -1
+                return allItems.map(({ key, report }, pos) => {
                   const opposite = isOppositeRole(report)
-                  return renderReportItem(report, key, opposite)
+                  const isNext = lastPos >= 0 && pos === lastPos + 1
+                  return renderReportItem(report, key, opposite, isNext)
                 })
-              )}
+              })()}
             </div>
           )}
         </CardContent>
