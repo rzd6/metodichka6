@@ -8,6 +8,8 @@ import { useTheme } from "@/contexts/theme-context"
 import type { UserRole } from "@/data/users"
 import { useState, useEffect } from "react"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 import { formatReportText } from "@/lib/report-text"
 import { getEffectiveReportTag } from "@/data/users"
 import type { UserGender } from "@/data/roles"
@@ -58,7 +60,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
         return filledReports[index] || ""
       })
     }
-    navigator.clipboard.writeText(processedText)
+    clipboardCopy(processedText)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 2000)
   }
@@ -326,7 +328,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
         subtitle: "Дежурство на переезде [ДПП]",
         reports: [
           { text: "r [ДПП] Занял ЗИЛ для отправки на место несения дежурства.", desc: "Перед выездом" },
-          { text: "r [ДПП] Заступил на дежурство на переезде *название*.", desc: "Начало дежурства" },
+          { text: "r [ДПП] Заступил на дежурство ��а переезде *название*.", desc: "Начало дежурства" },
           { text: "r [ДПП] Продолжаю дежурство на переезде *название*.", desc: "Каждые 10 минут" },
           {
             text: "r [ДПП] Поезд проследовал переезд *название* без замечаний.",
@@ -533,6 +535,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
             Полный справочник докладов и команд для радиосвязи
           </p>
         </div>
+        <BugReportButton sectionLabel="reports-section" />
       </div>
 
       <Card

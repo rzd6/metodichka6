@@ -3,6 +3,8 @@ import { contentData } from "@/data/content"
 import { Copy, Check, FileCheck } from "lucide-react"
 import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getThemeColor } from "@/lib/theme-utils"
@@ -19,7 +21,7 @@ export function OrdersSection() {
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
+    clipboardCopy(text)
     setCopiedIndex(id)
     setTimeout(() => setCopiedIndex(null), 2000)
   }
@@ -142,7 +144,7 @@ export function OrdersSection() {
         >
           <FileCheck className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Приказы
           </h2>
@@ -150,6 +152,7 @@ export function OrdersSection() {
             Шаблоны приказов для различных ситуаций
           </p>
         </div>
+        <BugReportButton sectionLabel="Приказы" />
       </div>
 
       <div className="flex gap-3 flex-wrap">

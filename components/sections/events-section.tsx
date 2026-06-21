@@ -6,6 +6,8 @@ import { Copy, Check, Calendar } from "lucide-react"
 import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 
 export function EventsSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
@@ -15,7 +17,7 @@ export function EventsSection() {
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
+    clipboardCopy(text)
     setCopiedIndex(id)
   }
 
@@ -127,7 +129,7 @@ export function EventsSection() {
         >
           <Calendar className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Мероприятия
           </h2>
@@ -135,6 +137,7 @@ export function EventsSection() {
             Различные мероприятия и осмотры
           </p>
         </div>
+        <BugReportButton sectionLabel="Мероприятия" />
       </div>
 
       <div className="flex gap-3">

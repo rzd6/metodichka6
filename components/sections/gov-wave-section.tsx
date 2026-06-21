@@ -6,6 +6,8 @@ import { Copy, Check, Radio } from "lucide-react"
 import { useTheme } from "@/contexts/theme-context"
 import { contentData } from "@/data/content"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 
 export function GovWaveSection() {
   const { theme } = useTheme()
@@ -14,7 +16,7 @@ export function GovWaveSection() {
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
+    clipboardCopy(text)
     setCopiedIndex(id)
     setTimeout(() => setCopiedIndex(null), 2000)
   }
@@ -37,7 +39,7 @@ export function GovWaveSection() {
         >
           <Radio className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Государственная волна
           </h2>
@@ -45,6 +47,7 @@ export function GovWaveSection() {
             Шаблоны объявлений для государственной волны
           </p>
         </div>
+        <BugReportButton sectionLabel="gov-wave" />
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">

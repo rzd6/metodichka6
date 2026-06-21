@@ -6,6 +6,8 @@ import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import { getBuiltinOverrides } from "@/data/custom-sections"
+import { BugReportButton } from "@/components/bug-report-button"
+import { clipboardCopy } from "@/lib/clipboard"
 
 export function LecturesSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
@@ -35,7 +37,7 @@ export function LecturesSection() {
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
+    clipboardCopy(text)
     setCopiedIndex(id)
   }
 
@@ -127,7 +129,7 @@ export function LecturesSection() {
         >
           <BookOpenText className="w-6 h-6" style={{ color: getTieColor() }} />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
             Лекции
           </h2>
@@ -135,6 +137,7 @@ export function LecturesSection() {
             Обучающие материалы для сотрудников РЖД
           </p>
         </div>
+        <BugReportButton sectionLabel="Лекции" />
       </div>
 
       <div className="flex gap-3">
@@ -162,7 +165,7 @@ export function LecturesSection() {
             selectedCategory === "additional" ? { backgroundColor: getTieColor(), borderColor: getTieColor() } : {}
           }
         >
-          Дополнительные лекции
+          Дополнитель��ые лекции
         </button>
       </div>
 
