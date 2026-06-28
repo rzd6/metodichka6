@@ -37,6 +37,18 @@ async function ensureTables() {
   await db.query(`ALTER TABLE trains ADD COLUMN IF NOT EXISTS arrive_depot TEXT;`)
 }
 
+function corsHeaders(): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  }
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders() })
+}
+
 // GET /api/trains  — list all trains
 // GET /api/trains?id=UUID — single train
 export async function GET(req: NextRequest) {
@@ -48,13 +60,13 @@ export async function GET(req: NextRequest) {
 
     if (id) {
       const res = await db.query("SELECT * FROM trains WHERE id = $1", [id])
-      return NextResponse.json({ data: res.rows[0] ?? null })
+      return NextResponse.json({ data: res.rows[0] ?? null }, { headers: corsHeaders() })
     }
 
     const res = await db.query("SELECT * FROM trains ORDER BY train_number ASC")
-    return NextResponse.json({ data: res.rows })
+    return NextResponse.json({ data: res.rows }, { headers: corsHeaders() })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: err.message }, { status: 500, headers: corsHeaders() })
   }
 }
 
