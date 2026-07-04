@@ -293,6 +293,12 @@
     return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' })
   }
 
+  function getMoscowTomorrowISO() {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' })
+  }
+
   function getMoscowTime() {
     return new Date().toLocaleTimeString('ru-RU', {
       timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit'
@@ -345,24 +351,106 @@
   const API_BASE = getApiBase()
 
   // ── Данные ───────────────────────────────────────────────────────────────
-  // Только занятые рейсы (как в Google Sheets), обогащённые данными поезда
-  let allShifts = []
+  let todayShifts = []    // рейсы за сегодня
+  let tomorrowShifts = [] // рейсы за завтра (только до 06:00)
   let loadError = null
   let dataLoaded = false
 
-  // Фильтруем занятые рейсы по станции
+  // ── Утилиты времени ──────────────────────────────────────────────────────
+
+  // Переводим "HH:MM" в минуты от полуночи
+  function timeToMinutes(t) {
+    if (!t) return null
+    const s = typeof t === 'string' ? t.trim().slice(0, 5) : String(t)
+    const [h, m] = s.split(':').map(Number)
+    if (isNaN(h) || isNaN(m)) return null
+    return h * 60 + m
+  }
+
+  // Текущее время в Москве в минутах от полуночи
+  function moscowNowMinutes() {
+    const t = new Date().toLocaleTimeString('ru-RU', {
+      timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', hour12: false
+    })
+    return timeToMinutes(t)
+  }
+
+  // Определяем "ключевое" время рейса на станции:
+  //   - конечная станция → время прибытия (рейс исчезает сразу по прибытию)
+  //   - промежуточная / начальная → время отправления (рейс исчезает через 10 минут)
+  function getEventTime(row, stationKey) {
+    const dir = row.direction
+    let isTerminal = false
+
+    if (dir === 'mirny-privolzhsk') {
+      isTerminal = stationKey === 'privolzhsk'
+    } else if (dir === 'privolzhsk-mirny') {
+      isTerminal = stationKey === 'mirny'
+    }
+
+    const times = getStationTimes(row, stationKey)
+
+    if (isTerminal) {
+      // Конечная: ориентируемся на прибытие
+      return { minutes: timeToMinutes(fmtTime(times.arr)), graceMinutes: 0 }
+    } else {
+      // Начальная / промежуточная: ориентируемся на отправление + 10 мин
+      return { minutes: timeToMinutes(fmtTime(times.dep)), graceMinutes: 10 }
+    }
+  }
+
+  // Проверяем, нужно ли показывать рейс на данной станции прямо сейчас
+  // isNextDay = true если рейс занят на завтра
+  function shouldShowRow(row, stationKey, nowMin, isNextDay) {
+    const { minutes: evMin, graceMinutes } = getEventTime(row, stationKey)
+    if (evMin === null) return false // нет времени на этой станции вовсе
+
+    if (!isNextDay) {
+      // Сегодняшний рейс: скрываем если (eventTime + grace) <= now
+      return (evMin + graceMinutes) > nowMin
+    } else {
+      // Завтрашний рейс с отправлением до 06:00:
+      // показываем уже сегодня, но сортируем после сегодняшних
+      return true
+    }
+  }
+
+  // Числовой ключ сортировки:
+  //   - сегодняшние: ключ = минуты (0..1439)
+  //   - завтрашние до 06:00: ключ = 10000 + минуты (показываются последними)
+  function sortKey(row, stationKey, isNextDay) {
+    const times = getStationTimes(row, stationKey)
+    const depMin = timeToMinutes(fmtTime(times.dep))
+    const arrMin = timeToMinutes(fmtTime(times.arr))
+    const baseMin = depMin !== null ? depMin : (arrMin !== null ? arrMin : 9999)
+    return isNextDay ? 10000 + baseMin : baseMin
+  }
+
+  // ── Получение строк для станции ──────────────────────────────────────────
   function getStationRows(stationKey) {
     if (!dataLoaded) return null
-    // Все направления проходят через обе конечные и промежуточную станцию
-    return allShifts.filter(s => {
-      const times = getStationTimes(s, stationKey)
-      return times.arr !== undefined || times.dep !== undefined
-    })
+
+    const nowMin = moscowNowMinutes()
+    const result = []
+
+    for (const row of todayShifts) {
+      if (shouldShowRow(row, stationKey, nowMin, false)) {
+        result.push({ row, isNextDay: false, key: sortKey(row, stationKey, false) })
+      }
+    }
+    for (const row of tomorrowShifts) {
+      if (shouldShowRow(row, stationKey, nowMin, true)) {
+        result.push({ row, isNextDay: true, key: sortKey(row, stationKey, true) })
+      }
+    }
+
+    result.sort((a, b) => a.key - b.key)
+    return result
   }
 
   // ── Построение HTML таблицы ──────────────────────────────────────────────
-  function buildTable(stationKey, rows) {
-    if (!rows) {
+  function buildTable(stationKey, entries) {
+    if (!entries) {
       return '<div class="loading">Загрузка...</div>'
     }
     if (loadError) {
@@ -379,26 +467,22 @@
     html += '<th class="th-delay">Опоздание</th>'
     html += '</tr></thead><tbody>'
 
-    if (rows.length === 0) {
+    if (entries.length === 0) {
       html += '<tr class="empty-row"><td colspan="7">На данный момент рейсов не запланировано</td></tr>'
     } else {
-      // Сортируем по времени отправления/прибытия на станции
-      const sorted = [...rows].sort((a, b) => {
-        const ta = getStationTimes(a, stationKey)
-        const tb = getStationTimes(b, stationKey)
-        const depA = fmtTime(ta.dep) || fmtTime(ta.arr) || '99:99'
-        const depB = fmtTime(tb.dep) || fmtTime(tb.arr) || '99:99'
-        return depA.localeCompare(depB)
-      })
-
-      for (const row of sorted) {
+      for (const { row, isNextDay } of entries) {
         const times = getStationTimes(row, stationKey)
         const dep = fmtTime(times.dep)
         const arr = fmtTime(times.arr)
         const delay = row.delay_minutes ? parseInt(row.delay_minutes) : 0
 
+        // Пометка для ночных рейсов следующего дня
+        const nextDayMark = isNextDay
+          ? ' <span style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:400;">(завтра)</span>'
+          : ''
+
         html += '<tr>'
-        html += '<td class="td-train">' + row.train_number + '</td>'
+        html += '<td class="td-train">' + row.train_number + nextDayMark + '</td>'
         html += '<td>' + abbr(row.class || '') + '</td>'
         html += '<td class="td-left td-destination">' + dirLabel(row.direction) + '</td>'
         html += '<td>' + (arr ? arr : '<span class="td-dash">—</span>') + '</td>'
@@ -415,13 +499,31 @@
 
   // ── Загрузка данных ──────────────────────────────────────────────────────
   async function loadData() {
-    const date = getMoscowDateISO()
-    try {
-      // Только занятые рейсы (with_trains=1 возвращает данные поезда вместе со сменой)
-      const shiftsRes = await fetch(API_BASE + '/api/train-shifts?date=' + date + '&with_trains=1')
-      const shiftsJson = await shiftsRes.json()
+    const today    = getMoscowDateISO()
+    const tomorrow = getMoscowTomorrowISO()
 
-      if (shiftsJson.data) allShifts = shiftsJson.data
+    try {
+      // Грузим сегодня и завтра параллельно
+      const [todayRes, tomorrowRes] = await Promise.all([
+        fetch(API_BASE + '/api/train-shifts?date=' + today    + '&with_trains=1'),
+        fetch(API_BASE + '/api/train-shifts?date=' + tomorrow + '&with_trains=1'),
+      ])
+      const [todayJson, tomorrowJson] = await Promise.all([todayRes.json(), tomorrowRes.json()])
+
+      todayShifts = todayJson.data || []
+
+      // Из завтрашних берём только рейсы с ключевым временем до 06:00
+      const tomorrow6h = 6 * 60 // 360 минут
+      tomorrowShifts = (tomorrowJson.data || []).filter(row => {
+        // Для каждой станции проверяем есть ли отправление до 06:00
+        for (const key of ['mirny', 'nevsky', 'privolzhsk']) {
+          const times = getStationTimes(row, key)
+          const dep = timeToMinutes(fmtTime(times.dep))
+          if (dep !== null && dep < tomorrow6h) return true
+        }
+        return false
+      })
+
       loadError = null
     } catch (e) {
       loadError = e.message
@@ -433,9 +535,9 @@
   // ── Рендер всех таблиц ───────────────────────────────────────────────────
   function renderAll() {
     for (const key of ['mirny', 'nevsky', 'privolzhsk']) {
-      const rows = getStationRows(key)
+      const entries = getStationRows(key)
       const container = document.getElementById('table-' + key)
-      if (container) container.innerHTML = buildTable(key, rows)
+      if (container) container.innerHTML = buildTable(key, entries)
     }
   }
 
