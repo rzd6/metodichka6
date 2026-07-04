@@ -11,7 +11,7 @@
       width: 100%;
       background: transparent;
       font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 14px;
+      font-size: 15px;
       color: #fff;
     }
 
@@ -23,10 +23,10 @@
     /* ── Заголовок с датой ── */
     .title-row {
       text-align: center;
-      padding: 10px 0 8px;
+      padding: 12px 0 10px;
     }
     .title-row h1 {
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 800;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -36,22 +36,21 @@
     /* ── Вкладки станций ── */
     .station-tabs {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       justify-content: center;
-      padding: 0 0 10px;
+      padding: 0 0 18px;
     }
     .tab-btn {
       background: #3a3f52;
       color: rgba(255,255,255,0.7);
       border: none;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 700;
       letter-spacing: 0.03em;
-      padding: 7px 22px;
+      padding: 9px 26px;
       border-radius: 3px;
       transition: background 0.15s, color 0.15s;
-      text-transform: none;
     }
     .tab-btn:hover {
       background: #4a4f66;
@@ -71,31 +70,31 @@
     .board-header {
       display: flex;
       align-items: center;
-      padding: 10px 14px;
+      padding: 14px 18px;
       background: #2d3347;
     }
     .board-header-left {
       flex: 1;
     }
     .board-title {
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 700;
       color: #fff;
     }
     .board-subtitle {
-      font-size: 11px;
+      font-size: 13px;
       color: rgba(255,255,255,0.45);
       font-style: italic;
-      margin-top: 1px;
+      margin-top: 2px;
     }
     .board-clock {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       flex-shrink: 0;
     }
     .board-clock-label {
-      font-size: 10px;
+      font-size: 11px;
       color: rgba(255,255,255,0.45);
       text-align: right;
       line-height: 1.3;
@@ -104,9 +103,9 @@
       background: #1a1f2e;
       border: 1px solid rgba(255,255,255,0.12);
       color: #fff;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 800;
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 3px;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.05em;
@@ -122,38 +121,38 @@
     }
     .schedule-table thead th {
       color: #fff;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      padding: 8px 10px;
+      padding: 10px 12px;
       text-align: center;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       white-space: nowrap;
     }
-    .schedule-table thead th:nth-child(1) { text-align: center; width: 80px; }
-    .schedule-table thead th:nth-child(2) { width: 70px; }
-    .schedule-table thead th:nth-child(3) { text-align: left; }
-    .schedule-table thead th:nth-child(4),
-    .schedule-table thead th:nth-child(5),
-    .schedule-table thead th:nth-child(6) { width: 90px; }
+    .schedule-table thead th.th-left { text-align: left; }
+    .schedule-table thead th.th-number { width: 100px; }
+    .schedule-table thead th.th-class  { width: 90px; }
+    .schedule-table thead th.th-time   { width: 110px; }
+    .schedule-table thead th.th-track  { width: 80px; }
+    .schedule-table thead th.th-delay  { width: 100px; }
 
     .schedule-table tbody tr:nth-child(even) { background: #141820; }
     .schedule-table tbody tr:nth-child(odd)  { background: #1a1f2e; }
 
     .schedule-table tbody td {
-      padding: 9px 10px;
+      padding: 11px 12px;
       text-align: center;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
       color: rgba(255,255,255,0.85);
       border-bottom: 1px solid rgba(255,255,255,0.05);
       white-space: nowrap;
     }
-    .schedule-table tbody td:nth-child(3) {
+    .schedule-table tbody td.td-left {
       text-align: left;
     }
     .td-train {
-      font-size: 16px !important;
+      font-size: 18px !important;
       font-weight: 800 !important;
       color: #f5c518 !important;
     }
@@ -165,40 +164,42 @@
       color: rgba(255,255,255,0.2) !important;
       font-weight: 400 !important;
     }
+    .td-delay-val {
+      color: #f5c518 !important;
+      font-weight: 700 !important;
+    }
 
     /* ── Пустое состояние ── */
     .empty-row td {
       text-align: center !important;
       color: #f5c518 !important;
-      font-size: 13px !important;
+      font-size: 14px !important;
       font-weight: 700 !important;
-      padding: 16px 10px !important;
+      padding: 18px 12px !important;
     }
 
     /* ── Дисклеймер ── */
     .disclaimer {
       text-align: center;
       padding: 10px 16px 4px;
-      font-size: 10px;
+      font-size: 11px;
       color: rgba(255,255,255,0.25);
       font-style: italic;
       line-height: 1.5;
     }
 
-    /* ── Ошибка ── */
+    /* ── Ошибка / загрузка ── */
     .error-msg {
       text-align: center;
-      padding: 18px;
+      padding: 20px;
       color: #e74c3c;
-      font-size: 13px;
+      font-size: 14px;
     }
-
-    /* ── Спиннер загрузки ── */
     .loading {
       text-align: center;
-      padding: 24px;
+      padding: 26px;
       color: rgba(255,255,255,0.35);
-      font-size: 13px;
+      font-size: 14px;
     }
 
     /* ── Скрытые вкладки ── */
@@ -281,7 +282,6 @@
 <script>
   // ── Утилиты ──────────────────────────────────────────────────────────────
 
-  // Формат даты ДД.ММ.ГГГГ (московское)
   function getMoscowDateLabel() {
     return new Date().toLocaleDateString('ru-RU', {
       timeZone: 'Europe/Moscow',
@@ -289,19 +289,16 @@
     })
   }
 
-  // Дата ISO для запроса
   function getMoscowDateISO() {
     return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' })
   }
 
-  // Время ЧЧ:ММ (московское)
   function getMoscowTime() {
     return new Date().toLocaleTimeString('ru-RU', {
       timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit'
     })
   }
 
-  // Сокращение категории
   const CLASS_ABBR = {
     'Пассажирский': 'ПАСС',
     'Скоростной':   'СКОР',
@@ -310,69 +307,57 @@
   }
   function abbr(cls) { return CLASS_ABBR[cls] || cls }
 
-  // Время прибытия/отправления для станции
+  // Время прибытия/отправления для конкретной станции
   function getStationTimes(row, stationKey) {
     const dir = row.direction
     if (dir === 'mirny-privolzhsk') {
-      if (stationKey === 'mirny')      return { arr: null,                dep: row.depart_start,  plat: row.platform_start  }
-      if (stationKey === 'nevsky')     return { arr: row.arrive_middle,   dep: row.depart_middle, plat: row.platform_middle }
-      if (stationKey === 'privolzhsk') return { arr: row.arrive_end,      dep: null,              plat: row.platform_end    }
+      if (stationKey === 'mirny')      return { arr: null,               dep: row.depart_start,  plat: row.platform_start  }
+      if (stationKey === 'nevsky')     return { arr: row.arrive_middle,  dep: row.depart_middle, plat: row.platform_middle }
+      if (stationKey === 'privolzhsk') return { arr: row.arrive_end,     dep: null,              plat: row.platform_end    }
     }
     if (dir === 'privolzhsk-mirny') {
-      if (stationKey === 'privolzhsk') return { arr: null,                dep: row.depart_start,  plat: row.platform_start  }
-      if (stationKey === 'nevsky')     return { arr: row.arrive_middle,   dep: row.depart_middle, plat: row.platform_middle }
-      if (stationKey === 'mirny')      return { arr: row.arrive_end,      dep: null,              plat: row.platform_end    }
+      if (stationKey === 'privolzhsk') return { arr: null,               dep: row.depart_start,  plat: row.platform_start  }
+      if (stationKey === 'nevsky')     return { arr: row.arrive_middle,  dep: row.depart_middle, plat: row.platform_middle }
+      if (stationKey === 'mirny')      return { arr: row.arrive_end,     dep: null,              plat: row.platform_end    }
     }
     return { arr: null, dep: null, plat: 1 }
   }
 
-  // Название направления
   function dirLabel(dir) {
     if (dir === 'mirny-privolzhsk') return 'Мирный — Приволжск'
     if (dir === 'privolzhsk-mirny') return 'Приволжск — Мирный'
     return dir
   }
 
-  // Форматировать время из "HH:MM:SS" → "HH:MM"
   function fmtTime(t) {
     if (!t) return null
     if (typeof t === 'string' && /^\d{2}:\d{2}/.test(t.trim())) return t.trim().slice(0, 5)
     return t
   }
 
-  // ── Определяем базовый URL API ───────────────────────────────────────────
-  // Поддержка: виджет доступен и с того же домена (Next.js) и через iframe с другого домена.
-  // Если виджет открыт прямо с сайта — используем относительные пути.
-  // Если через iframe с другого домена — нужен абсолютный URL сайта.
-  // Базовый URL задаём через параметр ?api= в URL виджета (опционально).
-
   function getApiBase() {
     const params = new URLSearchParams(window.location.search)
     const custom = params.get('api')
     if (custom) return custom.replace(/\/$/, '')
-    // Если виджет загружен с того же домена
     return window.location.origin
   }
 
   const API_BASE = getApiBase()
 
   // ── Данные ───────────────────────────────────────────────────────────────
-  let allShifts = []      // все занятые рейсы на сегодня (с данными поезда)
-  let allTrains = []      // все рейсы из базы
+  // Только занятые рейсы (как в Google Sheets), обогащённые данными поезда
+  let allShifts = []
   let loadError = null
   let dataLoaded = false
 
-  // Пустое расписание: есть ли поезда у станции
+  // Фильтруем занятые рейсы по станции
   function getStationRows(stationKey) {
     if (!dataLoaded) return null
-    // Из занятых рейсов — только те, что проходят через станцию
-    // + незанятые рейсы из базы для полного отображения
-    // Показываем ВСЕ поезда из базы, с пометкой кто занял (если занят)
-    const rows = allTrains.map(train => {
-      const shift = allShifts.find(s => s.train_number === train.train_number)
-      return { ...train, shift: shift || null }
+    // Все направления проходят через обе конечные и промежуточную станцию
+    return allShifts.filter(s => {
+      const times = getStationTimes(s, stationKey)
+      return times.arr !== undefined || times.dep !== undefined
     })
-    return rows
   }
 
   // ── Построение HTML таблицы ──────────────────────────────────────────────
@@ -385,16 +370,17 @@
     }
 
     let html = '<table class="schedule-table"><thead><tr>'
-    html += '<th>Номер поезда</th>'
-    html += '<th>Категория</th>'
-    html += '<th>Назначение</th>'
-    html += '<th>Прибытие</th>'
-    html += '<th>Отправление</th>'
-    html += '<th>Путь</th>'
+    html += '<th class="th-number">Номер поезда</th>'
+    html += '<th class="th-class">Категория</th>'
+    html += '<th class="th-left">Назначение</th>'
+    html += '<th class="th-time">Прибытие</th>'
+    html += '<th class="th-time">Отправление</th>'
+    html += '<th class="th-track">Путь</th>'
+    html += '<th class="th-delay">Опоздание</th>'
     html += '</tr></thead><tbody>'
 
     if (rows.length === 0) {
-      html += '<tr class="empty-row"><td colspan="6">На данный момент рейсов не запланировано</td></tr>'
+      html += '<tr class="empty-row"><td colspan="7">На данный момент рейсов не запланировано</td></tr>'
     } else {
       // Сортируем по времени отправления/прибытия на станции
       const sorted = [...rows].sort((a, b) => {
@@ -409,16 +395,16 @@
         const times = getStationTimes(row, stationKey)
         const dep = fmtTime(times.dep)
         const arr = fmtTime(times.arr)
-        // Пропустить если поезд не проходит через станцию
-        if (!dep && !arr) continue
+        const delay = row.delay_minutes ? parseInt(row.delay_minutes) : 0
 
         html += '<tr>'
         html += '<td class="td-train">' + row.train_number + '</td>'
         html += '<td>' + abbr(row.class || '') + '</td>'
-        html += '<td class="td-destination">' + dirLabel(row.direction) + '</td>'
+        html += '<td class="td-left td-destination">' + dirLabel(row.direction) + '</td>'
         html += '<td>' + (arr ? arr : '<span class="td-dash">—</span>') + '</td>'
         html += '<td>' + (dep ? dep : '<span class="td-dash">—</span>') + '</td>'
         html += '<td>' + (times.plat || 1) + '</td>'
+        html += '<td>' + (delay > 0 ? '<span class="td-delay-val">+' + delay + ' мин</span>' : '<span class="td-dash">—</span>') + '</td>'
         html += '</tr>'
       }
     }
@@ -431,15 +417,11 @@
   async function loadData() {
     const date = getMoscowDateISO()
     try {
-      const [shiftsRes, trainsRes] = await Promise.all([
-        fetch(API_BASE + '/api/train-shifts?date=' + date + '&with_trains=1'),
-        fetch(API_BASE + '/api/trains'),
-      ])
+      // Только занятые рейсы (with_trains=1 возвращает данные поезда вместе со сменой)
+      const shiftsRes = await fetch(API_BASE + '/api/train-shifts?date=' + date + '&with_trains=1')
       const shiftsJson = await shiftsRes.json()
-      const trainsJson = await trainsRes.json()
 
       if (shiftsJson.data) allShifts = shiftsJson.data
-      if (trainsJson.data) allTrains = trainsJson.data
       loadError = null
     } catch (e) {
       loadError = e.message
@@ -470,8 +452,7 @@
   // ── Часы ─────────────────────────────────────────────────────────────────
   function updateClocks() {
     const t = getMoscowTime()
-    const ids = ['clock', 'clock2', 'clock3']
-    ids.forEach(id => {
+    ;['clock', 'clock2', 'clock3'].forEach(id => {
       const el = document.getElementById(id)
       if (el) el.textContent = t
     })
@@ -488,7 +469,6 @@
   updateClocks()
   setInterval(updateClocks, 10000)
 
-  // Перезагружаем данные каждые 60 секунд
   loadData()
   setInterval(loadData, 60000)
 </script>
