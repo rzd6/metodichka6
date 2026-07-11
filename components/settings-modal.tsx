@@ -23,7 +23,7 @@ import {
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AccessPermissionsPanel } from "@/components/settings/access-permissions-panel"
-import { DEFAULT_REPORT_TAGS, type UserGender } from "@/data/roles"
+import { DEFAULT_REPORT_TAGS, POSITIONS_BY_ROLE, type UserGender } from "@/data/roles"
 import { ColorPicker } from "@/components/ui/color-picker"
 import { getThemeColor } from "@/lib/theme-utils"
 import { useState, useRef, useEffect } from "react"
@@ -47,6 +47,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [settingsTab, setSettingsTab] = useState<"appearance" | "account">("appearance")
   const [reportTag, setReportTag] = useState("")
   const [gender, setGender] = useState<UserGender>("male")
+  const [userPosition, setUserPosition] = useState("")
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
   const [profileError, setProfileError] = useState("")
@@ -96,6 +97,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       const cu = JSON.parse(localStorage.getItem("currentUser") || "null")
       setReportTag(cu?.reportTag?.replace(/^\[|\]$/g, "") ?? "")
       setGender(cu?.gender === "female" ? "female" : "male")
+      setUserPosition(cu?.position ?? "")
       // Load current tech mode from Supabase
       fetch("/api/tech-mode")
         .then((r) => r.json())
@@ -270,6 +272,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           id: currentUser.id,
           report_tag: normalizedTag || null,
           gender,
+          position_title: userPosition || null,
         }),
       })
       const json = await res.json()
@@ -281,6 +284,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         ...currentUser,
         reportTag: normalizedTag || undefined,
         gender,
+        position: userPosition || undefined,
       }
       localStorage.setItem("currentUser", JSON.stringify(updated))
       setProfileSaved(true)
@@ -583,18 +587,48 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
           <TabsContent value="account" className="flex-1 overflow-y-auto space-y-6 pr-2 mt-0 data-[state=inactive]:hidden">
 
+          {/* Должность */}
+          <div className="space-y-3">
+            <Label className={`text-base flex items-center gap-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
+              <UserCog className="w-4 h-4" style={{ color: getTieColor() }} />
+              Должность
+            </Label>
+            {(() => {
+              try {
+                const cu = JSON.parse(localStorage.getItem("currentUser") || "null")
+                const role = cu?.role as string | undefined
+                const positions: string[] = (role && POSITIONS_BY_ROLE[role as keyof typeof POSITIONS_BY_ROLE]) ? POSITIONS_BY_ROLE[role as keyof typeof POSITIONS_BY_ROLE] : []
+                if (positions.length === 0) return (
+                  <p className={`text-xs ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}>Нет доступных должностей для вашей роли</p>
+                )
+                return (
+                  <Select value={userPosition} onValueChange={(v) => { setUserPosition(v); setProfileSaved(false) }}>
+                    <SelectTrigger className={`${theme.mode === "dark" ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-gray-900"}`}>
+                      <SelectValue placeholder="Выберите должность" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((p: string) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )
+              } catch { return null }
+            })()}
+            <p className={`text-xs ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}>
+              Отображается в сайдбаре и при занятии рейса
+            </p>
+          </div>
+
+          {/* Тег */}
           <div className="space-y-3">
             <Label className={`text-base flex items-center gap-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
               <Tag className="w-4 h-4" style={{ color: getTieColor() }} />
               Служебный тег в докладах
             </Label>
-            <input
-              value={reportTag}
-              onChange={(e) => { setReportTag(e.target.value); setProfileSaved(false) }}
-              placeholder="Например: ПЧ"
-              className={`w-full h-10 rounded-lg border px-3 text-sm outline-none ${theme.mode === "dark" ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-black"}`}
-            />
-            <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>Подстановка в рации: {previewTag}</p>
+            <p className={`text-xs px-1 rounded py-1 ${theme.mode === "dark" ? "text-white/60 bg-white/5" : "text-gray-600 bg-gray-50"}`}>
+              Тег определяется автоматически по роли: <span style={{ color: getTieColor() }}>{previewTag}</span>
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -615,7 +649,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </div>
 
           <button onClick={handleSaveProfile} disabled={profileSaving} className="w-full h-10 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ backgroundColor: getTieColor() }}>
-            {profileSaving ? "Сохранение..." : profileSaved ? "Профиль сохранён" : "Сохранить тег и пол"}
+            {profileSaving ? "Сохранение..." : profileSaved ? "Профиль сохранён" : "Сохранить должность и пол"}
           </button>
           {profileError && <p className="text-xs text-red-500">{profileError}</p>}
 

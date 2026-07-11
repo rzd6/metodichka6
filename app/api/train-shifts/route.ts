@@ -30,6 +30,7 @@ async function ensureTables() {
   // Добавляем колонку delay_minutes если её ещё нет (миграция для старых БД)
   await db.query(`
     ALTER TABLE train_shifts ADD COLUMN IF NOT EXISTS delay_minutes INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE train_shifts ADD COLUMN IF NOT EXISTS claimed_by_position TEXT DEFAULT NULL;
   `)
 }
 
@@ -73,16 +74,16 @@ export async function POST(req: NextRequest) {
     await ensureTables()
     const db = getPool()
     const body = await req.json()
-    const { train_id, train_number, claimed_by_nickname, claimed_by_role, shift_date } = body
+    const { train_id, train_number, claimed_by_nickname, claimed_by_role, claimed_by_position, shift_date } = body
 
     const date = shift_date || new Date().toISOString().slice(0, 10)
 
     const res = await db.query(
-      `INSERT INTO train_shifts (train_id, train_number, claimed_by_nickname, claimed_by_role, shift_date)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO train_shifts (train_id, train_number, claimed_by_nickname, claimed_by_role, claimed_by_position, shift_date)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (train_number, shift_date) DO NOTHING
        RETURNING *`,
-      [train_id, train_number, claimed_by_nickname, claimed_by_role, date]
+      [train_id, train_number, claimed_by_nickname, claimed_by_role, claimed_by_position ?? null, date]
     )
     return NextResponse.json({ data: res.rows[0] ?? null })
   } catch (err: any) {

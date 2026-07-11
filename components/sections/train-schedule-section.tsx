@@ -45,6 +45,7 @@ interface TrainShift {
   train_number: number
   claimed_by_nickname: string
   claimed_by_role: string
+  claimed_by_position?: string | null
   shift_date: string
   delay_minutes?: number
   created_at: string
@@ -209,6 +210,13 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
     }
     setIsLoading(true)
     try {
+      // Читаем должность из localStorage
+      let userPosition: string | undefined
+      try {
+        const stored = JSON.parse(localStorage.getItem("currentUser") || "null")
+        userPosition = stored?.position || undefined
+      } catch { /* ignore */ }
+
       const { data, error } = await apiFetch("/api/train-shifts", {
         method: "POST",
         body: JSON.stringify({
@@ -216,6 +224,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
           train_number: train.train_number,
           claimed_by_nickname: userNickname || "Неизвестный",
           claimed_by_role: userRole,
+          claimed_by_position: userPosition ?? null,
           shift_date: shiftDate,
         }),
       })
@@ -572,9 +581,16 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                           <div className="text-center">
                             {isClaimed ? (
                               <div className="flex items-center justify-center gap-2">
-                                <span className="text-sm font-semibold" style={{ color: isMe ? getTieColor() : "#4ade80" }}>
-                                  {shift!.claimed_by_nickname}
-                                </span>
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <span className="text-sm font-semibold leading-tight" style={{ color: isMe ? getTieColor() : "#4ade80" }}>
+                                    {shift!.claimed_by_nickname}
+                                  </span>
+                                  {shift!.claimed_by_position && (
+                                    <span className="text-[10px] leading-tight text-white/45 truncate max-w-[120px]">
+                                      {shift!.claimed_by_position}
+                                    </span>
+                                  )}
+                                </div>
                                 {canRemoveShift(shift!) && (
                                   <button
                                     onClick={() => setDeleteShiftTarget(shift!)}
@@ -873,7 +889,14 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                                 <span className="text-xs font-bold uppercase text-white/50 tracking-wide w-12 flex-shrink-0">{CLASS_ABBR[train.class] ?? train.class}</span>
                                 <span className="text-white/80 text-xs flex-1">{startStation} — {endStation}</span>
                                 {shift
-                                  ? <span className="text-green-400 text-xs font-semibold">{shift.claimed_by_nickname}</span>
+                                  ? (
+                                    <div className="flex flex-col items-end gap-0">
+                                      <span className="text-green-400 text-xs font-semibold leading-tight">{shift.claimed_by_nickname}</span>
+                                      {shift.claimed_by_position && (
+                                        <span className="text-[10px] text-white/40 leading-tight">{shift.claimed_by_position}</span>
+                                      )}
+                                    </div>
+                                  )
                                   : <span className="text-white/25 text-xs italic">Свободен</span>
                                 }
                                 <div className="flex items-center gap-1">

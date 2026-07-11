@@ -7,7 +7,7 @@ import {
 } from "./roles"
 
 export type { UserRole, UserGender } from "./roles"
-export { sortUsersByRole, ALL_ROLES, ASSIGNABLE_ROLES } from "./roles"
+export { sortUsersByRole, ALL_ROLES, ASSIGNABLE_ROLES, POSITIONS_BY_ROLE } from "./roles"
 
 import {
   canAccessConfiguredSection,
@@ -26,6 +26,8 @@ export interface User {
   secondaryRole?: "Тех. Администратор" | "РЖД"
   reportTag?: string
   gender?: UserGender
+  /** Должность пользователя (конкретная, в рамках роли) */
+  position?: string
 }
 
 let cachedUsers: User[] | null = null
@@ -54,6 +56,7 @@ function rowToUser(row: Record<string, unknown>): User {
         : undefined,
     reportTag: row.report_tag ? String(row.report_tag) : undefined,
     gender: row.gender === "female" ? "female" : "male",
+    position: row.position_title ? String(row.position_title) : undefined,
   }
 }
 
@@ -155,6 +158,9 @@ export async function updateUser(
     }
     if ("gender" in updates) {
       body.gender = updates.gender || "male"
+    }
+    if ("position" in updates) {
+      body.position_title = updates.position || null
     }
 
     const { data, error } = await apiFetch("/api/users", {

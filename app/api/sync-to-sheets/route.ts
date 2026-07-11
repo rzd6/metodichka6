@@ -283,7 +283,8 @@ export async function POST(req: NextRequest) {
     const shiftRes = await db.query(
       `SELECT ts.*, t.direction, t.class, t.depart_start, t.arrive_middle, t.depart_middle,
               t.arrive_end, t.platform_start, t.platform_middle, t.platform_end,
-              COALESCE(ts.delay_minutes, 0) AS delay_minutes
+              COALESCE(ts.delay_minutes, 0) AS delay_minutes,
+              ts.claimed_by_position
        FROM train_shifts ts
        JOIN trains t ON t.train_number = ts.train_number
        WHERE ts.shift_date = $1
@@ -331,7 +332,7 @@ export async function POST(req: NextRequest) {
       // Данные пишем начиная с A5 (индекс 4).
       // headerRow = 3 — не используется для записи, только передаётся в buildFormatRequests.
       const headerRow = 3
-      const colCount = 7  // B–H: № Поезда, Категория, Назначение, Прибытие, Отправление, Путь, Опоздание
+      const colCount = 9  // B–J: № Поезда, Категория, Назначение, Прибытие, Отправление, Путь, Опоздание, Машинист, Должность
 
       // Строим строки данных начиная с A5 (без строки заголовков — она уже есть в таблице)
       const rows: (string | number)[][] = []
@@ -339,7 +340,7 @@ export async function POST(req: NextRequest) {
       // Строки данных (только занятые рейсы), начиная с B5 (столбец A — декоративный)
       if (stationShifts.length === 0) {
         // Нет рейсов — добавляем одну строку с объединёнными ячейками
-        rows.push(["Рейсов на данный период не запланировано", "", "", "", "", "", ""])
+        rows.push(["Рейсов на данный период не запланировано", "", "", "", "", "", "", "", ""])
       } else {
         for (const s of stationShifts) {
           const { arrival, departure, platform } = getStationTimes(s, station.key)
@@ -356,6 +357,8 @@ export async function POST(req: NextRequest) {
             departure,                // F — Отправление
             platform,                 // G — Путь
             (s.delay_minutes ?? 0) > 0 ? s.delay_minutes : "—", // H — Опоздание
+            s.claimed_by_nickname ?? "—",  // I — Машинист
+            s.claimed_by_position ?? "—",  // J — Должность
           ])
         }
       }

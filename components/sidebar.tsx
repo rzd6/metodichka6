@@ -53,6 +53,7 @@ interface LocalUser {
   vkAccessToken: string
   secondaryRole?: "Тех. Администратор" | "РЖД"
   reportTag?: string
+  position?: string
 }
 
 interface SidebarProps {
@@ -191,6 +192,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const isTechAdmin = user.role === "Тех. Администратор" || user.secondaryRole === "Тех. Администратор"
 
   const [displayTag, setDisplayTag] = useState("")
+  const [displayPosition, setDisplayPosition] = useState("")
 
   const loadCustomSections = useCallback(async () => {
     const data = await getCustomSections()
@@ -224,6 +226,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
         if (stored?.role) {
           setDisplayTag(getEffectiveReportTag(stored))
         }
+        setDisplayPosition(stored?.position ?? "")
       } catch {
         setCustomAvatar(null)
         setDisplayTag("")
@@ -642,11 +645,16 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                   <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-400"} mb-1`}>
                     {user.nickname}
                   </p>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {getRoleBadgeIcon(user.role)}
-                    <span className="text-xs truncate" style={{ color: getTieColor() }}>
+                    <span className="text-xs font-semibold" style={{ color: getTieColor() }}>
                       {displayTag || user.role}
                     </span>
+                    {displayPosition && (
+                      <span className={`text-xs truncate ${theme.mode === "dark" ? "text-white/55" : "text-gray-500"}`}>
+                        {displayPosition}
+                      </span>
+                    )}
                   </div>
                 </div>
               </>
