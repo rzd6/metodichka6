@@ -138,7 +138,8 @@ function MainContentInner() {
           dbUser.secondaryRole !== currentData.secondaryRole ||
           dbUser.customAvatar !== currentData.customAvatar ||
           dbUser.reportTag !== currentData.reportTag ||
-          dbUser.gender !== currentData.gender
+          dbUser.gender !== currentData.gender ||
+          dbUser.position !== (currentData as any).position
         ) {
           const updated = {
             id: dbUser.id,
@@ -149,6 +150,7 @@ function MainContentInner() {
             customAvatar: dbUser.customAvatar,
             reportTag: dbUser.reportTag,
             gender: dbUser.gender,
+            position: dbUser.position,
           }
           localStorage.setItem("currentUser", JSON.stringify(updated))
           setUser(updated)

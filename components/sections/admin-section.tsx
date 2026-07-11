@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { getAllUsers, addUser, updateUser, deleteUser, isTechAdmin, type User } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
 import { BugReportButton } from "@/components/bug-report-button"
-import { ASSIGNABLE_ROLES, sortUsersByRole, type UserRole } from "@/data/users"
+import { ASSIGNABLE_ROLES, sortUsersByRole, POSITIONS_BY_ROLE, type UserRole } from "@/data/users"
 import {
   Trash2,
   Edit,
@@ -75,6 +75,7 @@ export function AdminSection() {
   const [editNickname, setEditNickname] = useState("")
   const [editPassword, setEditPassword] = useState("")
   const [editRole, setEditRole] = useState<UserRole>("ПТО")
+  const [editPosition, setEditPosition] = useState("")
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({})
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showEditPassword, setShowEditPassword] = useState(false)
@@ -326,6 +327,7 @@ export function AdminSection() {
       setEditNickname(user.nickname)
       setEditPassword(user.password)
       setEditRole(user.role)
+      setEditPosition(user.position ?? "")
       const existingVkId = (user as any).vkId || ""
       setEditVkId(existingVkId)
       setEditVkIdRaw(existingVkId)
@@ -434,7 +436,7 @@ export function AdminSection() {
       return
     }
 
-    // Для имён — ждём паузу в наборе перед отправкой запроса
+    // Для имён — ��дём паузу в наборе перед отправкой запроса
     setEditVkId("")
     vkDebounceRef.current = setTimeout(() => resolveVkInput(raw), 600)
   }
@@ -445,13 +447,14 @@ export function AdminSection() {
 
     if (editNickname && editPassword) {
       if (currentUser?.role === "Старший Состав") {
-        await updateUser(id, { nickname: editNickname, role: editRole, vkId: editVkId || undefined })
+        await updateUser(id, { nickname: editNickname, role: editRole, vkId: editVkId || undefined, position: editPosition || undefined })
       } else {
         await updateUser(id, {
           nickname: editNickname,
           password: editPassword,
           role: editRole,
           vkId: editVkId || undefined,
+          position: editPosition || undefined,
         })
       }
       const updatedUsers = await getAllUsers()
@@ -498,6 +501,7 @@ export function AdminSection() {
     setEditingUser(null)
     setEditNickname("")
     setEditPassword("")
+    setEditPosition("")
   }
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
@@ -1046,7 +1050,7 @@ export function AdminSection() {
                           </div>
                         )}
                         {canChangeRole(user) && (
-                          <Select value={editRole} onValueChange={(value) => setEditRole(value as UserRole)}>
+                          <Select value={editRole} onValueChange={(value) => { setEditRole(value as UserRole); setEditPosition("") }}>
                             <SelectTrigger
                               className={`h-9 ${theme.mode === "dark"
                                   ? "bg-white/5 border-white/10 text-white"
@@ -1064,6 +1068,28 @@ export function AdminSection() {
                             </SelectContent>
                           </Select>
                         )}
+                        {/* Должность — доступна если для этой роли есть список */}
+                        {(() => {
+                          const positions: string[] = POSITIONS_BY_ROLE[editRole as keyof typeof POSITIONS_BY_ROLE] ?? []
+                          if (positions.length === 0) return null
+                          return (
+                            <Select value={editPosition} onValueChange={setEditPosition}>
+                              <SelectTrigger
+                                className={`h-9 ${theme.mode === "dark"
+                                    ? "bg-white/5 border-white/10 text-white"
+                                    : "bg-white border-gray-300 text-black"
+                                  }`}
+                              >
+                                <SelectValue placeholder="Выберите должность" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {positions.map((p) => (
+                                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )
+                        })()}
                         {/* VK ID field — принимает ссылку, короткое имя или числовой ID */}
                         <div className="flex flex-col gap-1">
                           <div
@@ -1160,7 +1186,7 @@ export function AdminSection() {
                                 </span>
                               )}
                             </div>
-                            {/* Строка 2: должность + VK-кнопка */}
+                            {/* Строка 2: роль + должность + VK-кнопка */}
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                               <div
                                 className="w-4 h-4 flex-shrink-0 flex items-center justify-center"
@@ -1173,6 +1199,11 @@ export function AdminSection() {
                               >
                                 {user.role}
                               </p>
+                              {user.position && (
+                                <span className={`text-xs truncate ${theme.mode === "dark" ? "text-white/45" : "text-gray-400"}`}>
+                                  · {user.position}
+                                </span>
+                              )}
                               {user.vkId && (
                                 <button
                                   onClick={(e) => {
