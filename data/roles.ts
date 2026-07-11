@@ -44,11 +44,45 @@ export const DEFAULT_REPORT_TAGS: Record<UserRole, string> = {
   "Тех. Администратор": "[N/A]",
 }
 
-export function sortUsersByRole<T extends { role: string }>(users: T[]): T[] {
+// Position hierarchy rank (lower number = higher rank), imported lazily to avoid circular deps
+// Keys match positionHierarchy in positions.ts
+const POSITION_RANK: Record<string, number> = {
+  "Тех. Администратор": 1,
+  "ГСЗФ": 2,
+  "ПГСЗФ": 3,
+  "Главный следящий за РЖД": 4,
+  "Помощник Главного Следящего": 5,
+  "Начальник Депо": 6,
+  "Первый Заместитель Начальника Депо": 7,
+  "Заместитель Начальника Депо по работе с составом": 8,
+  "Заместитель Начальника Депо по эксплуатации": 9,
+  "Заместитель Начальника Депо по кадровой работе": 9,
+  "Начальник ЭО": 10,
+  "Начальник ЦдУД": 11,
+  "Начальник ПТО": 12,
+  "Машинист-инструктор/Зам.Нач.ЭО": 13,
+  "Машинист-инструктор/Зам.Нач.ЦдУД": 14,
+  "Машинист-инструктор/Зам.Нач.ПТО": 15,
+  "Старший поездной диспетчер": 16,
+  "Поездной диспетчер": 17,
+  "Оператор при поездном диспетчере": 18,
+  "Машинист первого класса": 19,
+  "Машинист второго класса": 20,
+  "Машинист третьего класса": 21,
+  "Помощник машиниста": 22,
+  "Монтёр пути": 23,
+  "Слесарь-электрик": 24,
+}
+
+export function sortUsersByRole<T extends { role: string; position?: string }>(users: T[]): T[] {
   return [...users].sort((a, b) => {
     const rankA = ROLE_RANK[a.role as UserRole] ?? 0
     const rankB = ROLE_RANK[b.role as UserRole] ?? 0
-    return rankB - rankA
+    if (rankB !== rankA) return rankB - rankA
+    // При одинаковой роли — сортируем по должности
+    const posA = POSITION_RANK[a.position ?? ""] ?? 999
+    const posB = POSITION_RANK[b.position ?? ""] ?? 999
+    return posA - posB
   })
 }
 
