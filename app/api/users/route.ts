@@ -36,6 +36,7 @@ async function ensureTable() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS secondary_role TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS report_tag TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'male';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS position_title TEXT DEFAULT NULL;
   `)
 }
 
