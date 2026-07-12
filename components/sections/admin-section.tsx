@@ -830,7 +830,11 @@ export function AdminSection() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => loadUsers(true)}
+            onClick={async () => {
+              setIsRefreshing(true)
+              await fetch("/api/sync-from-sheets").catch(() => {})
+              await loadUsers(true)
+            }}
             disabled={isRefreshing || isLoading}
             className={`h-8 px-3 text-xs ${theme.mode === "dark"
               ? "border-white/10 bg-transparent text-white hover:bg-white/5"
@@ -1226,7 +1230,7 @@ export function AdminSection() {
                                   title="Дополнительная роль: РЖД"
                                 >
                                   <Crown className="w-3 h-3" />
-                                  РЖД
+                                  ��ЖД
                                 </span>
                               )}
                             </div>

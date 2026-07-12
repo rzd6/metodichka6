@@ -3,11 +3,9 @@ import { google } from "googleapis"
 import { GoogleAuth } from "google-auth-library"
 import { Pool } from "pg"
 
-// Disable self-signed cert check for Supabase/PG direct connection
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
 const SPREADSHEET_ID = "1CnTpA7Xj7T5Tsofw_oq9S9FldU_AnOd_oiGMLPigEEg"
-const SHEET_NAME = "Лист1" // first/only sheet
 const DEV_NICKNAME = "v0_dev_rzd"
 const SERVICE_ACCOUNT_EMAIL = "rzd6-metodichka@rzd-metodichka.iam.gserviceaccount.com"
 
@@ -29,23 +27,15 @@ function getAuth() {
   })
 }
 
-/**
- * Normalize position from the Google Sheet to match our POSITIONS_BY_ROLE keys.
- * The sheet uses slightly different spelling (е.g. "Зам. Начальника Депо" vs "Заместитель Начальника Депо").
- */
-const POSITION_MAP: Record<string, string> = {
-  // Руководство
-  "Начальник Депо": "Начальник Депо",
+// ─── Position normalisation ───────────────────────────────────────────────────
 
-  // Заместитель
+const POSITION_MAP: Record<string, string> = {
+  "Начальник Депо": "Начальник Депо",
   "Первый Заместитель Начальника Депо": "Первый Заместитель Начальника Депо",
   "Зам. Начальника Депо по кадровой работе": "Заместитель Начальника Депо по кадровой работе",
   "Заместитель Начальника Депо по кадровой работе": "Заместитель Начальника Депо по кадровой работе",
   "Зам. Начальника Депо по эксплуатации": "Заместитель Начальника Депо по эксплуатации",
   "Заместитель Начальника Депо по эксплуатации": "Заместитель Начальника Депо по эксплуатации",
-  "Зам. Начальника Депо по работе с составом": "Заместитель Начальника Депо по работе с составом",
-
-  // Старший Состав
   "Начальник ЭО": "Начальник ЭО",
   "Начальник ЦдУД": "Начальник ЦдУД",
   "Начальник ПТО": "Начальник ПТО",
@@ -55,8 +45,6 @@ const POSITION_MAP: Record<string, string> = {
   "Машинист-инструктор/Зам.Нач.ЭО": "Машинист-инструктор/Зам.Нач.ЭО",
   "Машинист-инструктор/Зам.Нач.ЦдУД": "Машинист-инструктор/Зам.Нач.ЦдУД",
   "Машинист-инструктор/Зам.Нач.ПТО": "Машинист-инструктор/Зам.Нач.ПТО",
-
-  // ЦдУД
   "Помощник машиниста": "Помощник машиниста",
   "Машинист 3-го класса": "Машинист третьего класса",
   "Машинист третьего класса": "Машинист третьего класса",
@@ -69,20 +57,16 @@ const POSITION_MAP: Record<string, string> = {
   "Поездной диспетчер": "Поездной диспетчер",
   "Старший диспетчер": "Старший поездной диспетчер",
   "Старший поездной диспетчер": "Старший поездной диспетчер",
-
-  // ПТО
   "Слесарь-электрик": "Слесарь-электрик",
   "Монтёр пути": "Монтёр пути",
   "Монтер пути": "Монтёр пути",
 }
 
-/** Map normalized position to role */
 const POSITION_TO_ROLE: Record<string, string> = {
   "Начальник Депо": "Руководство",
   "Первый Заместитель Начальника Депо": "Заместитель",
   "Заместитель Начальника Депо по кадровой работе": "Заместитель",
   "Заместитель Начальника Депо по эксплуатации": "Заместитель",
-  "Заместитель Начальника Депо по работе с составом": "Заместитель",
   "Начальник ЭО": "Старший Состав",
   "Начальник ЦдУД": "Старший Состав",
   "Начальник ПТО": "Старший Состав",
@@ -101,7 +85,6 @@ const POSITION_TO_ROLE: Record<string, string> = {
 }
 
 const ROLE_RANK: Record<string, number> = {
-  "Тех. Администратор": 10,
   "Руководство": 9,
   "Заместитель": 8,
   "Старший Состав": 7,
@@ -109,173 +92,198 @@ const ROLE_RANK: Record<string, number> = {
   "ПТО": 3,
 }
 
-/** Extract VK numeric ID from text-with-hyperlink like "vk.com/id12345" or bare number */
-function extractVkId(raw: string | undefined): string | null {
-  if (!raw) return null
-  // Matches numeric VK user ID patterns
-  const idMatch = raw.match(/\bid(\d+)\b/)
+// ─── VK extraction ────────────────────────────────────────────────────────────
+
+/** Extract numeric VK user ID from any URL or raw string */
+function extractVkIdFromUrl(url: string): string | null {
+  if (!url) return null
+  // vk.com/idXXXXX
+  const idMatch = url.match(/vk\.com\/id(\d+)/i)
   if (idMatch) return idMatch[1]
-  // Bare number
-  const numMatch = raw.match(/^\d+$/)
-  if (numMatch) return raw.trim()
+  // bare number
+  const numMatch = url.trim().match(/^\d+$/)
+  if (numMatch) return url.trim()
   return null
 }
 
-/** Parse the Google Sheets value.  Google Sheets Hyperlink cells often come as
- *  `=HYPERLINK("url","text")` in the raw value or just the plain URL string. */
-function parseVkCellValue(cell: any): string | null {
-  if (!cell) return null
-  const str = String(cell).trim()
-  // =HYPERLINK("https://vk.com/idXXX","Label") — grab the URL part
-  const hyperlinkMatch = str.match(/HYPERLINK\("([^"]+)"/)
-  if (hyperlinkMatch) return extractVkId(hyperlinkMatch[1])
-  return extractVkId(str)
-}
+// ─── Sheet parsing ────────────────────────────────────────────────────────────
 
 interface SheetEmployee {
   nickname: string
-  position: string
+  position: string   // normalised job title
+  role: string       // derived UserRole string
+  rank: number
   bankAccount: string
+  /** Already-extracted numeric VK id, or null if not present */
   vkId: string | null
 }
 
-/** Determine whether a row is a section-header row (nickname cell is empty or contains known headers) */
-function isSectionRow(row: any[]): boolean {
-  const a = String(row[0] ?? "").trim()
-  if (!a) return true
-  // Common header/title patterns
-  if (/общее количество/i.test(a)) return true
-  if (/состав/i.test(a) && !/инструктор/i.test(a)) return true
-  if (/^ЦдУД$|^ПТО$|дирекция|отдел|руководящий/i.test(a)) return true
-  if (/никнейм/i.test(a)) return true
+/** Returns true if the row looks like a section header / totals / empty row */
+function isSectionRow(nickname: string, positionRaw: string): boolean {
+  if (!nickname) return true
+  if (/общее количество/i.test(nickname)) return true
+  if (/дирекция|руководящий|отдел|^ЦдУД$|^ПТО$/i.test(nickname)) return true
+  if (/никнейм|ранг|должность/i.test(nickname)) return true
+  if (!positionRaw || /должность|ранг|никнейм/i.test(positionRaw)) return true
   return false
 }
 
-/** Parse employees from raw sheet rows (any format / number of header rows). */
-function parseEmployees(rows: any[][]): SheetEmployee[] {
+/**
+ * Build the employee list from Sheets API `spreadsheets.get` with includeGridData:true.
+ * This lets us read actual hyperlink URLs from cells (col I = VK link).
+ *
+ * Layout (0-indexed columns):
+ *   A=0  Никнейм
+ *   C=2  Должность
+ *   H=7  Банковский счёт (default password)
+ *   I=8  ВКонтакте (hyperlink cell — display text is person's name, URL is vk.com/idXXX)
+ */
+function parseEmployeesFromGridData(sheetData: any): SheetEmployee[] {
   const employees: SheetEmployee[] = []
 
-  for (const row of rows) {
-    const nickname = String(row[0] ?? "").trim()
-    const positionRaw = String(row[2] ?? "").trim() // col C (index 2)
-    const bankAccount = String(row[7] ?? "").trim() // col H (index 7)
-    const vkRaw = row[8] // col I (index 8)
+  // sheetData.data[0] is the first (and only) GridRange
+  const rowData: any[] = sheetData?.data?.[0]?.rowData ?? []
 
-    // Skip section headers / empty rows / rows with no nickname
-    if (!nickname || isSectionRow(row)) continue
-    // Skip rows where position is empty or looks like a header
-    if (!positionRaw || /должность|ранг|никнейм/i.test(positionRaw)) continue
+  for (const row of rowData) {
+    const cells: any[] = row?.values ?? []
+
+    const getCellText = (idx: number) =>
+      String(cells[idx]?.formattedValue ?? cells[idx]?.userEnteredValue?.stringValue ?? "").trim()
+
+    const getCellHyperlink = (idx: number): string | null => {
+      const cell = cells[idx]
+      if (!cell) return null
+      // Preferred: explicit hyperlink field set by Google Sheets UI
+      if (cell.hyperlink) return cell.hyperlink
+      // Fallback: HYPERLINK formula in userEnteredValue
+      const formula = cell.userEnteredValue?.formulaValue ?? ""
+      const m = formula.match(/HYPERLINK\("([^"]+)"/)
+      if (m) return m[1]
+      // Fallback: plain URL text
+      const text = getCellText(idx)
+      if (/https?:\/\//i.test(text)) return text
+      return null
+    }
+
+    const nickname = getCellText(0)
+    const positionRaw = getCellText(2)
+    const bankAccount = getCellText(7)
+    const vkUrl = getCellHyperlink(8)
+    const vkId = vkUrl ? extractVkIdFromUrl(vkUrl) : null
+
+    if (isSectionRow(nickname, positionRaw)) continue
 
     const normalizedPosition = POSITION_MAP[positionRaw] ?? positionRaw
+    const role = POSITION_TO_ROLE[normalizedPosition] ?? "ЦдУД"
+    const rank = ROLE_RANK[role] ?? 1
 
-    employees.push({
-      nickname,
-      position: normalizedPosition,
-      bankAccount,
-      vkId: parseVkCellValue(vkRaw),
-    })
+    employees.push({ nickname, position: normalizedPosition, role, rank, bankAccount, vkId })
   }
 
   return employees
 }
 
-async function ensureDefaultPasswordColumn(db: Pool): Promise<void> {
+// ─── Database helpers ─────────────────────────────────────────────────────────
+
+async function ensureColumns(db: Pool): Promise<void> {
   await db.query(`
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS is_default_password BOOLEAN DEFAULT false;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS position_title TEXT DEFAULT NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS is_default_password BOOLEAN DEFAULT false;
   `)
 }
 
-// GET /api/sync-from-sheets — read sheet and sync users
+// ─── Route handler ────────────────────────────────────────────────────────────
+
 export async function GET() {
+  const db = getPool()
   try {
     const auth = getAuth()
-    const sheets = google.sheets({ version: "v4", auth })
+    const sheetsApi = google.sheets({ version: "v4", auth })
 
-    // Read a wide range — A:P covers all needed columns
-    const response = await sheets.spreadsheets.values.get({
+    // Use spreadsheets.get with includeGridData so we can read hyperlink URLs from cells
+    const response = await sheetsApi.spreadsheets.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `A:P`,
-      valueRenderOption: "FORMULA", // preserve HYPERLINK formulas
+      includeGridData: true,
+      // Request only the first sheet, columns A-P, all rows
+      ranges: ["A:P"],
+      fields: "sheets(data(rowData(values(formattedValue,userEnteredValue,hyperlink))))",
     })
 
-    const rows: any[][] = (response.data.values ?? []) as any[][]
-    const sheetEmployees = parseEmployees(rows)
+    const firstSheet = response.data.sheets?.[0]
+    if (!firstSheet) {
+      return NextResponse.json({ error: "Лист не найден" }, { status: 404 })
+    }
 
-    const db = getPool()
-    await ensureDefaultPasswordColumn(db)
+    const sheetEmployees = parseEmployeesFromGridData(firstSheet)
 
-    // Fetch all current users from DB
-    const { rows: dbUsers } = await db.query(
-      "SELECT id, username, password, position, secondary_role, is_default_password FROM users"
-    )
+    await ensureColumns(db)
 
-    const dbByNickname = new Map<string, any>()
+    // Fetch all existing users (columns we need)
+    const { rows: dbUsers } = await db.query(`
+      SELECT id, username, secondary_role, position_title
+      FROM users
+    `)
+
+    // Index by nickname (username column in DB)
+    const dbByNickname = new Map<string, { id: string; secondary_role: string | null; position_title: string | null }>()
     for (const u of dbUsers) dbByNickname.set(u.username, u)
 
     const sheetNicknames = new Set(sheetEmployees.map((e) => e.nickname))
-
     const stats = { created: 0, updated: 0, deleted: 0, skipped: 0 }
 
-    // Upsert employees from sheet
     for (const emp of sheetEmployees) {
-      const role = POSITION_TO_ROLE[emp.position] ?? "ЦдУД"
-      const rankMap: Record<string, number> = ROLE_RANK
-      const rank = rankMap[role] ?? 1
-
       const existing = dbByNickname.get(emp.nickname)
 
       if (!existing) {
-        // Create new account — password = bank account number
-        const password = emp.bankAccount || "password"
+        // ── New account ──────────────────────────────────────────────────────
+        // Password = bank account number from col H; flag it as default
+        const password = emp.bankAccount.trim() || "password123"
         await db.query(
-          `INSERT INTO users (username, password, full_name, position, rank, avatar, vk_id, position_title, is_default_password)
+          `INSERT INTO users
+             (username, password, full_name, position, rank, avatar, vk_id, position_title, is_default_password)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
            ON CONFLICT (username) DO NOTHING`,
           [
             emp.nickname,
             password,
-            `[${role}] ${emp.nickname}`,
-            role,
-            rank,
-            `/avatars/${role === "ПТО" ? "pto" : role === "ЦдУД" ? "cdud" : "management"}.png`,
+            emp.nickname,
+            emp.role,
+            emp.rank,
+            "/avatars/cdud.png",
             emp.vkId,
             emp.position,
           ]
         )
         stats.created++
       } else {
-        // Skip Тех. Администратор accounts — never modify them from the sheet
-        if (
-          existing.secondary_role === "Тех. Администратор" ||
-          existing.position === "Тех. Администратор"
-        ) {
+        // ── Existing account ─────────────────────────────────────────────────
+        // Skip Тех. Администратор — never overwrite their data from the sheet
+        if (existing.secondary_role === "Тех. Администратор" || existing.position_title === "Тех. Администратор") {
           stats.skipped++
           continue
         }
 
-        // Update position_title, vk_id, and role if they changed. Never touch password.
+        // Update role, rank, position_title.
+        // VK: only set if the sheet has a value AND the DB currently has none.
+        // Password is NEVER touched for existing accounts.
         await db.query(
           `UPDATE users SET
-            position_title = $2,
-            position = $3,
-            rank = $4,
-            vk_id = COALESCE($5, vk_id),
-            updated_at = NOW()
+             position      = $2,
+             rank          = $3,
+             position_title = $4,
+             vk_id         = CASE WHEN $5::text IS NOT NULL AND (vk_id IS NULL OR vk_id = '') THEN $5::text ELSE vk_id END,
+             updated_at    = NOW()
            WHERE id = $1`,
-          [existing.id, emp.position, role, rank, emp.vkId]
+          [existing.id, emp.role, emp.rank, emp.position, emp.vkId]
         )
         stats.updated++
       }
     }
 
-    // Delete accounts NOT in the sheet (except dev account and Тех. Администратор accounts)
+    // Delete accounts absent from the sheet (except dev & Тех. Администратор)
     for (const [nickname, dbUser] of dbByNickname.entries()) {
       if (nickname === DEV_NICKNAME) continue
-      if (
-        dbUser.secondary_role === "Тех. Администратор" ||
-        dbUser.position === "Тех. Администратор"
-      ) continue
+      if (dbUser.secondary_role === "Тех. Администратор" || dbUser.position_title === "Тех. Администратор") continue
       if (!sheetNicknames.has(nickname)) {
         await db.query("DELETE FROM users WHERE id = $1", [dbUser.id])
         stats.deleted++
@@ -283,14 +291,10 @@ export async function GET() {
     }
 
     await db.end()
-
-    return NextResponse.json({
-      success: true,
-      stats,
-      employees: sheetEmployees.length,
-    })
+    return NextResponse.json({ success: true, stats, total: sheetEmployees.length })
   } catch (err: any) {
     console.error("[sync-from-sheets]", err)
+    try { await db.end() } catch {}
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
