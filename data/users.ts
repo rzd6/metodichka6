@@ -28,6 +28,8 @@ export interface User {
   gender?: UserGender
   /** Должность пользователя (конкретная, в рамках роли) */
   position?: string
+  /** Если true — пароль не изменён (равен банковскому счёту из таблицы) */
+  isDefaultPassword?: boolean
 }
 
 let cachedUsers: User[] | null = null
@@ -57,6 +59,7 @@ function rowToUser(row: Record<string, unknown>): User {
     reportTag: row.report_tag ? String(row.report_tag) : undefined,
     gender: row.gender === "female" ? "female" : "male",
     position: row.position_title ? String(row.position_title) : undefined,
+    isDefaultPassword: row.is_default_password === true || row.is_default_password === "true",
   }
 }
 
@@ -137,7 +140,11 @@ export async function updateUser(
   try {
     const body: Record<string, unknown> = { id }
     if (updates.nickname) body.username = updates.nickname
-    if (updates.password) body.password = updates.password
+    if (updates.password) {
+      body.password = updates.password
+      // Clearing the default-password flag when user explicitly sets a new password
+      body.is_default_password = false
+    }
     if (updates.role) {
       body.position = updates.role
       body.rank = getRankFromRole(updates.role)

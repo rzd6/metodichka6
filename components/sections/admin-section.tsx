@@ -72,6 +72,7 @@ export function AdminSection() {
   const [newNickname, setNewNickname] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [newRole, setNewRole] = useState<UserRole>("ПТО")
+  const [newPosition, setNewPosition] = useState("")
   const [editNickname, setEditNickname] = useState("")
   const [editPassword, setEditPassword] = useState("")
   const [editRole, setEditRole] = useState<UserRole>("ПТО")
@@ -126,7 +127,12 @@ export function AdminSection() {
 
   const canAddUser = () => {
     if (!currentUser) return false
-    return currentUser.role === "Руководство" || currentUser.role === "Заместитель" || isCurrentTechAdmin()
+    return (
+      currentUser.role === "Руководство" ||
+      currentUser.role === "Заместитель" ||
+      currentUser.role === "Старший Состав" ||
+      isCurrentTechAdmin()
+    )
   }
 
   /** Returns true if the target user is "protected" — has Тех. Администратор as primary or secondary role.
@@ -255,7 +261,11 @@ export function AdminSection() {
 
   const getAvailableRoles = (): UserRole[] => {
     if (!currentUser) return []
-    if (currentUser.role === "Руководство" || isCurrentTechAdmin()) {
+    if (isCurrentTechAdmin()) {
+      // Тех.Адм может создавать всё включая других Тех.Адм
+      return ["Руководство", "Заместитель", "Старший Состав", "ЦдУД", "ПТО", "Тех. Администратор"]
+    }
+    if (currentUser.role === "Руководство") {
       return ASSIGNABLE_ROLES
     }
     if (currentUser.role === "Заместитель" || currentUser.role === "Старший Состав") {
@@ -266,7 +276,20 @@ export function AdminSection() {
 
   const handleAddUser = async () => {
     if (newNickname && newPassword && canAddUser()) {
-      const added = await addUser(newNickname, newPassword, newRole, newVkId || undefined)
+      // Derive role from selected position
+      const derivedRole: UserRole = newPosition
+        ? (Object.entries(POSITIONS_BY_ROLE).find(([, positions]) =>
+            (positions as string[]).includes(newPosition)
+          )?.[0] as UserRole) ?? newRole
+        : newRole
+
+      const added = await addUser(newNickname, newPassword, derivedRole, newVkId || undefined)
+
+      // Set position on the newly created user
+      if (added && newPosition) {
+        await updateUser(added.id, { position: newPosition })
+      }
+
       const updatedUsers = await getAllUsers()
       const sortedUsers = sortUsersByRole(updatedUsers)
       setUsers(sortedUsers)
@@ -277,13 +300,14 @@ export function AdminSection() {
           { id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role },
           { id: added.id, nickname: added.nickname },
           undefined,
-          newRole
+          derivedRole
         )
       }
 
       setNewNickname("")
       setNewPassword("")
       setNewRole("ПТО")
+      setNewPosition("")
       setNewVkId("")
       setNewVkIdRaw("")
       setNewVkResolveError("")
@@ -428,7 +452,7 @@ export function AdminSection() {
       return
     }
 
-    // id123456 — парсим прямо в браузере
+    // id123456 — парсим ��рямо в браузере
     const slug = raw.match(/vk\.com\/([^\s/?#]+)/i)?.[1] ?? raw.replace(/^@/, "")
     const idDirect = slug.match(/^id(\d+)$/i)?.[1]
     if (idDirect) {
@@ -914,25 +938,45 @@ export function AdminSection() {
                 </div>
                 <div className="space-y-2">
                   <label className={`text-sm font-medium ${theme.mode === "dark" ? "text-white/90" : "text-gray-700"}`}>
-                    Роль
+                    Должность
                   </label>
-                  <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
+                  <Select
+                    value={newPosition}
+                    onValueChange={(value) => {
+                      setNewPosition(value)
+                      // Auto-derive role from position
+                      const derived = Object.entries(POSITIONS_BY_ROLE).find(([, positions]) =>
+                        (positions as string[]).includes(value)
+                      )?.[0] as UserRole | undefined
+                      if (derived) setNewRole(derived)
+                    }}
+                  >
                     <SelectTrigger
                       className={`h-12 ${theme.mode === "dark"
                           ? "bg-white/5 border-white/10 text-white"
                           : "bg-white border-gray-300 text-black"
                         }`}
                     >
-                      <SelectValue />
+                      <SelectValue placeholder="Выберите должность" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getAvailableRoles().map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
+                      {getAvailableRoles().flatMap((role) => {
+                        const positions = POSITIONS_BY_ROLE[role] ?? []
+                        // "Тех. Администратор" role has itself as the only position
+                        const items = positions.length > 0 ? positions : [role]
+                        return items.map((pos) => (
+                          <SelectItem key={pos} value={pos}>
+                            {pos}
+                          </SelectItem>
+                        ))
+                      })}
                     </SelectContent>
                   </Select>
+                  {newPosition && (
+                    <p className={`text-xs ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}>
+                      Роль: {newRole}
+                    </p>
+                  )}
                 </div>
                 {/* VK field for new user */}
                 <div className="space-y-2">
@@ -1186,23 +1230,20 @@ export function AdminSection() {
                                 </span>
                               )}
                             </div>
-                            {/* Строка 2: роль + должность + VK-кнопка */}
+                            {/* Строка 2: должность + VK-кнопка */}
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <div
-                                className="w-4 h-4 flex-shrink-0 flex items-center justify-center"
-                                style={{ color: getTieColor() }}
-                              >
-                                {getRoleIcon(user.role, "sm")}
-                              </div>
-                              <p
-                                className={`text-xs truncate ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}
-                              >
-                                {user.role}
-                              </p>
-                              {user.position && (
-                                <span className={`text-xs truncate ${theme.mode === "dark" ? "text-white/45" : "text-gray-400"}`}>
-                                  · {user.position}
-                                </span>
+                              {user.position ? (
+                                <p
+                                  className={`text-xs truncate ${theme.mode === "dark" ? "text-white/60" : "text-gray-500"}`}
+                                >
+                                  {user.position}
+                                </p>
+                              ) : (
+                                <p
+                                  className={`text-xs truncate ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}
+                                >
+                                  {user.role}
+                                </p>
                               )}
                               {user.vkId && (
                                 <button

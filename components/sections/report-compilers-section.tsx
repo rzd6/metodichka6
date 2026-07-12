@@ -14,6 +14,16 @@ import { ROLE_RANK } from "@/data/roles"
 import { BugReportButton } from "@/components/bug-report-button"
 import { Calendar } from "lucide-react"
 import { clipboardCopy } from "@/lib/clipboard"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Структура: перегон содержит строки докладов
 interface ReportSegment {
@@ -121,6 +131,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
 
   const [showNotification, setShowNotification] = useState(false)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [claimDialogTrainNumber, setClaimDialogTrainNumber] = useState<string | null>(null)
   const { theme } = useTheme()
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
@@ -200,6 +211,15 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
       setGeneratedWithType(selectedType)
       setGeneratedWithRole(selectedRole)
       setGlobalDelay(0)
+    }
+
+    // Если есть номер рейса и рейс ещё не занят в расписании — предложить занять
+    const trainNum = flightNumber.trim()
+    if (trainNum && userNickname) {
+      const alreadyClaimed = myShifts.some((s) => String(s.train_number) === trainNum)
+      if (!alreadyClaimed) {
+        setClaimDialogTrainNumber(trainNum)
+      }
     }
 
     // Сброс полей
@@ -293,7 +313,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут в депо ТЧЭ-1 готов, ЧМ2 лунно-белый.`,
             `cr Принято! Выполняю.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Мирный в депо ТЧЭ-1.`,
-            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1. Рейс № ${flightNumber} окончен, локомотив сдан, машинист ${machinistName}!`,
+            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1. Рейс № ${flightNumber} окончен, локомот��в сдан, машинист ${machinistName}!`,
             `tr ${passNumber} Понятно! Прибыли в ТЧЭ-1, рейс ${flightNumber} окончен, локомотив сдан.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1, рейс ${flightNumber} окончен, локомотив сдан.`,
           ],
@@ -859,11 +879,74 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
     }
   }
 
+  const handleClaimFromDialog = async () => {
+    if (!claimDialogTrainNumber || !userNickname) { setClaimDialogTrainNumber(null); return }
+    const date = getMoscowDateISO()
+    try {
+      // Find the train record by number
+      const { data: trainsData } = await apiFetch("/api/trains")
+      const train = Array.isArray(trainsData)
+        ? trainsData.find((t: any) => String(t.train_number) === claimDialogTrainNumber)
+        : null
+      if (!train) { setClaimDialogTrainNumber(null); return }
+
+      await apiFetch("/api/train-shifts", {
+        method: "POST",
+        body: JSON.stringify({
+          train_id: train.id,
+          train_number: train.train_number,
+          claimed_by_nickname: userNickname,
+          claimed_by_role: userRole ?? "ЦдУД",
+          shift_date: date,
+        }),
+      })
+      // Refresh my shifts list
+      await loadMyShifts()
+    } catch {
+      // silent
+    } finally {
+      setClaimDialogTrainNumber(null)
+    }
+  }
+
   const canSeeTech = ROLE_RANK[userRole ?? "ПТО"] >= ROLE_RANK["Старший Состав"]
   const isTechSelected = selectedCategory === "Технический"
 
   return (
     <div className="space-y-6 opacity-95">
+      {/* Диалог: занять рейс в расписании */}
+      <AlertDialog open={!!claimDialogTrainNumber} onOpenChange={(open) => { if (!open) setClaimDialogTrainNumber(null) }}>
+        <AlertDialogContent className={`border-2 rounded-2xl ${isDark ? "bg-[#0f1419] border-white/10" : "bg-white border-gray-200"}`}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+              Занять рейс в расписании?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={`text-base ${isDark ? "text-white/70" : "text-gray-600"}`}>
+              Желаете занять рейс{" "}
+              <span className="font-semibold" style={{ color: getTieColor() }}>
+                №{claimDialogTrainNumber}
+              </span>{" "}
+              в расписании рейсов на сегодня?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel
+              className={`flex-1 h-11 font-medium ${isDark ? "bg-white/5 border-white/10 text-white hover:bg-white/10" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+            >
+              Нет
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClaimFromDialog}
+              className="flex-1 h-11 font-semibold text-white border-0"
+              style={{ backgroundColor: getTieColor() }}
+            >
+              <Train className="w-4 h-4 mr-2" />
+              Да, занять
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center gap-3 pb-4 border-b" style={{ borderColor: getTieColor() + "40" }}>
         <div className="p-3 rounded-xl" style={{ background: `linear-gradient(135deg, ${getTieColor()}20, ${getTieColor()}10)` }}>
           <Settings className="w-6 h-6" style={{ color: getTieColor() }} />
