@@ -94,15 +94,74 @@ const ROLE_RANK: Record<string, number> = {
 
 // ─── VK extraction ────────────────────────────────────────────────────────────
 
-/** Extract numeric VK user ID from any URL or raw string */
-function extractVkIdFromUrl(url: string): string | null {
-  if (!url) return null
-  // vk.com/idXXXXX
-  const idMatch = url.match(/vk\.com\/id(\d+)/i)
+/**
+ * Resolve any VK link / screen name to a numeric user ID.
+ * Mirrors the full logic in /api/vk/resolve/route.ts:
+ *   1. Already a number → return as-is
+ *   2. id<number> pattern → return the number
+ *   3. utils.resolveScreenName VK API (no token needed)
+ *   4. Fetch the profile page and scrape the ID from embedded JSON / og:url
+ */
+async function resolveVkToId(raw: string): Promise<string | null> {
+  if (!raw) return null
+  const input = raw.trim()
+
+  // 1. Already a numeric ID
+  if (/^\d+$/.test(input)) return input
+
+  // 2. Extract screen_name from URL forms
+  let screenName = input
+    .replace(/^https?:\/\//i, "")
+    .replace(/^(?:m\.)?vk\.(?:com|ru)\//i, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .trim()
+
+  if (!screenName) return null
+
+  // 3. id<number> pattern
+  const idMatch = screenName.match(/^id(\d+)$/i)
   if (idMatch) return idMatch[1]
-  // bare number
-  const numMatch = url.trim().match(/^\d+$/)
-  if (numMatch) return url.trim()
+
+  // 4. utils.resolveScreenName (no token)
+  try {
+    const resolveUrl = new URL("https://api.vk.com/method/utils.resolveScreenName")
+    resolveUrl.searchParams.set("screen_name", screenName)
+    resolveUrl.searchParams.set("v", "5.199")
+    const resolveRes = await fetch(resolveUrl.toString(), {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RZD-App/1.0)" },
+    })
+    if (resolveRes.ok) {
+      const data = await resolveRes.json()
+      if (data.response?.object_id) return String(data.response.object_id)
+      // If VK returned a non-auth error, bail out early
+      if (data.error && data.error.error_code !== 5 && data.error.error_code !== 15) return null
+    }
+  } catch { /* fall through */ }
+
+  // 5. Scrape VK profile page
+  try {
+    const profileUrl = `https://vk.com/${encodeURIComponent(screenName)}`
+    const htmlRes = await fetch(profileUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept-Language": "ru-RU,ru;q=0.9",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+      redirect: "follow",
+    })
+    if (htmlRes.ok) {
+      const html = await htmlRes.text()
+      const m =
+        html.match(/"user_id":([1-9]\d*)/) ||
+        html.match(/"owner_id":([1-9]\d*)/) ||
+        html.match(/property=["']og:url["'][^>]*content=["'][^"']*\/id(\d+)["']/i) ||
+        html.match(/content=["'][^"']*\/id(\d+)["'][^>]*property=["']og:url["']/i) ||
+        html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["'][^"']*\/id(\d+)["']/i)
+      if (m) return m[1]
+    }
+  } catch { /* silent */ }
+
   return null
 }
 
@@ -136,9 +195,9 @@ function isSectionRow(nickname: string, positionRaw: string): boolean {
  *   A=0  Никнейм
  *   C=2  Должность
  *   H=7  Банковский счёт (default password)
- *   I=8  ВКонтакте (hyperlink cell — display text is person's name, URL is vk.com/idXXX)
+ *   I=8  ВКонтакте (hyperlink cell — display text is person's name, URL may be any VK form)
  */
-function parseEmployeesFromGridData(sheetData: any): SheetEmployee[] {
+async function parseEmployeesFromGridData(sheetData: any): Promise<SheetEmployee[]> {
   const employees: SheetEmployee[] = []
 
   // sheetData.data[0] is the first (and only) GridRange
@@ -159,7 +218,7 @@ function parseEmployeesFromGridData(sheetData: any): SheetEmployee[] {
       const formula = cell.userEnteredValue?.formulaValue ?? ""
       const m = formula.match(/HYPERLINK\("([^"]+)"/)
       if (m) return m[1]
-      // Fallback: plain URL text
+      // Fallback: plain URL text in cell
       const text = getCellText(idx)
       if (/https?:\/\//i.test(text)) return text
       return null
@@ -168,10 +227,12 @@ function parseEmployeesFromGridData(sheetData: any): SheetEmployee[] {
     const nickname = getCellText(0)
     const positionRaw = getCellText(2)
     const bankAccount = getCellText(7)
-    const vkUrl = getCellHyperlink(8)
-    const vkId = vkUrl ? extractVkIdFromUrl(vkUrl) : null
+    const vkRaw = getCellHyperlink(8) ?? getCellText(8)
 
     if (isSectionRow(nickname, positionRaw)) continue
+
+    // Resolve VK URL / screen name → numeric ID (handles all formats, same as manual add)
+    const vkId = vkRaw ? await resolveVkToId(vkRaw) : null
 
     const normalizedPosition = POSITION_MAP[positionRaw] ?? positionRaw
     const role = POSITION_TO_ROLE[normalizedPosition] ?? "ЦдУД"
@@ -214,7 +275,7 @@ export async function GET() {
       return NextResponse.json({ error: "Лист не найден" }, { status: 404 })
     }
 
-    const sheetEmployees = parseEmployeesFromGridData(firstSheet)
+    const sheetEmployees = await parseEmployeesFromGridData(firstSheet)
 
     await ensureColumns(db)
 
