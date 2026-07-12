@@ -127,7 +127,12 @@ export function AdminSection() {
 
   const canAddUser = () => {
     if (!currentUser) return false
-    return currentUser.role === "Руководство" || currentUser.role === "Заместитель" || isCurrentTechAdmin()
+    return (
+      currentUser.role === "Руководство" ||
+      currentUser.role === "Заместитель" ||
+      currentUser.role === "Старший Состав" ||
+      isCurrentTechAdmin()
+    )
   }
 
   /** Returns true if the target user is "protected" — has Тех. Администратор as primary or secondary role.
@@ -256,7 +261,11 @@ export function AdminSection() {
 
   const getAvailableRoles = (): UserRole[] => {
     if (!currentUser) return []
-    if (currentUser.role === "Руководство" || isCurrentTechAdmin()) {
+    if (isCurrentTechAdmin()) {
+      // Тех.Адм может создавать всё включая других Тех.Адм
+      return ["Руководство", "Заместитель", "Старший Состав", "ЦдУД", "ПТО", "Тех. Администратор"]
+    }
+    if (currentUser.role === "Руководство") {
       return ASSIGNABLE_ROLES
     }
     if (currentUser.role === "Заместитель" || currentUser.role === "Старший Состав") {
@@ -951,13 +960,16 @@ export function AdminSection() {
                       <SelectValue placeholder="Выберите должность" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getAvailableRoles().flatMap((role) =>
-                        (POSITIONS_BY_ROLE[role] ?? []).map((pos) => (
+                      {getAvailableRoles().flatMap((role) => {
+                        const positions = POSITIONS_BY_ROLE[role] ?? []
+                        // "Тех. Администратор" role has itself as the only position
+                        const items = positions.length > 0 ? positions : [role]
+                        return items.map((pos) => (
                           <SelectItem key={pos} value={pos}>
                             {pos}
                           </SelectItem>
                         ))
-                      )}
+                      })}
                     </SelectContent>
                   </Select>
                   {newPosition && (

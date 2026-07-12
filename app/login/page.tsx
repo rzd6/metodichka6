@@ -52,6 +52,8 @@ export default function LoginPage() {
       }
 
       localStorage.setItem("currentUser", JSON.stringify(user))
+      // Sync users from Google Sheet in background after VK login
+      fetch("/api/sync-from-sheets").catch(() => {})
       router.push("/")
     } catch {
       setError("Ошибка авторизации через ВКонтакте. Попробуйте снова.")
@@ -136,6 +138,8 @@ export default function LoginPage() {
 
     localStorage.setItem("currentUser", JSON.stringify(user))
     setLoading(false)
+    // Sync users from Google Sheet in background after login
+    fetch("/api/sync-from-sheets").catch(() => {})
     router.push("/")
   }
 
