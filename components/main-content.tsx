@@ -21,6 +21,8 @@ interface LocalUser {
   customAvatar?: string
   reportTag?: string
   gender?: "male" | "female"
+  isDefaultPassword?: boolean
+  position?: string
 }
 
 function MainContentInner() {
@@ -44,6 +46,19 @@ function MainContentInner() {
     loadCustomBg()
     window.addEventListener("customBgUpdated", loadCustomBg)
     return () => window.removeEventListener("customBgUpdated", loadCustomBg)
+  }, [])
+
+  // Sync users from Google Sheet on page load (once per mount)
+  // After sync completes, run a full DB refresh so isDefaultPassword / position propagate
+  useEffect(() => {
+    const auth = localStorage.getItem("currentUser")
+    if (!auth) return
+    fetch("/api/sync-from-sheets")
+      .then(() => {
+        if (refreshCurrentUserRef.current) refreshCurrentUserRef.current()
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Poll global tech mode from Supabase every 10 seconds
@@ -139,9 +154,10 @@ function MainContentInner() {
           dbUser.customAvatar !== currentData.customAvatar ||
           dbUser.reportTag !== currentData.reportTag ||
           dbUser.gender !== currentData.gender ||
-          dbUser.position !== (currentData as any).position
+          dbUser.position !== currentData.position ||
+          dbUser.isDefaultPassword !== currentData.isDefaultPassword
         ) {
-          const updated = {
+          const updated: LocalUser = {
             id: dbUser.id,
             nickname: dbUser.nickname,
             role: dbUser.role,
@@ -151,6 +167,7 @@ function MainContentInner() {
             reportTag: dbUser.reportTag,
             gender: dbUser.gender,
             position: dbUser.position,
+            isDefaultPassword: dbUser.isDefaultPassword,
           }
           localStorage.setItem("currentUser", JSON.stringify(updated))
           setUser(updated)
@@ -253,6 +270,31 @@ function MainContentInner() {
           }}
         >
           <div className="p-4 space-y-3">
+            {/* Default password warning banner */}
+            {user?.isDefaultPassword && (
+              <div
+                className="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium"
+                style={{
+                  backgroundColor: getTieColor() + "18",
+                  borderColor: getTieColor() + "40",
+                  color: getTieColor(),
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 flex-shrink-0 mt-0.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <span>
+                  У вас установлен пароль по умолчанию (банковский счёт). Необходимо сменить его в разделе{" "}
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent("openSettings", { detail: { tab: "account" } }))}
+                    className="underline font-semibold hover:opacity-80 transition-opacity"
+                  >
+                    Настройки
+                  </button>
+                  {" "}→ Изменить пароль.
+                </span>
+              </div>
+            )}
             <ContentSection activeSection={activeSection} onSectionChange={handleSectionChange} userRole={user?.role} userNickname={user?.nickname} />
           </div>
         </div>

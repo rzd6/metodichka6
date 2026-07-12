@@ -34,9 +34,10 @@ import { ImageCropModal } from "@/components/image-crop-modal"
 interface SettingsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialTab?: "appearance" | "account"
 }
 
-export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalProps) {
   const { theme, updateTheme } = useTheme()
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -81,6 +82,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   useEffect(() => {
     if (open) {
+      if (initialTab) setSettingsTab(initialTab)
       const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null")
       setAvatarPreview(currentUser?.customAvatar || null)
       const savedBg = localStorage.getItem("rzd-custom-bg")

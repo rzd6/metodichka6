@@ -180,6 +180,7 @@ function DevRoleSwitcher({
 
 export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsCollapsed, user }: SidebarProps) {
   const [showSettings, setShowSettings] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<"appearance" | "account">("appearance")
   const [showNotifications, setShowNotifications] = useState(false)
   const [customAvatar, setCustomAvatar] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -200,6 +201,18 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const loadBuiltinOverrides = useCallback(async () => {
     const data = await getBuiltinOverrides()
     setBuiltinOverrides(data)
+  }, [])
+
+  // Open settings modal from anywhere (e.g. default-password warning banner)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent).detail?.tab
+      if (tab === "account") setSettingsInitialTab("account")
+      else setSettingsInitialTab("appearance")
+      setShowSettings(true)
+    }
+    window.addEventListener("openSettings", handler)
+    return () => window.removeEventListener("openSettings", handler)
   }, [])
 
   useEffect(() => {
@@ -852,7 +865,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
         </div>
       </aside>
 
-      <SettingsModal open={showSettings} onOpenChange={setShowSettings} />
+      <SettingsModal open={showSettings} onOpenChange={setShowSettings} initialTab={settingsInitialTab} />
       <NotificationsModal open={showNotifications} onOpenChange={setShowNotifications} userRole={user.role} secondaryRole={user.secondaryRole} />
     </>
   )
