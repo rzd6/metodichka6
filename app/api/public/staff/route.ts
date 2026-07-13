@@ -42,18 +42,19 @@ export async function GET(_req: NextRequest) {
         'Старший Состав',
         'Тех. Администратор'
       )
+        AND position_title IS NOT NULL
       ORDER BY rank DESC, created_at ASC
     `)
 
     const staff = res.rows.map((r) => ({
       username: r.username as string,
       role: r.role as string,
-      positionTitle: r.position_title as string | null,
+      positionTitle: r.position_title as string,
       rank: Number(r.rank),
     }))
 
-    return NextResponse.json({ data: staff }, { headers: CORS_HEADERS })
+    return NextResponse.json({ ok: true, data: staff }, { headers: CORS_HEADERS })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message, data: [] }, { status: 500, headers: CORS_HEADERS })
+    return NextResponse.json({ ok: false, error: err.message, data: [] }, { status: 500, headers: CORS_HEADERS })
   }
 }
