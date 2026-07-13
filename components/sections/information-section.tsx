@@ -423,26 +423,25 @@ export function InformationSection({ userRole }: InformationSectionProps) {
 }
 
 function LeadershipSection({ getTieColor, theme }: any) {
-  const [users, setUsers] = useState<Array<{ nickname: string; position: string }>>([])
+  const [users, setUsers] = useState<Array<{ nickname: string; positionTitle: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/users")
+    fetch("/api/public/staff")
       .then((r) => r.json())
       .then((json) => {
-        // API returns { data: [...] }
-        const rows: Array<any> = json.data || json.users || []
+        const rows: Array<any> = json.data || []
         setUsers(rows.map((row: any) => ({
-          nickname: row.username ?? row.nickname ?? "",
-          position: row.position ?? "",
+          nickname: row.username ?? "",
+          positionTitle: row.positionTitle ?? "",
         })))
       })
       .catch(() => setUsers([]))
       .finally(() => setIsLoading(false))
   }, [])
 
-  const getNicknameByPosition = (position: string): string => {
-    const found = users.find((u) => u.position === position)
+  const getNicknameByPosition = (positionTitle: string): string => {
+    const found = users.find((u) => u.positionTitle === positionTitle)
     return found ? found.nickname : "Вакантно"
   }
 
@@ -453,8 +452,8 @@ function LeadershipSection({ getTieColor, theme }: any) {
         : "text-gray-400"
       : "text-orange-500"
 
-  const PositionRow = ({ label, position }: { label: string; position: string }) => {
-    const nickname = isLoading ? "" : getNicknameByPosition(position)
+  const PositionRow = ({ label, positionTitle }: { label: string; positionTitle: string }) => {
+    const nickname = isLoading ? "" : getNicknameByPosition(positionTitle)
     return (
       <div
         className={`p-3 rounded-xl border ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-200"}`}
@@ -491,8 +490,8 @@ function LeadershipSection({ getTieColor, theme }: any) {
               Высшее руководство
             </h3>
             <div className="space-y-2">
-              <PositionRow label='Генеральный Директор ОАО "РЖД"' position="Главный следящий за РЖД" />
-              <PositionRow label="Заместитель Генерального Директора" position="Помощник Главного Следящего" />
+              <PositionRow label='Генеральный Директор ОАО "РЖД"' positionTitle="Главный следящий за РЖД" />
+              <PositionRow label="Заместитель Генерального Директора" positionTitle="Помощник Главного Следящего" />
             </div>
           </div>
 
@@ -501,8 +500,8 @@ function LeadershipSection({ getTieColor, theme }: any) {
               Руководство депо
             </h3>
             <div className="space-y-2">
-              <PositionRow label="Начальник Депо" position="Начальник Депо" />
-              <PositionRow label="Первый Заместитель Начальника Депо" position="Первый Заместитель Начальника Депо" />
+              <PositionRow label="Начальник Депо" positionTitle="Начальник Депо" />
+              <PositionRow label="Первый Заместитель Начальника Депо" positionTitle="Первый Заместитель Начальника Депо" />
             </div>
           </div>
 
@@ -511,8 +510,8 @@ function LeadershipSection({ getTieColor, theme }: any) {
               Заместители начальника депо
             </h3>
             <div className="space-y-2">
-              <PositionRow label="Зам. начальника депо по эксплуатации" position="Заместитель Начальника Депо по эксплуатации" />
-              <PositionRow label="Зам. начальника депо по работе с составом" position="Заместитель Начальника Депо по работе с составом" />
+              <PositionRow label="Зам. начальника депо по эксплуатации" positionTitle="Заместитель Начальника Депо по эксплуатации" />
+              <PositionRow label="Зам. начальника депо по работе с составом" positionTitle="Заместитель Начальника Депо по работе с составом" />
             </div>
           </div>
 
@@ -521,9 +520,9 @@ function LeadershipSection({ getTieColor, theme }: any) {
               Начальники отделов
             </h3>
             <div className="space-y-2">
-              <PositionRow label="Начальник ЭО*" position="Начальник ЭО" />
-              <PositionRow label="Начальник ЦдУД*" position="Начальник ЦдУД" />
-              <PositionRow label="Начальник ПТО*" position="Начальник ПТО" />
+              <PositionRow label="Начальник ЭО*" positionTitle="Начальник ЭО" />
+              <PositionRow label="Начальник ЦдУД*" positionTitle="Начальник ЦдУД" />
+              <PositionRow label="Начальник ПТО*" positionTitle="Начальник ПТО" />
             </div>
           </div>
 
@@ -532,9 +531,9 @@ function LeadershipSection({ getTieColor, theme }: any) {
               Заместители начальников отделов
             </h3>
             <div className="space-y-2">
-              <PositionRow label="Заместитель начальника ЭО" position="Машинист-инструктор/Зам.Нач.ЭО" />
-              <PositionRow label="Заместитель начальника ЦдУД" position="Машинист-инструктор/Зам.Нач.ЦдУД" />
-              <PositionRow label="Заместитель начальника ПТО" position="Машинист-инструктор/Зам.Нач.ПТО" />
+              <PositionRow label="Заместитель начальника ЭО" positionTitle="Машинист-инструктор/Зам.Нач.ЭО" />
+              <PositionRow label="Заместитель начальника ЦдУД" positionTitle="Машинист-инструктор/Зам.Нач.ЦдУД" />
+              <PositionRow label="Заместитель начальника ПТО" positionTitle="Машинист-инструктор/Зам.Нач.ПТО" />
             </div>
           </div>
 
@@ -658,7 +657,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
                     Основная обязанность:
                   </p>
                   <p className={`text-sm leading-relaxed ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-                    Ремонт железнодорожных путей. Если у него есть водительское удостоверение категории C, то он может
+                    Ремонт железнодорожных путей. Если у него есть водительское удостоверение категории C, то он м��жет
                     взять на парковке у здания РЖД специальный транспорт - служебный ЗИЛ, который позволит быстро и
                     комфортно добираться до места работы. Кроме того, использование специального транспорта позволит ему
                     находиться в паре с другим сотрудником второго ранга. Важно отметить, что использование других видов
@@ -993,7 +992,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                   <ul className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                     <li>- Разгон до максимальной скорости - 16,81 сек.</li>
                     <li>- Макс. скорость - 129 км/ч.</li>
-                    <li>- Вместительность - 4 места.</li>
+                    <li>- Вместительн��сть - 4 места.</li>
                     <li>- В автопарке - 2 единицы.</li>
                   </ul>
                 </div>
@@ -1220,7 +1219,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                 </div>
                 <div className="md:w-1/2 space-y-4">
                   <h4 className={`text-lg font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-                    Паровоз ЛВ
+                    Парово�� ЛВ
                   </h4>
                   <div
                     className={`p-4 rounded-xl border ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-200"}`}
@@ -1874,7 +1873,7 @@ function RetroTrainSection({ getTieColor, theme }: any) {
               <li>• Стоянка на станциях по 3 минуты</li>
               <li>• Должен соблюдаться скоростной регламент и расписание ретро-поездов</li>
               <li>• Рейсы на ретро-поезде выполняются только в выходные</li>
-              <li>• Проводить рейс на ретро-поезде можно только с разрешения руководящего состава</li>
+              <li>• ��роводить рейс на ретро-поезде можно только с разрешения руководящего состава</li>
             </ul>
           </div>
         </CardContent>
