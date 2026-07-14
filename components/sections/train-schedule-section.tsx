@@ -209,7 +209,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
 
   const loadTrains = useCallback(async () => {
     const { data } = await apiFetch("/api/trains")
-    if (Array.isArray(data)) setTrains(data)
+    if (Array.isArray(data)) setTrains([...data].sort((a, b) => a.train_number - b.train_number))
   }, [])
 
   const loadShifts = useCallback(async () => {
@@ -450,6 +450,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         return
       }
 
+      parsed.sort((a, b) => a.train_number - b.train_number)
       setXlsxPreview({ trains: parsed, detectedDirection: direction })
     } catch (err: any) {
       toast({ title: "Ошибка чтения файла", description: err?.message, variant: "destructive" })
@@ -648,7 +649,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       </span>
                     </div>
 
-                    {/* Column header row: Номер, Категория, Маршрут, Отпр.депо, Отпр.станция, Приб.станция, Приб.депо, Путь, Машинист */}
+                    {/* Column header row: Номер, Категория, Маршрут, Отпр.депо, Отпр.станция, Приб.с��анция, Приб.депо, Путь, Машинист */}
                     <div
                       className="grid text-white/60 text-[11px] font-semibold uppercase tracking-wide px-5 py-1.5"
                       style={{ gridTemplateColumns: "56px 60px 1fr 80px 90px 90px 80px 44px 1fr", background: "#181c28", borderBottom: `1px solid ${borderClr}` }}
