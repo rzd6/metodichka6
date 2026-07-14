@@ -456,61 +456,6 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
     }
   }
 
-  const handleXlsxFile = async (file: File) => {
-    try {
-      const { read, utils } = await import("xlsx")
-      const buf = await file.arrayBuffer()
-      const wb = read(buf, { cellDates: true })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const rows: any[][] = utils.sheet_to_json(ws, { header: 1, defval: null })
-
-      // Detect direction from row 0 headers
-      // Row 0: [№, Депо, StationA, null, Невский, null, StationB, null, Депо]
-      const header0 = rows[0] ?? []
-      const col2Station = String(header0[2] ?? "").trim()
-      const isMirnyFirst = col2Station.toLowerCase().includes("мирн")
-      const direction = isMirnyFirst ? "mirny-privolzhsk" : "privolzhsk-mirny"
-
-      // Default platforms:
-      // mirny-privolzhsk: Мирный=1, Невский=4, Приволжск=2
-      // privolzhsk-mirny: Приволжск=1, Невский=1, Мирный=2
-      const defaultPlatforms = isMirnyFirst
-        ? { start: 1, middle: 4, end: 2 }
-        : { start: 1, middle: 1, end: 2 }
-
-      // Column layout (0-indexed):
-      // 0=№  1=Депо(отпр)  2=СтанцияА(приб)  3=СтанцияА(отпр)
-      // 4=Невский(приб)  5=Невский(отпр)  6=СтанцияБ(приб)
-      // 7=СтанцияБ(отпр)  8=Депо(приб)
-      const parsed = []
-      for (const row of rows) {
-        const num = row[0]
-        if (typeof num !== "number" || !Number.isInteger(num) || num <= 0) continue
-        parsed.push({
-          train_number: num,
-          direction,
-          depart_depot:  formatTime(row[1]),  // Де��о отправление
-          depart_start:  formatTime(row[3]),  // Начальная станция отправление (col 2 = прибытие, пропускаем)
-          arrive_middle: formatTime(row[4]),  // Невский приб��тие
-          depart_middle: formatTime(row[5]),  // Невский отправление
-          arrive_end:    formatTime(row[6]),  // Конечная станция прибытие
-          arrive_depot:  formatTime(row[8]),  // Депо прибытие
-          platform_start: defaultPlatforms.start,
-          platform_middle: defaultPlatforms.middle,
-          platform_end: defaultPlatforms.end,
-        })
-      }
-
-      if (parsed.length === 0) {
-        toast({ title: "Рейсов не найдено", description: "Файл не содержит строк с номерами рейсов", variant: "destructive" })
-        return
-      }
-
-      setXlsxPreview({ trains: parsed, detectedDirection: direction })
-    } catch (err: any) {
-      toast({ title: "Ошибка чтения файла", description: err?.message, variant: "destructive" })
-    }
-  }
 
   const handleXlsxImport = async () => {
     if (!xlsxPreview) return
@@ -1188,7 +1133,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                               </div>
                               <div className="flex gap-2">
                                 <button onClick={() => handleEditSave(train)} disabled={isLoading} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-500 transition-colors disabled:opacity-50">
-                                  <Check className="w-3.5 h-3.5" /> Сохранить
+                                  <Check className="w-3.5 h-3.5" /> ��охранить
                                 </button>
                                 <button onClick={() => { setEditingTrainId(null); setEditForm({}) }} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white/60 hover:text-white bg-white/10 hover:bg-white/20 transition-colors">
                                   <X className="w-3.5 h-3.5" /> Отмена
