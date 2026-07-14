@@ -416,6 +416,10 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         ? { start: 1, middle: 4, end: 2 }
         : { start: 1, middle: 1, end: 2 }
 
+      // Column layout (0-indexed):
+      // 0=№  1=Депо(отпр)  2=СтанцияА(приб)  3=СтанцияА(отпр)
+      // 4=Невский(приб)  5=Невский(отпр)  6=СтанцияБ(приб)
+      // 7=СтанцияБ(отпр)  8=Депо(приб)
       const parsed = []
       for (const row of rows) {
         const num = row[0]
@@ -423,12 +427,12 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         parsed.push({
           train_number: num,
           direction,
-          depart_depot: formatTime(row[1]),
-          depart_start: formatTime(row[2]),
-          arrive_middle: formatTime(row[3]),
-          depart_middle: formatTime(row[4]),
-          arrive_end: formatTime(row[5]),
-          arrive_depot: formatTime(row[7]),
+          depart_depot:  formatTime(row[1]),  // Депо отправление
+          depart_start:  formatTime(row[3]),  // Начальная станция отправление (col 2 = прибытие, пропускаем)
+          arrive_middle: formatTime(row[4]),  // Невский прибытие
+          depart_middle: formatTime(row[5]),  // Невский отправление
+          arrive_end:    formatTime(row[6]),  // Конечная станция прибытие
+          arrive_depot:  formatTime(row[8]),  // Депо прибытие
           platform_start: defaultPlatforms.start,
           platform_middle: defaultPlatforms.middle,
           platform_end: defaultPlatforms.end,
