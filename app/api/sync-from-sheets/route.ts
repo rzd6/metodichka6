@@ -281,12 +281,12 @@ export async function GET() {
 
     // Fetch all existing users (columns we need)
     const { rows: dbUsers } = await db.query(`
-      SELECT id, username, secondary_role, position_title
+      SELECT id, username, secondary_role, position_title, absent_since
       FROM users
     `)
 
     // Index by nickname (username column in DB)
-    const dbByNickname = new Map<string, { id: string; secondary_role: string | null; position_title: string | null }>()
+    const dbByNickname = new Map<string, { id: string; secondary_role: string | null; position_title: string | null; absent_since: Date | null }>()
     for (const u of dbUsers) dbByNickname.set(u.username, u)
 
     const sheetNicknames = new Set(sheetEmployees.map((e) => e.nickname))
@@ -342,12 +342,33 @@ export async function GET() {
     }
 
     // Delete accounts absent from the sheet (except dev & Тех. Администратор)
+    // Deletion is deferred: only remove if the account has been absent for 3+ minutes.
+    // This prevents accidental deletion when accounts are temporarily moved in the sheet.
+    await db.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS absent_since TIMESTAMPTZ DEFAULT NULL;
+    `)
+
+    const THREE_MINUTES_MS = 3 * 60 * 1000
+
     for (const [nickname, dbUser] of dbByNickname.entries()) {
       if (nickname === DEV_NICKNAME) continue
       if (dbUser.secondary_role === "Тех. Администратор" || dbUser.position_title === "Тех. Администратор") continue
+
       if (!sheetNicknames.has(nickname)) {
-        await db.query("DELETE FROM users WHERE id = $1", [dbUser.id])
-        stats.deleted++
+        const absentSince: Date | null = dbUser.absent_since ?? null
+
+        if (!absentSince) {
+          // First time seeing this account absent — mark the time, do NOT delete yet
+          await db.query("UPDATE users SET absent_since = NOW() WHERE id = $1", [dbUser.id])
+        } else if (Date.now() - absentSince.getTime() >= THREE_MINUTES_MS) {
+          // Been absent for 3+ minutes — safe to delete
+          await db.query("DELETE FROM users WHERE id = $1", [dbUser.id])
+          stats.deleted++
+        }
+        // else: still within the grace period — skip
+      } else {
+        // Account is present in the sheet — clear any pending absent marker
+        await db.query("UPDATE users SET absent_since = NULL WHERE id = $1 AND absent_since IS NOT NULL", [dbUser.id])
       }
     }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Plus, Trash2, UserX, Database, Train, CalendarClock, Pencil, Check, X } from "lucide-react"
+import { Plus, Trash2, UserX, Database, CalendarClock, Pencil, Check, X, Upload, Square, CheckSquare } from "lucide-react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import type { UserRole } from "@/data/users"
@@ -179,6 +179,31 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   const [editingTrainId, setEditingTrainId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<typeof trainForm>>({})
 
+  // Bulk delete
+  const [selectedTrainIds, setSelectedTrainIds] = useState<Set<string>>(new Set())
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false)
+  const [bulkSelectMode, setBulkSelectMode] = useState(false)
+
+  // XLSX import
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [xlsxPreview, setXlsxPreview] = useState<{
+    trains: Array<{
+      train_number: number
+      direction: string
+      depart_depot: string | null
+      depart_start: string | null
+      arrive_middle: string | null
+      depart_middle: string | null
+      arrive_end: string | null
+      arrive_depot: string | null
+      platform_start: number
+      platform_middle: number
+      platform_end: number
+    }>
+    detectedDirection: string
+  } | null>(null)
+  const [xlsxClass, setXlsxClass] = useState("Пассажирский")
+
   const getTieColor = () => getThemeColor(theme.colorTheme)
   const isDark = theme.mode === "dark"
 
@@ -325,6 +350,126 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
     }
   }
 
+  // ---- Bulk delete ----
+  const handleBulkDelete = async () => {
+    setIsLoading(true)
+    setShowBulkDeleteConfirm(false)
+    try {
+      for (const id of selectedTrainIds) {
+        await apiFetch("/api/trains", { method: "DELETE", body: JSON.stringify({ id }) })
+      }
+      await loadTrains()
+      await loadShifts()
+      toast({ title: `Удалено ${selectedTrainIds.size} рейсов` })
+      setSelectedTrainIds(new Set())
+      setBulkSelectMode(false)
+    } catch (err: any) {
+      toast({ title: "Ошибка при удалении", description: err?.message, variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const toggleSelectTrain = (id: string) => {
+    setSelectedTrainIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedTrainIds.size === trains.length) {
+      setSelectedTrainIds(new Set())
+    } else {
+      setSelectedTrainIds(new Set(trains.map((t) => t.id)))
+    }
+  }
+
+  // ---- XLSX import ----
+  function formatTime(d: Date | null): string | null {
+    if (!d) return null
+    const h = d.getUTCHours().toString().padStart(2, "0")
+    const m = d.getUTCMinutes().toString().padStart(2, "0")
+    return `${h}:${m}`
+  }
+
+  const handleXlsxFile = async (file: File) => {
+    try {
+      const { read, utils } = await import("xlsx")
+      const buf = await file.arrayBuffer()
+      const wb = read(buf, { cellDates: true })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows: any[][] = utils.sheet_to_json(ws, { header: 1, defval: null })
+
+      // Detect direction from row 0 headers
+      // Row 0: [№, Депо, StationA, null, Невский, null, StationB, null, Депо]
+      const header0 = rows[0] ?? []
+      const col2Station = String(header0[2] ?? "").trim()
+      const isMirnyFirst = col2Station.toLowerCase().includes("мирн")
+      const direction = isMirnyFirst ? "mirny-privolzhsk" : "privolzhsk-mirny"
+
+      // Default platforms:
+      // mirny-privolzhsk: Мирный=1, Невский=4, Приволжск=2
+      // privolzhsk-mirny: Приволжск=1, Невский=1, Мирный=2
+      const defaultPlatforms = isMirnyFirst
+        ? { start: 1, middle: 4, end: 2 }
+        : { start: 1, middle: 1, end: 2 }
+
+      const parsed = []
+      for (const row of rows) {
+        const num = row[0]
+        if (typeof num !== "number" || !Number.isInteger(num) || num <= 0) continue
+        parsed.push({
+          train_number: num,
+          direction,
+          depart_depot: formatTime(row[1]),
+          depart_start: formatTime(row[2]),
+          arrive_middle: formatTime(row[3]),
+          depart_middle: formatTime(row[4]),
+          arrive_end: formatTime(row[5]),
+          arrive_depot: formatTime(row[7]),
+          platform_start: defaultPlatforms.start,
+          platform_middle: defaultPlatforms.middle,
+          platform_end: defaultPlatforms.end,
+        })
+      }
+
+      if (parsed.length === 0) {
+        toast({ title: "Рейсов не найдено", description: "Файл не содержит строк с номерами рейсов", variant: "destructive" })
+        return
+      }
+
+      setXlsxPreview({ trains: parsed, detectedDirection: direction })
+    } catch (err: any) {
+      toast({ title: "Ошибка чтения файла", description: err?.message, variant: "destructive" })
+    }
+  }
+
+  const handleXlsxImport = async () => {
+    if (!xlsxPreview) return
+    setIsLoading(true)
+    let added = 0
+    let skipped = 0
+    try {
+      for (const t of xlsxPreview.trains) {
+        const { data } = await apiFetch("/api/trains", {
+          method: "POST",
+          body: JSON.stringify({ ...t, class: xlsxClass }),
+        })
+        if (data) added++
+        else skipped++
+      }
+      await loadTrains()
+      setXlsxPreview(null)
+      toast({ title: `Импорт завершён`, description: `Добавлено: ${added}, пропущено (уже есть): ${skipped}` })
+    } catch (err: any) {
+      toast({ title: "Ошибка импорта", description: err?.message, variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleEditSave = async (train: TrainRecord) => {
     const cls = editForm.class || train.class
     if (editForm.depart_depot && !validateDepartureTime(editForm.depart_depot, cls)) {
@@ -412,7 +557,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
             Расписание рейсов
           </h2>
           <p className={`text-sm ${isDark ? "text-white/70" : "text-gray-600"}`}>
-            Движение поездов по станциям РЖД
+            Движение поезд��в по станциям РЖД
           </p>
         </div>
       </div>
@@ -611,8 +756,42 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
       {canManageTrainDB(userRole) && showAdminPanel && (
         <div className="rounded-xl overflow-hidden" style={{ background: boardBg, border: `1px solid ${borderClr}` }}>
           {/* Header */}
-          <div className="px-5 py-3 flex items-center justify-between" style={{ background: headerBg }}>
-            <span className="text-white font-bold text-sm uppercase tracking-wide">База рейсов</span>
+          <div className="px-5 py-3 flex flex-wrap items-center gap-2" style={{ background: headerBg }}>
+            <span className="text-white font-bold text-sm uppercase tracking-wide mr-auto">База рейсов</span>
+            {/* Bulk select toggle */}
+            <button
+              onClick={() => { setBulkSelectMode((v) => !v); setSelectedTrainIds(new Set()) }}
+              className={`flex items-center gap-1.5 h-7 px-3 rounded text-xs font-semibold transition-colors border ${bulkSelectMode ? "bg-white/30 border-white/60 text-white" : "bg-white/10 border-white/20 text-white/70 hover:bg-white/20"}`}
+              title="Выбрать несколько для удаления"
+            >
+              {bulkSelectMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+              Выбрать
+            </button>
+            {bulkSelectMode && selectedTrainIds.size > 0 && (
+              <button
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                className="flex items-center gap-1.5 h-7 px-3 rounded text-xs font-semibold text-white bg-red-600 hover:bg-red-500 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Удалить ({selectedTrainIds.size})
+              </button>
+            )}
+            {/* xlsx import */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1.5 h-7 px-3 rounded text-xs font-semibold text-white bg-white/20 hover:bg-white/30 transition-colors"
+              title="Импорт рейсов из xlsx-файла"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Из файла
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) { handleXlsxFile(f); e.target.value = "" } }}
+            />
             <button
               onClick={() => { setShowTrainForm((v) => !v); setEditingTrainId(null) }}
               className="flex items-center gap-1.5 h-7 px-3 rounded text-xs font-semibold text-white bg-white/20 hover:bg-white/30 transition-colors"
@@ -688,7 +867,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                         <Input type="time" value={trainForm.arrive_middle} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">Отпр. Невский</Label>
+                        <Label className="text-xs text-white/60">Отп��. Невский</Label>
                         <Input type="time" value={trainForm.depart_middle} onChange={(e) => setTrainForm((f) => ({ ...f, depart_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
@@ -769,6 +948,68 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
             </form>
           )}
 
+          {/* XLSX preview */}
+          {xlsxPreview && (
+            <div className="px-5 py-4 space-y-4" style={{ borderBottom: `1px solid ${borderClr}`, background: "#0f1419" }}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-white font-semibold text-sm">
+                  Файл содержит {xlsxPreview.trains.length} рейсов •{" "}
+                  {xlsxPreview.detectedDirection === "mirny-privolzhsk" ? "Мирный — Приволжск" : "Приволжск — Мирный"}
+                </span>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Label className="text-xs text-white/60">Категория для всех</Label>
+                  <Select value={xlsxClass} onValueChange={setXlsxClass}>
+                    <SelectTrigger className="h-7 w-44 text-xs bg-white/5 border-white/10 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALL_CLASSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* Preview table */}
+              <div className="overflow-x-auto rounded border border-white/10">
+                <table className="w-full text-xs text-white/80">
+                  <thead>
+                    <tr className="text-white/40 uppercase tracking-wide" style={{ background: "#1a1f2e" }}>
+                      <th className="px-3 py-1.5 text-left">№</th>
+                      <th className="px-3 py-1.5">Отпр.депо</th>
+                      <th className="px-3 py-1.5">Отпр.нач.</th>
+                      <th className="px-3 py-1.5">Приб.Невск.</th>
+                      <th className="px-3 py-1.5">Отпр.Невск.</th>
+                      <th className="px-3 py-1.5">Приб.кон.</th>
+                      <th className="px-3 py-1.5">Приб.депо</th>
+                      <th className="px-3 py-1.5">Пути</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {xlsxPreview.trains.map((t, i) => (
+                      <tr key={t.train_number} style={{ background: i % 2 === 0 ? rowEvenBg : rowOddBg }}>
+                        <td className="px-3 py-1 font-bold" style={{ color: "#f5c518" }}>{t.train_number}</td>
+                        <td className="px-3 py-1 text-center font-mono">{t.depart_depot ?? "—"}</td>
+                        <td className="px-3 py-1 text-center font-mono">{t.depart_start ?? "—"}</td>
+                        <td className="px-3 py-1 text-center font-mono">{t.arrive_middle ?? "—"}</td>
+                        <td className="px-3 py-1 text-center font-mono">{t.depart_middle ?? "—"}</td>
+                        <td className="px-3 py-1 text-center font-mono">{t.arrive_end ?? "—"}</td>
+                        <td className="px-3 py-1 text-center font-mono">{t.arrive_depot ?? "—"}</td>
+                        <td className="px-3 py-1 text-center">{t.platform_start}/{t.platform_middle}/{t.platform_end}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" disabled={isLoading} onClick={handleXlsxImport} className="h-8 text-white font-semibold" style={{ background: getTieColor() }}>
+                  <Check className="w-3.5 h-3.5 mr-1.5" /> Сохранить {xlsxPreview.trains.length} рейсов
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setXlsxPreview(null)} className="h-8 bg-transparent border-white/20 text-white/70 hover:bg-white/10">
+                  Отмена
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Trains list grouped by direction */}
           {trains.length === 0 ? (
             <p className="text-center py-8 text-white/40 text-sm">На данный момент рейсов не запланировано</p>
@@ -784,7 +1025,18 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                 if (group.length === 0) return null
                 return (
                   <div key={dir}>
-                    <div className="px-5 py-2" style={{ background: "#252b3b" }}>
+                    <div className="px-5 py-2 flex items-center gap-3" style={{ background: "#252b3b" }}>
+                      {bulkSelectMode && (
+                        <button
+                          onClick={toggleSelectAll}
+                          className="text-white/40 hover:text-white/70 transition-colors"
+                          title="Выбрать все"
+                        >
+                          {selectedTrainIds.size === trains.length
+                            ? <CheckSquare className="w-4 h-4 text-white/70" />
+                            : <Square className="w-4 h-4" />}
+                        </button>
+                      )}
                       <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#f5c518" }}>{label}</span>
                     </div>
                     {group.map((train, idx) => {
@@ -798,7 +1050,18 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                       const currentClass = isEditing ? (ef.class || train.class) : train.class
 
                       return (
-                        <div key={train.id} className="px-5 py-3" style={{ background: rowBg }}>
+                        <div key={train.id} className="px-5 py-3 flex gap-3 items-start" style={{ background: rowBg }}>
+                          {bulkSelectMode && (
+                            <button
+                              onClick={() => toggleSelectTrain(train.id)}
+                              className="mt-0.5 flex-shrink-0 text-white/40 hover:text-white/70 transition-colors"
+                            >
+                              {selectedTrainIds.has(train.id)
+                                ? <CheckSquare className="w-4 h-4 text-white" />
+                                : <Square className="w-4 h-4" />}
+                            </button>
+                          )}
+                          <div className="flex-1 min-w-0">
                           {isEditing ? (
                             <div className="space-y-3">
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -933,6 +1196,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                               </div>
                             </>
                           )}
+                          </div>
                         </div>
                       )
                     })}
@@ -957,6 +1221,23 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
             <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10">Отмена</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteShift} className="bg-red-600 hover:bg-red-700 text-white border-0">
               <UserX className="w-4 h-4 mr-2" /> Освободить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={(o) => !o && setShowBulkDeleteConfirm(false)}>
+        <AlertDialogContent className="bg-[#1a1f2e] border border-[#2a3040] text-white rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить {selectedTrainIds.size} рейсов из базы?</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/60">
+              Все выбранные рейсы и записи на них будут удалены. Это действие необратимо.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10">Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700 text-white border-0">
+              <Trash2 className="w-4 h-4 mr-2" /> Удалить все
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
