@@ -387,55 +387,61 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   }
 
   // ---- XLSX import ----
-  function formatTime(d: Date | null): string | null {
-    if (!d) return null
-    const h = d.getUTCHours().toString().padStart(2, "0")
-    const m = d.getUTCMinutes().toString().padStart(2, "0")
-    return `${h}:${m}`
-  }
-
   const handleXlsxFile = async (file: File) => {
     try {
       const { read, utils } = await import("xlsx")
       const buf = await file.arrayBuffer()
-      const wb = read(buf, { cellDates: true })
+      // cellDates: false — read raw values so cell.w gives us the formatted "H:MM" string
+      const wb = read(buf, { cellDates: false })
       const ws = wb.Sheets[wb.SheetNames[0]]
-      const rows: any[][] = utils.sheet_to_json(ws, { header: 1, defval: null })
 
-      // Detect direction from row 0 headers
-      // Row 0: [№, Депо, StationA, null, Невский, null, StationB, null, Депо]
-      const header0 = rows[0] ?? []
-      const col2Station = String(header0[2] ?? "").trim()
-      const isMirnyFirst = col2Station.toLowerCase().includes("мирн")
+      // Helper: get formatted time string from a cell (e.g. "0:15"), or null
+      const cellW = (col: number, row: number): string | null => {
+        const addr = utils.encode_cell({ r: row, c: col })
+        const cell = ws[addr]
+        if (!cell) return null
+        const w = String(cell.w ?? "").trim()
+        return /^\d{1,2}:\d{2}$/.test(w) ? w : null
+      }
+
+      // Detect direction from row 0 merged header — col C (index 2) = first station name
+      // File layout rows 0-1 are headers, data starts at row 2
+      const firstStationCell = ws[utils.encode_cell({ r: 0, c: 2 })]
+      const firstStation = String(firstStationCell?.v ?? firstStationCell?.w ?? "").trim()
+      const isMirnyFirst = firstStation.toLowerCase().includes("мирн")
       const direction = isMirnyFirst ? "mirny-privolzhsk" : "privolzhsk-mirny"
 
       // Default platforms:
-      // mirny-privolzhsk: Мирный=1, Невский=4, Приволжск=2
-      // privolzhsk-mirny: Приволжск=1, Невский=1, Мирный=2
+      // mirny-privolzhsk:  Мирный=1,    Невский=4, Приволжск=2
+      // privolzhsk-mirny:  Приволжск=1, Невский=1, Мирный=2
       const defaultPlatforms = isMirnyFirst
         ? { start: 1, middle: 4, end: 2 }
         : { start: 1, middle: 1, end: 2 }
 
       // Column layout (0-indexed):
-      // 0=№  1=Депо(отпр)  2=СтанцияА(приб)  3=СтанцияА(отпр)
-      // 4=Невский(приб)  5=Невский(отпр)  6=СтанцияБ(приб)
-      // 7=СтанцияБ(отпр)  8=Депо(приб)
+      // A(0)=№  B(1)=Депо отпр  C(2)=Ст.А приб  D(3)=Ст.А отпр
+      // E(4)=Невск приб  F(5)=Невск отпр  G(6)=Ст.Б приб
+      // H(7)=Ст.Б отпр   I(8)=Депо приб
+      const range = utils.decode_range(ws["!ref"] ?? "A1")
       const parsed = []
-      for (const row of rows) {
-        const num = row[0]
-        if (typeof num !== "number" || !Number.isInteger(num) || num <= 0) continue
+      for (let r = 2; r <= range.e.r; r++) {
+        const numCell = ws[utils.encode_cell({ r, c: 0 })]
+        if (!numCell) continue
+        const num = typeof numCell.v === "number" ? numCell.v : parseInt(String(numCell.v ?? ""), 10)
+        if (!num || isNaN(num) || num <= 0) continue
+
         parsed.push({
-          train_number: num,
+          train_number:  num,
           direction,
-          depart_depot:  formatTime(row[1]),  // Депо отправление
-          depart_start:  formatTime(row[3]),  // Начальная станция отправление (col 2 = прибытие, пропускаем)
-          arrive_middle: formatTime(row[4]),  // Невский прибытие
-          depart_middle: formatTime(row[5]),  // Невский отправление
-          arrive_end:    formatTime(row[6]),  // Конечная станция прибытие
-          arrive_depot:  formatTime(row[8]),  // Депо прибытие
-          platform_start: defaultPlatforms.start,
+          depart_depot:  cellW(1, r),  // B — Депо отправление
+          depart_start:  cellW(3, r),  // D — Нач. станция отправление (C = прибытие, пропускаем)
+          arrive_middle: cellW(4, r),  // E — Невский прибытие
+          depart_middle: cellW(5, r),  // F — Невский отправление
+          arrive_end:    cellW(6, r),  // G — Кон. станция прибытие (H = отправление, пропускаем)
+          arrive_depot:  cellW(8, r),  // I — Депо прибытие
+          platform_start:  defaultPlatforms.start,
           platform_middle: defaultPlatforms.middle,
-          platform_end: defaultPlatforms.end,
+          platform_end:    defaultPlatforms.end,
         })
       }
 
@@ -449,6 +455,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
       toast({ title: "Ошибка чтения файла", description: err?.message, variant: "destructive" })
     }
   }
+
 
   const handleXlsxImport = async () => {
     if (!xlsxPreview) return
@@ -1126,7 +1133,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                               </div>
                               <div className="flex gap-2">
                                 <button onClick={() => handleEditSave(train)} disabled={isLoading} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-500 transition-colors disabled:opacity-50">
-                                  <Check className="w-3.5 h-3.5" /> Сохранить
+                                  <Check className="w-3.5 h-3.5" /> ��охранить
                                 </button>
                                 <button onClick={() => { setEditingTrainId(null); setEditForm({}) }} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white/60 hover:text-white bg-white/10 hover:bg-white/20 transition-colors">
                                   <X className="w-3.5 h-3.5" /> Отмена
