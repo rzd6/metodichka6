@@ -16,12 +16,21 @@ function getPool(): Pool {
 }
 
 function getAuth() {
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
   if (!privateKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY не задан")
+  // Render / some hosts store the key with literal \n instead of real newlines,
+  // or wrap it in extra quotes. Normalize both cases.
+  privateKey = privateKey
+    .replace(/^["']|["']$/g, "")   // strip surrounding quotes if any
+    .replace(/\\n/g, "\n")          // literal \n → real newline
+  if (!privateKey.includes("-----BEGIN")) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY имеет неверный формат (не содержит BEGIN PRIVATE KEY)")
+  }
+  console.log("[sync-from-sheets] private key starts with:", privateKey.slice(0, 40))
   return new GoogleAuth({
     credentials: {
       client_email: SERVICE_ACCOUNT_EMAIL,
-      private_key: privateKey.replace(/\\n/g, "\n"),
+      private_key: privateKey,
     },
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   })
@@ -256,11 +265,26 @@ async function ensureColumns(db: Pool): Promise<void> {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function GET() {
+  // Early checks — return clear 500 messages instead of cryptic errors
+  const pgUrl = process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL
+  if (!pgUrl) {
+    console.error("[sync-from-sheets] ERROR: POSTGRES_URL not set")
+    return NextResponse.json({ error: "POSTGRES_URL не задан" }, { status: 500 })
+  }
+  const gKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  if (!gKey) {
+    console.error("[sync-from-sheets] ERROR: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY not set")
+    return NextResponse.json({ error: "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY не задан" }, { status: 500 })
+  }
+
   const db = getPool()
   try {
+    console.log("[sync-from-sheets] step: getAuth")
     const auth = getAuth()
+    console.log("[sync-from-sheets] step: build sheetsApi")
     const sheetsApi = google.sheets({ version: "v4", auth })
 
+    console.log("[sync-from-sheets] step: spreadsheets.get")
     // Use spreadsheets.get with includeGridData so we can read hyperlink URLs from cells
     const response = await sheetsApi.spreadsheets.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -269,21 +293,27 @@ export async function GET() {
       ranges: ["A:P"],
       fields: "sheets(data(rowData(values(formattedValue,userEnteredValue,hyperlink))))",
     })
+    console.log("[sync-from-sheets] step: spreadsheets.get OK, sheets count:", response.data.sheets?.length)
 
     const firstSheet = response.data.sheets?.[0]
     if (!firstSheet) {
       return NextResponse.json({ error: "Лист не найден" }, { status: 404 })
     }
 
+    console.log("[sync-from-sheets] step: parseEmployeesFromGridData")
     const sheetEmployees = await parseEmployeesFromGridData(firstSheet)
+    console.log("[sync-from-sheets] parsed employees:", sheetEmployees.length)
 
+    console.log("[sync-from-sheets] step: ensureColumns")
     await ensureColumns(db)
 
     // Fetch all existing users (columns we need)
+    console.log("[sync-from-sheets] step: SELECT users")
     const { rows: dbUsers } = await db.query(`
       SELECT id, username, secondary_role, position_title, absent_since
       FROM users
     `)
+    console.log("[sync-from-sheets] db users count:", dbUsers.length)
 
     // Index by nickname (username column in DB)
     const dbByNickname = new Map<string, { id: string; secondary_role: string | null; position_title: string | null; absent_since: Date | null }>()
@@ -372,11 +402,12 @@ export async function GET() {
       }
     }
 
+    console.log("[sync-from-sheets] step: done, stats:", stats)
     await db.end()
     return NextResponse.json({ success: true, stats, total: sheetEmployees.length })
   } catch (err: any) {
-    console.error("[sync-from-sheets]", err)
+    console.error("[sync-from-sheets] ERROR step failed:", err?.message, err?.stack)
     try { await db.end() } catch {}
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: err.message, stack: process.env.NODE_ENV !== "production" ? err.stack : undefined }, { status: 500 })
   }
 }
