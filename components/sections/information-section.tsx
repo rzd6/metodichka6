@@ -663,7 +663,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
                     Основная обязанность:
                   </p>
                   <p className={`text-sm leading-relaxed ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-                    Ремонт железнодорожных путей. Если у него есть водительское удостоверение категории C, то он м��жет
+                    Ремонт железнодорожных путей. Если у него есть водительское удостоверение категории C, то он может
                     взять на парковке у здания РЖД специальный транспорт - служебный ЗИЛ, который позволит быстро и
                     комфортно добираться до места работы. Кроме того, использование специального транспорта позволит ему
                     находиться в паре с другим сотрудником второго ранга. Важно отметить, что использование других видов
@@ -998,7 +998,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                   <ul className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                     <li>- Разгон до максимальной скорости - 16,81 сек.</li>
                     <li>- Макс. скорость - 129 км/ч.</li>
-                    <li>- Вместительн��сть - 4 места.</li>
+                    <li>- Вместительность - 4 места.</li>
                     <li>- В автопарке - 2 единицы.</li>
                   </ul>
                 </div>
@@ -1225,7 +1225,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                 </div>
                 <div className="md:w-1/2 space-y-4">
                   <h4 className={`text-lg font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-                    Парово�� ЛВ
+                    Паровоз ЛВ
                   </h4>
                   <div
                     className={`p-4 rounded-xl border ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-200"}`}
@@ -1281,7 +1281,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     <ul className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                       <li>- Конструкционная скорость - 160 км/ч</li>
                       <li>- Масса тары - 56,9 т.</li>
-                      <li>- Коли��ество пассажирских мест - 54 спальных места</li>
+                      <li>- Количество пассажирских мест - 54 спальных места</li>
                       <li>- Количество мест для проводников - 2 спальных места</li>
                     </ul>
                   </div>
@@ -1879,7 +1879,7 @@ function RetroTrainSection({ getTieColor, theme }: any) {
               <li>• Стоянка на станциях по 3 минуты</li>
               <li>• Должен соблюдаться скоростной регламент и расписание ретро-поездов</li>
               <li>• Рейсы на ретро-поезде выполняются только в выходные</li>
-              <li>• ��роводить рейс на ретро-поезде можно только с разрешения руководящего состава</li>
+              <li>• Проводить рейс на ретро-поезде можно только с разрешения руководящего состава</li>
             </ul>
           </div>
         </CardContent>
