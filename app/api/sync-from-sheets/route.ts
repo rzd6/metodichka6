@@ -259,6 +259,7 @@ async function ensureColumns(db: Pool): Promise<void> {
   await db.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS position_title TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_default_password BOOLEAN DEFAULT false;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS absent_since TIMESTAMPTZ DEFAULT NULL;
   `)
 }
 
@@ -374,10 +375,6 @@ export async function GET() {
     // Delete accounts absent from the sheet (except dev & Тех. Администратор)
     // Deletion is deferred: only remove if the account has been absent for 3+ minutes.
     // This prevents accidental deletion when accounts are temporarily moved in the sheet.
-    await db.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS absent_since TIMESTAMPTZ DEFAULT NULL;
-    `)
-
     const THREE_MINUTES_MS = 3 * 60 * 1000
 
     for (const [nickname, dbUser] of dbByNickname.entries()) {
