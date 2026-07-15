@@ -174,7 +174,7 @@ export default function LoginPage() {
             <div className="flex justify-center mb-2">
               <div className="w-32 h-32 flex items-center justify-center rounded-full overflow-hidden shadow-lg">
                 <Image
-                  src="https://s.fotora.ru/5de02d57c0127f12.png"
+                  src="https://i.imgur.com/Jf1SDzt.jpeg"
                   alt="РЖД Logo"
                   width={128}
                   height={128}
