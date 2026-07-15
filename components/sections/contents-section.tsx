@@ -189,7 +189,7 @@ export function ContentsSection({ onSectionChange, userRole }: ContentsSectionPr
             </div>
             <div className="flex-1">
               <p className={`text-sm leading-relaxed ${theme.mode === "dark" ? "text-red-200" : "text-red-900"}`}>
-                <strong>(!!!)</strong> - Официальный ресурс государственной фракции. За слив любой информации из данного
+                Официальный ресурс государственной фракции. За слив любой информации из данного
                 ресурса в руки лиц, кроме сотрудников данной фракции или администрации 6 сервера, игрок и администратор
                 может быть наказан согласно ОЧС 0.1.16
               </p>
