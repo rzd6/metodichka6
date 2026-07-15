@@ -603,7 +603,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
             Расписание рейсов
           </h2>
           <p className={`text-sm ${isDark ? "text-white/70" : "text-gray-600"}`}>
-            Движение поезд��в по станциям РЖД
+            Движение поездов по станциям РЖД
           </p>
         </div>
       </div>
@@ -920,7 +920,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                         <Input type="time" value={trainForm.arrive_middle} onChange={(e) => setTrainForm((f) => ({ ...f, arrive_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-white/60">Отп��. Невский</Label>
+                        <Label className="text-xs text-white/60">Отпр. Невский</Label>
                         <Input type="time" value={trainForm.depart_middle} onChange={(e) => setTrainForm((f) => ({ ...f, depart_middle: e.target.value }))} className="h-8 text-sm bg-white/5 border-white/10 text-white [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1.5">
@@ -1182,7 +1182,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                               </div>
                               <div className="flex gap-2">
                                 <button onClick={() => handleEditSave(train)} disabled={isLoading} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-500 transition-colors disabled:opacity-50">
-                                  <Check className="w-3.5 h-3.5" /> ��охранить
+                                  <Check className="w-3.5 h-3.5" /> Сохранить
                                 </button>
                                 <button onClick={() => { setEditingTrainId(null); setEditForm({}) }} className="flex items-center gap-1.5 px-3 h-7 rounded text-xs font-semibold text-white/60 hover:text-white bg-white/10 hover:bg-white/20 transition-colors">
                                   <X className="w-3.5 h-3.5" /> Отмена

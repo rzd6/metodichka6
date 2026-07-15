@@ -462,7 +462,7 @@ export function AdminSection() {
       return
     }
 
-    // id123456 — парсим ��рямо в браузере
+    // id123456 — парсим прямо в браузере
     const slug = raw.match(/vk\.com\/([^\s/?#]+)/i)?.[1] ?? raw.replace(/^@/, "")
     const idDirect = slug.match(/^id(\d+)$/i)?.[1]
     if (idDirect) {
@@ -470,7 +470,7 @@ export function AdminSection() {
       return
     }
 
-    // Для имён — ��дём паузу в наборе перед отправкой запроса
+    // Для имён — ждём паузу в наборе перед отправкой запроса
     setEditVkId("")
     vkDebounceRef.current = setTimeout(() => resolveVkInput(raw), 600)
   }
@@ -1245,7 +1245,7 @@ export function AdminSection() {
                                   title="Дополнительная роль: РЖД"
                                 >
                                   <Crown className="w-3 h-3" />
-                                  ��ЖД
+                                  РЖД
                                 </span>
                               )}
                             </div>
@@ -1320,7 +1320,7 @@ export function AdminSection() {
                               onClick={() => handleToggleTechAdmin(user)}
                               variant="outline"
                               size="sm"
-                              title={user.secondaryRole === "Тех. Администратор" ? "Снять Тех. Администратора" : "Выда��ь Тех. Администратора"}
+                              title={user.secondaryRole === "Тех. Администратор" ? "Снять Тех. Администратора" : "Выдать Тех. Администратора"}
                               className={`h-8 w-8 p-0 transition-all ${
                                 user.secondaryRole === "Тех. Администратор"
                                   ? "border-amber-500 text-amber-500 hover:bg-amber-500/10"

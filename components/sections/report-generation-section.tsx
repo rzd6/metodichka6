@@ -2711,7 +2711,7 @@ export function ReportGenerationSection() {
                               <p
                                 className={`text-sm font-medium ${theme.mode === "dark" ? "text-white/90" : "text-gray-700"}`}
                               >
-                                Ссылк�� на папку:
+                                Ссылка на папку:
                               </p>
                               <div className="flex flex-col gap-1">
                                 {typeof entry.folderUrl === "string" ? (
@@ -3616,7 +3616,7 @@ export function ReportGenerationSection() {
                   <Input
                     value={entryTitle}
                     onChange={(e) => setEntryTitle(e.target.value)}
-                    placeholder="Например: №542, Проверка ��окомотивов"
+                    placeholder="Например: №542, Проверка локомотивов"
                     className={
                       theme.mode === "dark"
                         ? "bg-white/5 border-white/10 text-white placeholder:text-white/40"

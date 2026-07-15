@@ -291,7 +291,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
         })
         segs.push({
           id: "seg-nevsky-mirny",
-          title: "Перегон: Невский → ��ирный",
+          title: "Перегон: Невский → Мирный",
           delayMinutes: 0,
           reports: [
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Мирный готов, Ч1 зелёный.`,
@@ -313,13 +313,13 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут в депо ТЧЭ-1 готов, ЧМ2 лунно-белый.`,
             `cr Принято! Выполняю.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Мирный в депо ТЧЭ-1.`,
-            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1. Рейс № ${flightNumber} окончен, локомот��в сдан, машинист ${machinistName}!`,
+            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1. Рейс № ${flightNumber} окончен, локомотив сдан, машинист ${machinistName}!`,
             `tr ${passNumber} Понятно! Прибыли в ТЧЭ-1, рейс ${flightNumber} окончен, локомотив сдан.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл в ТЧЭ-1, рейс ${flightNumber} окончен, локомотив сдан.`,
           ],
         })
       } else {
-        // Автономный ��риволжск→Мирный
+        // Автономный Приволжск→Мирный
         segs.push({
           id: "seg-depot-priv",
           title: "Перегон: Депо → Приволжск",
@@ -418,7 +418,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           title: "Перегон: Невский → Приволжск",
           delayMinutes: 0,
           reports: [
-            `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Приволжск готов, Н4 зелён��й.`,
+            `tr ${passNumber} ${loco}-${locomotiveNumber} ${callSign}, маршрут до ст. Приволжск готов, Н4 зелёный.`,
             `cr Принято! Выполняю.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Невский на перегон до ст. Приволжск.`,
             `cr Диспетчер!`,
@@ -529,7 +529,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
             `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 1 путь ст. Приволжск, машинист ${machinistName}.`,
-            `tr ${passNumber} Понятн��, прибыли под посадку на 1 путь ст. Приволжск, ожидайте 3 минуты.`,
+            `tr ${passNumber} Понятно, прибыли под посадку на 1 путь ст. Приволжск, ожидайте 3 минуты.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 1 путь ст. Приволжск, стоянка 3 минуты.`,
           ],
         })
@@ -734,14 +734,14 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
           reports: [
             `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,
             `r [${callSign}]...пл. Азино без остановки.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Н два жёлтых, ве��хний мигающий.`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Приволжск, вижу Н два жёлтых, верхний мигающий.`,
             `r [${callSign}] Прибываем на 2 путь ст. Приволжск.${assistantText}`,
             `r [${callSign}] Прибыли на 2 путь ст. Приволжск. Интервал: 3 минуты.${assistantText}`,
           ],
         })
         segs.push({
           id: "seg-priv-depot",
-          title: "Перего��: Приволжск → Депо",
+          title: "Перегон: Приволжск → Депо",
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
@@ -1029,7 +1029,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             <Alert className={`border-l-4 rounded-xl ${isDark ? "bg-blue-500/10 border-blue-500 backdrop-blur-sm" : "bg-blue-50 border-blue-400"}`}>
               <AlertCircle className="h-5 w-5 text-blue-400" />
               <AlertDescription className={`text-base ${isDark ? "text-blue-200" : "text-blue-700"}`}>
-                <strong>Важно:</strong> Локомотив "Паровоз ЛВ" используется только для туристических рейсов, мероприятий или те��тов.
+                <strong>Важно:</strong> Локомотив "Паровоз ЛВ" используется только для туристических рейсов, мероприятий или тестов.
               </AlertDescription>
             </Alert>
           )}

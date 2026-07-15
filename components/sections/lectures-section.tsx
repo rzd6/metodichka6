@@ -165,7 +165,7 @@ export function LecturesSection() {
             selectedCategory === "additional" ? { backgroundColor: getTieColor(), borderColor: getTieColor() } : {}
           }
         >
-          Дополнитель��ые лекции
+          Дополнительные лекции
         </button>
       </div>
 
