@@ -425,10 +425,14 @@ export function InformationSection({ userRole }: InformationSectionProps) {
 function LeadershipSection({ getTieColor, theme }: any) {
   const [users, setUsers] = useState<Array<{ nickname: string; positionTitle: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
 
   useEffect(() => {
     fetch("/api/public/staff")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((json) => {
         const rows: Array<any> = json.data || []
         setUsers(rows.map((row: any) => ({
@@ -436,7 +440,7 @@ function LeadershipSection({ getTieColor, theme }: any) {
           positionTitle: row.positionTitle ?? "",
         })))
       })
-      .catch(() => setUsers([]))
+      .catch(() => setFetchError(true))
       .finally(() => setIsLoading(false))
   }, [])
 
@@ -465,6 +469,8 @@ function LeadershipSection({ getTieColor, theme }: any) {
               className="inline-block w-28 h-3.5 rounded align-middle animate-pulse"
               style={{ backgroundColor: getTieColor() + "30" }}
             />
+          ) : fetchError ? (
+            <span className="text-red-400/70 text-xs">нет подключения</span>
           ) : (
             <span className={positionColor(nickname)}>{nickname}</span>
           )}
@@ -1275,7 +1281,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     <ul className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                       <li>- Конструкционная скорость - 160 км/ч</li>
                       <li>- Масса тары - 56,9 т.</li>
-                      <li>- Количество пассажирских мест - 54 спальных места</li>
+                      <li>- Коли��ество пассажирских мест - 54 спальных места</li>
                       <li>- Количество мест для проводников - 2 спальных места</li>
                     </ul>
                   </div>

@@ -95,6 +95,12 @@ function addMinutes(time: string | null | undefined, mins: number): string {
   return `${hh}:${mm}`
 }
 
+function timeToMinutes(t: string | null | undefined): number {
+  if (!t) return 9999
+  const [h, m] = t.split(":").map(Number)
+  return (isNaN(h) || isNaN(m)) ? 9999 : h * 60 + m
+}
+
 function getMoscowTime(): string {
   return new Date().toLocaleTimeString("ru-RU", {
     timeZone: "Europe/Moscow",
@@ -144,6 +150,10 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   const [trains, setTrains] = useState<TrainRecord[]>([])
   const [shifts, setShifts] = useState<TrainShift[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [trainsLoading, setTrainsLoading] = useState(true)
+  const [shiftsLoading, setShiftsLoading] = useState(true)
+  const [trainsError, setTrainsError] = useState(false)
+  const [shiftsError, setShiftsError] = useState(false)
 
   const [activeDirection, setActiveDirection] = useState<DirectionTab>("mirny-privolzhsk")
   const [shiftDate, setShiftDate] = useState(getMoscowDateISO())
@@ -208,13 +218,35 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   const isDark = theme.mode === "dark"
 
   const loadTrains = useCallback(async () => {
-    const { data } = await apiFetch("/api/trains")
-    if (Array.isArray(data)) setTrains(data)
+    setTrainsLoading(true)
+    setTrainsError(false)
+    try {
+      const res = await fetch("/api/trains", { headers: { "Content-Type": "application/json" } })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const { data } = await res.json()
+      if (Array.isArray(data)) setTrains(data)
+      else throw new Error("no data")
+    } catch {
+      setTrainsError(true)
+    } finally {
+      setTrainsLoading(false)
+    }
   }, [])
 
   const loadShifts = useCallback(async () => {
-    const { data } = await apiFetch(`/api/train-shifts?date=${shiftDate}&with_trains=1`)
-    if (Array.isArray(data)) setShifts(data)
+    setShiftsLoading(true)
+    setShiftsError(false)
+    try {
+      const res = await fetch(`/api/train-shifts?date=${shiftDate}&with_trains=1`, { headers: { "Content-Type": "application/json" } })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const { data } = await res.json()
+      if (Array.isArray(data)) setShifts(data)
+      else throw new Error("no data")
+    } catch {
+      setShiftsError(true)
+    } finally {
+      setShiftsLoading(false)
+    }
   }, [shiftDate])
 
   useEffect(() => { loadTrains() }, [loadTrains])
@@ -401,7 +433,10 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
         const cell = ws[addr]
         if (!cell) return null
         const w = String(cell.w ?? "").trim()
-        return /^\d{1,2}:\d{2}$/.test(w) ? w : null
+        if (!/^\d{1,2}:\d{2}$/.test(w)) return null
+        // Normalize "1:15" → "01:15" to avoid sorting issues
+        const [h, m] = w.split(":")
+        return `${h.padStart(2, "0")}:${m}`
       }
 
       // Detect direction from row 0 merged header — col C (index 2) = first station name
@@ -626,7 +661,14 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
             ))}
           </div>
 
-          {trains.length === 0 ? (
+          {trainsLoading || shiftsLoading ? (
+            <div className="flex items-center gap-3 px-5 py-6">
+              <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin flex-shrink-0" />
+              <p className="text-white/40 text-sm">Подключение к базе данных...</p>
+            </div>
+          ) : trainsError || shiftsError ? (
+            <p className="px-5 py-6 text-red-400/80 text-sm">Не удалось подключиться к базе данных</p>
+          ) : trains.length === 0 ? (
             <p className="px-5 py-6 text-white/30 text-sm">
               На данный момент рейсов не запланировано
             </p>
@@ -635,7 +677,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
               {DIRECTIONS.filter(({ value: dir }) => dir === activeDirection).map(({ value: dir, label: dirLabel, short }) => {
                 const group = [...trains]
                   .filter((t) => t.direction === dir)
-                  .sort((a, b) => (a.depart_start || "99:99").localeCompare(b.depart_start || "99:99"))
+                  .sort((a, b) => timeToMinutes(a.depart_start) - timeToMinutes(b.depart_start))
 
                 if (group.length === 0) return null
 
@@ -1022,8 +1064,15 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
           )}
 
           {/* Trains list grouped by direction */}
-          {trains.length === 0 ? (
-            <p className="text-center py-8 text-white/40 text-sm">На данный момент рейсов не запланировано</p>
+          {trainsLoading ? (
+            <div className="flex items-center justify-center gap-3 py-8">
+              <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin flex-shrink-0" />
+              <p className="text-white/40 text-sm">Загрузка базы рейсов...</p>
+            </div>
+          ) : trainsError ? (
+            <p className="text-center py-8 text-red-400/80 text-sm">Не удалось подключиться к базе данных</p>
+          ) : trains.length === 0 ? (
+            <p className="text-center py-8 text-white/40 text-sm">База рейсов пуста</p>
           ) : (
             <div className="divide-y divide-[#2a3040]">
               {[
@@ -1032,7 +1081,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
               ].map(({ dir, label }) => {
                 const group = [...trains]
                   .filter((t) => t.direction === dir)
-                  .sort((a, b) => (a.depart_start || "99:99").localeCompare(b.depart_start || "99:99"))
+                  .sort((a, b) => timeToMinutes(a.depart_start) - timeToMinutes(b.depart_start))
                 if (group.length === 0) return null
                 return (
                   <div key={dir}>

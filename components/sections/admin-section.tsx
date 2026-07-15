@@ -83,6 +83,7 @@ export function AdminSection() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [usersError, setUsersError] = useState(false)
   const [newVkId, setNewVkId] = useState("")
   const [newVkIdRaw, setNewVkIdRaw] = useState("")
   const [newVkResolving, setNewVkResolving] = useState(false)
@@ -99,9 +100,18 @@ export function AdminSection() {
   const loadUsers = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true)
     else setIsRefreshing(true)
-    const loadedUsers = await getAllUsers(silent)
-    const sortedUsers = sortUsersByRole(loadedUsers)
-    setUsers(sortedUsers)
+    if (!silent) setUsersError(false)
+    try {
+      const res = await fetch("/api/users", { headers: { "Content-Type": "application/json" } })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      if (!Array.isArray(json.data)) throw new Error("no data")
+      const loadedUsers = await getAllUsers(silent)
+      const sortedUsers = sortUsersByRole(loadedUsers)
+      setUsers(sortedUsers)
+    } catch {
+      if (!silent) setUsersError(true)
+    }
     const current = getCurrentUser()
     setCurrentUser(current)
     if (!silent) setIsLoading(false)
@@ -856,6 +866,11 @@ export function AdminSection() {
               style={{ opacity: 1 - i * 0.12 }}
             />
           ))}
+        </div>
+      ) : usersError ? (
+        <div className={`flex items-center gap-3 p-4 rounded-xl border ${theme.mode === "dark" ? "bg-red-900/20 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600"}`}>
+          <div className="w-2 h-2 rounded-full bg-current flex-shrink-0" />
+          <p className="text-sm">Не удалось подключиться к базе данных. Проверьте соединение и попробуйте обновить страницу.</p>
         </div>
       ) : (
         <>
