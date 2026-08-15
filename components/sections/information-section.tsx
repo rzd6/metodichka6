@@ -22,10 +22,12 @@ import { useTheme } from "@/contexts/theme-context"
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import type { UserRole } from "@/data/users"
+import { isTechAdmin } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
 
 interface InformationSectionProps {
   userRole?: UserRole
+  userSecondaryRole?: string
 }
 
 function ExpandableImage({ src, alt, label }: { src: string; alt: string; label?: string }) {
@@ -54,7 +56,7 @@ function ExpandableImage({ src, alt, label }: { src: string; alt: string; label?
   )
 }
 
-export function InformationSection({ userRole }: InformationSectionProps) {
+export function InformationSection({ userRole, userSecondaryRole }: InformationSectionProps) {
   const { theme } = useTheme()
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isScrollingUp, setIsScrollingUp] = useState(false)
@@ -161,8 +163,8 @@ export function InformationSection({ userRole }: InformationSectionProps) {
 
     if (!userRole) return allSections
 
-    // Тех. Администратор sees the same content as Руководство
-    const effectiveRole = userRole === "Тех. Администратор" ? "Руководство" : userRole
+    // Тех. Администратор (основная или вторая роль) видит контент как Руководство
+    const effectiveRole = isTechAdmin(userRole, userSecondaryRole) ? "Руководство" : userRole
     return allSections.filter((section) => section.roles.includes(effectiveRole))
   }
 
@@ -253,7 +255,7 @@ export function InformationSection({ userRole }: InformationSectionProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <DutiesSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+              <DutiesSection getTieColor={getTieColor} theme={theme} userRole={userRole} userSecondaryRole={userSecondaryRole} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -272,7 +274,7 @@ export function InformationSection({ userRole }: InformationSectionProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <VehiclesSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+              <VehiclesSection getTieColor={getTieColor} theme={theme} userRole={userRole} userSecondaryRole={userSecondaryRole} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -329,7 +331,7 @@ export function InformationSection({ userRole }: InformationSectionProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <CommandsSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+              <CommandsSection getTieColor={getTieColor} theme={theme} userRole={userRole} userSecondaryRole={userSecondaryRole} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -553,12 +555,13 @@ function LeadershipSection({ getTieColor, theme }: any) {
   )
 }
 
-function DutiesSection({ getTieColor, theme, userRole }: any) {
-  const showPTO = !userRole || userRole === "ПТО"
-  const showCdUD = !userRole || userRole === "ЦдУД"
-  const showSenior = !userRole || userRole === "Старший Состав"
-  const showDeputy = !userRole || userRole === "Заместитель"
-  const showLeadership = !userRole || userRole === "Руководство"
+function DutiesSection({ getTieColor, theme, userRole, userSecondaryRole }: any) {
+  const showAll = !userRole || isTechAdmin(userRole, userSecondaryRole)
+  const showPTO = showAll || userRole === "ПТО"
+  const showCdUD = showAll || userRole === "ЦдУД"
+  const showSenior = showAll || userRole === "Старший Состав"
+  const showDeputy = showAll || userRole === "Заместитель"
+  const showLeadership = showAll || userRole === "Руководство"
 
   return (
     <div id="duties" className="space-y-6 scroll-mt-6">
@@ -657,7 +660,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
                     Основная обязанность:
                   </p>
                   <p className={`text-sm leading-relaxed ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-                    Ремонт железнодорожных путей. Если у него есть водительское удостоверение категории C, то он м��жет
+                    Ремонт железнодорожных путей. Если у него есть водительское удост��верение категории C, то он м��жет
                     взять на парковке у здания РЖД специальный транспорт - служебный ЗИЛ, который позволит быстро и
                     комфортно добираться до места работы. Кроме того, использование специального транспорта позволит ему
                     находиться в паре с другим сотрудником второго ранга. Важно отметить, что использование других видов
@@ -770,7 +773,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
                     диспетчера, машинист может следовать автономно, с соблюдением всех правил. Машинист обязан следить
                     за сообщениями от диспетчера для возможных сообщений об экстренных остановках. В случае пропуска
                     остановки, машинист обязан немедленно доложить об этом диспетчеру, а также остановиться и
-                    отправиться по расписанию. Строго запрещён возврат на станцию задним ходом!
+                    отправиться по расписанию. Строго з��прещён возврат на станцию задним ходом!
                   </p>
                 </div>
               </CardContent>
@@ -897,11 +900,12 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
   )
 }
 
-function VehiclesSection({ getTieColor, theme, userRole }: any) {
+function VehiclesSection({ getTieColor, theme, userRole, userSecondaryRole }: any) {
+  const showAll = !userRole || isTechAdmin(userRole, userSecondaryRole)
   const canSeePatriot =
-    !userRole || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
+    showAll || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
   const canSeePAZ =
-    !userRole || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
+    showAll || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
 
   return (
     <div id="vehicles" className="space-y-6 scroll-mt-6">
@@ -1275,7 +1279,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     <ul className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                       <li>- Конструкционная скорость - 160 км/ч</li>
                       <li>- Масса тары - 56,9 т.</li>
-                      <li>- Количество пассажирских мест - 54 спальных места</li>
+                      <li>- Коли��ество пассажирских мест - 54 спальных места</li>
                       <li>- Количество мест для проводников - 2 спальных места</li>
                     </ul>
                   </div>
@@ -1366,9 +1370,9 @@ function RollingStockSection({ getTieColor, theme }: any) {
   )
 }
 
-function TagsSection({ getTieColor, theme, userRole }: any) {
+function TagsSection({ getTieColor, theme, userRole, userSecondaryRole }: any) {
   const showRanks = (ranks: number[]) => {
-    if (!userRole) return true
+    if (!userRole || isTechAdmin(userRole, userSecondaryRole)) return true
 
     if (userRole === "ПТО") return ranks.some((r) => r >= 1 && r <= 2)
     if (userRole === "ЦдУД") return ranks.some((r) => r >= 3 && r <= 5)
@@ -1539,9 +1543,13 @@ function DutyLocationsSection({ getTieColor, theme }: any) {
   )
 }
 
-function CommandsSection({ getTieColor, theme, userRole }: any) {
+function CommandsSection({ getTieColor, theme, userRole, userSecondaryRole }: any) {
   const showSeniorCommands =
-    !userRole || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
+    !userRole ||
+    isTechAdmin(userRole, userSecondaryRole) ||
+    userRole === "Старший Состав" ||
+    userRole === "Заместитель" ||
+    userRole === "Руководство"
 
   return (
     <div id="commands" className="space-y-6 scroll-mt-6">

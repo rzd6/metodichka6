@@ -30,6 +30,9 @@ import { getIconComponent } from "@/components/section-editor/section-editor-hea
 import { SectionEditorPage } from "@/components/section-editor/section-editor-page"
 import type { UserRole } from "@/data/roles"
 
+// Временно скрыто: создание новых авторских разделов. Переключить обратно на true, чтобы вернуть функциональность.
+const SHOW_CREATE_SECTION_BUTTON = false
+
 interface SidebarUser {
   id: string
   nickname: string
@@ -143,12 +146,14 @@ export function SectionsManagementTab({ currentUser }: Props) {
             <RefreshCw className={`w-3 h-3 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
             Обновить
           </Button>
-          <Button size="sm" onClick={() => setEditorTarget(null)}
-            className="h-8 px-3 text-xs text-white font-semibold"
-            style={{ backgroundColor: tieColor }}>
-            <Plus className="w-3 h-3 mr-1.5" />
-            Создать раздел
-          </Button>
+          {SHOW_CREATE_SECTION_BUTTON && (
+            <Button size="sm" onClick={() => setEditorTarget(null)}
+              className="h-8 px-3 text-xs text-white font-semibold"
+              style={{ backgroundColor: tieColor }}>
+              <Plus className="w-3 h-3 mr-1.5" />
+              Создать раздел
+            </Button>
+          )}
         </div>
       </div>
 

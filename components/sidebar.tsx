@@ -46,6 +46,9 @@ import {
 } from "@/data/custom-sections"
 import { getIconComponent } from "@/components/section-editor/section-editor-header"
 
+// Временно скрыто: авторские (кастомные) разделы. Переключить обратно на true, чтобы вернуть функциональность.
+const SHOW_CUSTOM_SECTIONS = false
+
 interface LocalUser {
   id: string
   nickname: string
@@ -558,7 +561,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
     sections.push({ id: "rzd-website", label: "Официальные уведомления" })
   }
 
-  if (user.role !== "ПТО") {
+  if (user.role !== "ПТО" || isTechAdmin) {
     sections.push({ id: "train-schedule", label: "Расписание рейсов" })
   }
 
@@ -713,7 +716,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
             })}
 
             {/* Custom sections */}
-            {customSections
+            {SHOW_CUSTOM_SECTIONS && customSections
               .filter((cs) => !cs.is_hidden || isTechAdmin)
               .map((cs) => {
                 const IconComp = getIconComponent(cs.icon)

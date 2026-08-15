@@ -11,14 +11,15 @@ import { getThemeColor } from "@/lib/theme-utils"
 import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 import { formatReportText } from "@/lib/report-text"
-import { getEffectiveReportTag } from "@/data/users"
+import { getEffectiveReportTag, isTechAdmin } from "@/data/users"
 import type { UserGender } from "@/data/roles"
 
 interface RadioReportsSectionProps {
   userRole?: UserRole
+  userSecondaryRole?: string
 }
 
-export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
+export function RadioReportsSection({ userRole, userSecondaryRole }: RadioReportsSectionProps) {
   const { theme } = useTheme()
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
   const [userTag, setUserTag] = useState("[ТЭГ]")
@@ -74,7 +75,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
   }
 
   const canSeeReport = (reportRank: string): boolean => {
-    if (!userRole) return true
+    if (!userRole || isTechAdmin(userRole, userSecondaryRole)) return true
 
     if (reportRank === "duty") return true
 
@@ -322,7 +323,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
   }
 
   const dutyReports = {
-    title: "Дежурство на переездах и станциях",
+    title: "Дежурство на переездах и ста��циях",
     sections: [
       {
         subtitle: "Дежурство на переезде [ДПП]",

@@ -79,7 +79,8 @@ export const CONFIGURABLE_SECTIONS: SectionPermissionDef[] = [
   {
     id: "bug-report",
     label: "Баг-репорт",
-    allowedRoles: ["Руководство"],
+    // Пункт в sidebar виден только Тех. Администратору (обход через isTechAdminRole в canAccessConfiguredSection)
+    allowedRoles: [],
   },
 ]
 

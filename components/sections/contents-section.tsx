@@ -40,9 +40,10 @@ import { getThemeColor } from "@/lib/theme-utils"
 interface ContentsSectionProps {
   onSectionChange: (section: string) => void
   userRole: UserRole
+  userSecondaryRole?: string
 }
 
-export function ContentsSection({ onSectionChange, userRole }: ContentsSectionProps) {
+export function ContentsSection({ onSectionChange, userRole, userSecondaryRole }: ContentsSectionProps) {
   const { theme } = useTheme()
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
@@ -60,35 +61,35 @@ export function ContentsSection({ onSectionChange, userRole }: ContentsSectionPr
       icon: BookOpenText,
       title: "Лекции",
       description: "Обучающие материалы для сотрудников РЖД. Включает основные и дополнительные лекции.",
-      canAccess: canAccessEducationalContent(userRole),
+      canAccess: canAccessEducationalContent(userRole, userSecondaryRole),
     },
     {
       id: "training",
       icon: Dumbbell,
       title: "Тренировки",
       description: "Физические упражнения и программы для поддержания формы сотрудников.",
-      canAccess: canAccessEducationalContent(userRole),
+      canAccess: canAccessEducationalContent(userRole, userSecondaryRole),
     },
     {
       id: "events",
       icon: Calendar,
       title: "Мероприятия",
       description: "Корпоративные мероприятия и события для сотрудников РЖД.",
-      canAccess: canAccessEducationalContent(userRole),
+      canAccess: canAccessEducationalContent(userRole, userSecondaryRole),
     },
     {
       id: "exams",
       icon: GraduationCap,
       title: "Экзамены",
       description: "Теоретические и практические экзамены для проверки знаний.",
-      canAccess: canAccessEducationalContent(userRole),
+      canAccess: canAccessEducationalContent(userRole, userSecondaryRole),
     },
     {
       id: "interviews",
       icon: Briefcase,
       title: "Собеседования",
       description: "Материалы для проведения собеседований с кандидатами.",
-      canAccess: canAccessInterviews(userRole),
+      canAccess: canAccessInterviews(userRole, userSecondaryRole),
     },
     {
       id: "duty",
@@ -109,28 +110,28 @@ export function ContentsSection({ onSectionChange, userRole }: ContentsSectionPr
       icon: FileBarChart,
       title: "Генерация отчётов",
       description: "Создание отчётов для различных подразделений РЖД.",
-      canAccess: true, // Available to all roles
+      canAccess: false, // Временно скрыто для всех ролей
     },
     {
       id: "orders",
       icon: FileCheck,
       title: "Приказы",
       description: "Шаблоны приказов по дисциплине, увольнению, приёму и другим вопросам.",
-      canAccess: canAccessOrders(userRole),
+      canAccess: canAccessOrders(userRole, userSecondaryRole),
     },
     {
       id: "gov-wave",
       icon: Radio,
       title: "Гос Волна",
       description: "Шаблоны объявлений для государственной волны на разных этапах.",
-      canAccess: canAccessGovWave(userRole),
+      canAccess: canAccessGovWave(userRole, userSecondaryRole),
     },
     {
       id: "report-compiler",
       icon: Settings,
       title: "Составитель докладов",
       description: "Инструмент для автоматического создания докладов о рейсах.",
-      canAccess: canAccessReportCompiler(userRole),
+      canAccess: canAccessReportCompiler(userRole, userSecondaryRole),
     },
     {
       id: "retro-train",
@@ -151,7 +152,7 @@ export function ContentsSection({ onSectionChange, userRole }: ContentsSectionPr
       icon: Users,
       title: "Управление",
       description: "Управление правами доступа и учётными записями сотрудников.",
-      canAccess: canAccessManagement(userRole),
+      canAccess: canAccessManagement(userRole, userSecondaryRole),
     },
   ]
 
@@ -226,7 +227,7 @@ export function ContentsSection({ onSectionChange, userRole }: ContentsSectionPr
                 Журнал Активности
               </a>
             </Button>
-            {canAccessGoogleSheets(userRole) && (
+            {canAccessGoogleSheets(userRole, userSecondaryRole) && (
               <Button
                 asChild
                 size="lg"
@@ -243,7 +244,7 @@ export function ContentsSection({ onSectionChange, userRole }: ContentsSectionPr
                 </a>
               </Button>
             )}
-            {canAccessGovWave(userRole) && (
+            {canAccessGovWave(userRole, userSecondaryRole) && (
               <Button
                 asChild
                 size="lg"
