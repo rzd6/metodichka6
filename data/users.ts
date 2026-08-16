@@ -4,6 +4,7 @@ import {
   normalizeStoredRole,
   sortUsersByRole,
   DEFAULT_REPORT_TAGS,
+  POSITION_REPORT_TAGS,
 } from "./roles"
 
 export type { UserRole, UserGender } from "./roles"
@@ -274,11 +275,13 @@ export function isTechAdmin(role: UserRole, secondaryRole?: string): boolean {
   return role === "Тех. Администратор" || secondaryRole === "Тех. Администратор"
 }
 
-export function getEffectiveReportTag(user: Pick<User, "role" | "reportTag">): string {
-  const tag = user.reportTag?.trim()
-  if (tag) {
-    if (tag.startsWith("[") && tag.endsWith("]")) return tag
-    return `[${tag}]`
+/**
+ * Служебный тег в докладах выставляется автоматически по должности пользователя.
+ * Кастомные (произвольные) теги больше не поддерживаются.
+ */
+export function getEffectiveReportTag(user: Pick<User, "role" | "position">): string {
+  if (user.position && POSITION_REPORT_TAGS[user.position]) {
+    return POSITION_REPORT_TAGS[user.position]
   }
   return DEFAULT_REPORT_TAGS[user.role] || "[ТЭГ]"
 }

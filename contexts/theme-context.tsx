@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { POSITION_REPORT_TAGS } from "@/data/roles"
 
 interface Theme {
   background: string
@@ -123,18 +124,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(theme)
   }, [theme])
 
-  const getTag = () => {
-    try {
-      const u = JSON.parse(localStorage.getItem("currentUser") || "null")
-      if (u?.reportTag) {
-        const t = String(u.reportTag).trim()
-        return t.startsWith("[") ? t : `[${t}]`
-      }
-    } catch {
-      /* ignore */
-    }
-    return getTagFromPosition(userProfile.position)
-  }
+  // Служебный тег в докладах выставляется автоматически по должности (кастомные теги не поддерживаются)
+  const getTag = () => getTagFromPosition(userProfile.position)
 
   return (
     <ThemeContext.Provider
@@ -192,26 +183,5 @@ function getFontSizeClass(fontSize: string) {
 }
 
 export function getTagFromPosition(position: string): string {
-  const positionTagMap: { [key: string]: string } = {
-    "Начальник Депо": "[ТЧ]",
-    "Первый Заместитель Начальника Депо": "[ТЧЗ-1]",
-    "Зам. Начальника Депо по кадровой работе": "[ТЧЗк]",
-    "Зам. Начальника Депо по эксплуатации": "[ТЧЗэ]",
-    "Начальник ЭО": "[ЦКАДР]",
-    "Начальник ЦдУД": "[ДГПд]",
-    "Начальник ПТО": "[ДГПт]",
-    "Машинист-инструктор / Зам.Нач.ЭО": "[ТЧМИ]",
-    "Машинист-инструктор / Зам.Нач.ЦдУД": "[ТЧМИ]",
-    "Машинист-инструктор / Зам.Нач.ПТО": "[ТЧМИ]",
-    "Старший диспетчер": "[ДНЦ-С]",
-    "Поездной диспетчер": "[ДНЦ]",
-    "Оператор при ДНЦ": "[ДНЦ-О]",
-    "Машинист первого класса": "[ТЧМ-1КМ]",
-    "Машинист второго класса": "[ТЧМ-2КМ]",
-    "Машинист третьего класса": "[ТЧМ-3КМ]",
-    "Помощник машиниста": "[ТЧМП]",
-    "Монтёр пути": "[ПЧ]",
-    "Слесарь-электрик": "[ТЧР]",
-  }
-  return positionTagMap[position] || ""
+  return POSITION_REPORT_TAGS[position] || ""
 }

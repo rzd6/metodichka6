@@ -122,7 +122,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
       { tag: "[ТЧМ-1КМ]", name: "Машинист первого класса" },
     ],
     rank5: [
-      { tag: "[ДНЦ-О]", name: "Оператор при поездном диспетчере" },
+      { tag: "[ДСП]", name: "Дежурный по станции" },
       { tag: "[ДНЦ]", name: "Поездной диспетчер" },
       { tag: "[ДНЦ-С]", name: "Старший поездной диспетчер" },
     ],
@@ -322,7 +322,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
   }
 
   const dutyReports = {
-    title: "Дежурство на переездах и станциях",
+    title: "Дежурство на переездах и ста��циях",
     sections: [
       {
         subtitle: "Дежурство на переезде [ДПП]",
