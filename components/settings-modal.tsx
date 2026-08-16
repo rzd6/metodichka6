@@ -23,12 +23,12 @@ import {
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AccessPermissionsPanel } from "@/components/settings/access-permissions-panel"
-import { DEFAULT_REPORT_TAGS, type UserGender } from "@/data/roles"
+import { type UserGender } from "@/data/roles"
 import { ColorPicker } from "@/components/ui/color-picker"
 import { getThemeColor } from "@/lib/theme-utils"
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { updateUser } from "@/data/users"
+import { updateUser, getEffectiveReportTag } from "@/data/users"
 import { ImageCropModal } from "@/components/image-crop-modal"
 
 interface SettingsModalProps {
@@ -46,7 +46,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [techMode, setTechMode] = useState(false)
   const [techModeLoading, setTechModeLoading] = useState(false)
   const [settingsTab, setSettingsTab] = useState<"appearance" | "account">("appearance")
-  const [reportTag, setReportTag] = useState("")
   const [gender, setGender] = useState<UserGender>("male")
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
@@ -96,7 +95,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setProfileError("")
       setProfileSaved(false)
       const cu = JSON.parse(localStorage.getItem("currentUser") || "null")
-      setReportTag(cu?.reportTag?.replace(/^\[|\]$/g, "") ?? "")
       setGender(cu?.gender === "female" ? "female" : "male")
       // Load current tech mode from Supabase
       fetch("/api/tech-mode")
@@ -264,13 +262,11 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }
     setProfileSaving(true)
     try {
-      const normalizedTag = reportTag.trim() ? reportTag.trim().replace(/^\[|\]$/g, "") : ""
       const res = await fetch("/api/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: currentUser.id,
-          report_tag: normalizedTag || null,
           gender,
         }),
       })
@@ -281,7 +277,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       }
       const updated = {
         ...currentUser,
-        reportTag: normalizedTag || undefined,
         gender,
       }
       localStorage.setItem("currentUser", JSON.stringify(updated))
@@ -297,11 +292,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const previewTag = (() => {
     try {
       const u = JSON.parse(localStorage.getItem("currentUser") || "null")
-      if (reportTag.trim()) {
-        const t = reportTag.trim().replace(/^\[|\]$/g, "")
-        return `[${t}]`
-      }
-      return u?.role ? DEFAULT_REPORT_TAGS[u.role as keyof typeof DEFAULT_REPORT_TAGS] || "[ТЭГ]" : "[ТЭГ]"
+      return getEffectiveReportTag(u ?? { role: "ЦдУД" })
     } catch {
       return "[ТЭГ]"
     }
@@ -590,13 +581,14 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
               <Tag className="w-4 h-4" style={{ color: getTieColor() }} />
               Служебный тег в докладах
             </Label>
-            <input
-              value={reportTag}
-              onChange={(e) => { setReportTag(e.target.value); setProfileSaved(false) }}
-              placeholder="Например: ПЧ"
-              className={`w-full h-10 rounded-lg border px-3 text-sm outline-none ${theme.mode === "dark" ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-black"}`}
-            />
-            <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>Подстановка в рации: {previewTag}</p>
+            <div
+              className={`w-full h-10 rounded-lg border px-3 flex items-center text-sm font-medium ${theme.mode === "dark" ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-black"}`}
+            >
+              {previewTag}
+            </div>
+            <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>
+              Тег выставляется автоматически в зависимости от вашей должности и не может быть изменён вручную.
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -617,7 +609,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
           </div>
 
           <button onClick={handleSaveProfile} disabled={profileSaving} className="w-full h-10 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ backgroundColor: getTieColor() }}>
-            {profileSaving ? "Сохранение..." : profileSaved ? "Профиль сохранён" : "Сохранить тег и пол"}
+            {profileSaving ? "Сохранение..." : profileSaved ? "Пол сохранён" : "Сохранить пол"}
           </button>
           {profileError && <p className="text-xs text-red-500">{profileError}</p>}
 

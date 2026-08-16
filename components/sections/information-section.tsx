@@ -534,7 +534,7 @@ function LeadershipSection({ getTieColor, theme }: any) {
 
           <div className="space-y-3">
             <h3 className={`text-base font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-              Заместители начальников отделов
+              Заместите��и начальников отделов
             </h3>
             <div className="space-y-2">
               <PositionRow label="Заместитель начальника ЭО" positionTitle="Машинист-инструктор/Зам.Нач.ЭО" />
@@ -573,7 +573,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
       <div className="flex items-center gap-3 pb-4 border-b" style={{ borderColor: getTieColor() + "40" }}>
         <Briefcase className="w-6 h-6" style={{ color: getTieColor() }} />
         <h2 className="text-2xl font-bold" style={{ color: getTieColor() }}>
-          Раздел II. Основные обязанности сотрудников
+          Раздел II. Основные обязанности сотрудник��в
         </h2>
       </div>
       <div className="space-y-6">
@@ -905,7 +905,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
 
 function VehiclesSection({ getTieColor, theme, userRole }: any) {
   const canSeePatriot =
-    !userRole || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
+    !userRole || userRole === "Старший ��остав" || userRole === "Заместитель" || userRole === "Руководство"
   const canSeePAZ =
     !userRole || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
 
@@ -1453,7 +1453,7 @@ function TagsSection({ getTieColor, theme, userRole }: any) {
               >
                 <p className={`font-bold mb-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>5 ранг:</p>
                 <div className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-                  <p>[ДНЦ-О] Оператор при поездном диспетчере</p>
+                  <p>[ДСП] Дежурный по станции</p>
                   <p>[ДНЦ] Поездной диспетчер</p>
                   <p>[ДНЦ-С] Старший поездной диспетчер</p>
                 </div>
@@ -1573,7 +1573,7 @@ function CommandsSection({ getTieColor, theme, userRole }: any) {
               <p>/r [текст] - IC рация фракции. (с 1 ранга)</p>
               <p>/rb [текст] - OOC (NonRP) рация фракции. (с 1 ранга)</p>
               <p>/db [текст] - OOC (NonRP) общая рация всех фракций. (с 6 ранга)</p>
-              <p>/d [текст] - IC общая рация всех фракций. (с 6 ранга)</p>
+              <p>/d [текст] - IC общая рация всех фракций. (с 6 ра��га)</p>
             </div>
           </CardContent>
         </Card>
@@ -1768,7 +1768,7 @@ function OfficesSection({ getTieColor, theme }: any) {
         >
           <CardContent className="pt-6 space-y-4">
             <h3 className={`text-lg font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-              Комната отдыха сотрудников
+              Ком��ата отдыха сотрудников
             </h3>
             <div
               className="rounded-xl overflow-hidden border-2"
@@ -2061,7 +2061,7 @@ function RetroTrainSection({ getTieColor, theme }: any) {
                     Поездной диспетчер
                   </p>
                   <p className={`text-sm ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-                    Доступно только с должности Оператор при ДНЦ (Возможны исключения)
+                    Доступно только с должности Дежурный по станции (Возможны исключения)
                   </p>
                   <p className={`text-sm mt-1 ${theme.mode === "dark" ? "text-white/60" : "text-gray-500"}`}>
                     Обязанности: Сопровождать поезд во время следования
