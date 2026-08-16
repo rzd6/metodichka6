@@ -25,12 +25,8 @@ import {
   Link,
   Terminal,
   RefreshCw,
-  Layers,
-  History,
   ClipboardList,
 } from "lucide-react"
-import { SectionsManagementTab } from "@/components/sections/sections-management-tab"
-import { SectionAuditTab } from "@/components/sections/section-audit-tab"
 import { BuiltinSectionsTab } from "@/components/sections/builtin-sections-tab"
 import { StaffAuditTab, logStaffAction } from "@/components/sections/staff-audit-tab"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -64,7 +60,7 @@ function getCurrentUser() {
 
 export function AdminSection() {
   const { theme } = useTheme()
-  const [activeTab, setActiveTab] = useState<"accounts" | "sections" | "audit" | "builtin" | "staff-log">("accounts")
+  const [activeTab, setActiveTab] = useState<"accounts" | "builtin" | "staff-log">("accounts")
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
@@ -640,47 +636,13 @@ export function AdminSection() {
   const isTechAdminUser = isCurrentTechAdmin()
 
   // If showing a non-accounts tab that needs full-page editor, render separately
-  if (activeTab === "sections" && isTechAdminUser) {
-    return (
-      <div className="space-y-3 opacity-95">
-        {/* Tab bar */}
-        <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
-          {[
-            { id: "accounts" as const, label: "Аккаунты", icon: Users },
-            { id: "sections" as const, label: "Разделы", icon: Layers },
-            { id: "builtin" as const, label: "Встроенные", icon: Wrench },
-            { id: "audit" as const, label: "Аудит разделов", icon: History },
-            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
-          ].map(({ id, label, icon: Ic }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={activeTab === id ? { backgroundColor: getTieColor(), color: "#fff" } : { color: theme.mode === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
-            >
-              <Ic className="w-4 h-4" />
-              <span className="hidden sm:block">{label}</span>
-            </button>
-          ))}
-        </div>
-        {currentUser && (
-          <SectionsManagementTab
-            currentUser={{ id: currentUser.id, nickname: currentUser.nickname, role: currentUser.role, vkAccessToken: "", secondaryRole: currentUser.secondaryRole, reportTag: currentUser.reportTag }}
-          />
-        )}
-      </div>
-    )
-  }
-
   if (activeTab === "builtin" && isTechAdminUser) {
     return (
       <div className="space-y-3 opacity-95">
         <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
           {[
             { id: "accounts" as const, label: "Аккаунты", icon: Users },
-            { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
-            { id: "audit" as const, label: "Аудит разделов", icon: History },
             { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
@@ -701,34 +663,6 @@ export function AdminSection() {
     )
   }
 
-  if (activeTab === "audit" && isTechAdminUser) {
-    return (
-      <div className="space-y-3 opacity-95">
-        {/* Tab bar */}
-        <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
-          {[
-            { id: "accounts" as const, label: "Аккаунты", icon: Users },
-            { id: "sections" as const, label: "Разделы", icon: Layers },
-            { id: "builtin" as const, label: "Встроенные", icon: Wrench },
-            { id: "audit" as const, label: "Аудит разделов", icon: History },
-            { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
-          ].map(({ id, label, icon: Ic }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={activeTab === id ? { backgroundColor: getTieColor(), color: "#fff" } : { color: theme.mode === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
-            >
-              <Ic className="w-4 h-4" />
-              <span className="hidden sm:block">{label}</span>
-            </button>
-          ))}
-        </div>
-        <SectionAuditTab tieColor={getTieColor()} isDark={theme.mode === "dark"} />
-      </div>
-    )
-  }
-
   if (activeTab === "staff-log" && isTechAdminUser) {
     return (
       <div className="space-y-3 opacity-95">
@@ -736,9 +670,7 @@ export function AdminSection() {
         <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
           {[
             { id: "accounts" as const, label: "Аккаунты", icon: Users },
-            { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
-            { id: "audit" as const, label: "Аудит разделов", icon: History },
             { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
@@ -764,9 +696,7 @@ export function AdminSection() {
         <div className="flex gap-1 p-1 rounded-xl border" style={{ borderColor: getTieColor() + "30", backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}>
           {[
             { id: "accounts" as const, label: "Аккаунты", icon: Users },
-            { id: "sections" as const, label: "Разделы", icon: Layers },
             { id: "builtin" as const, label: "Встроенные", icon: Wrench },
-            { id: "audit" as const, label: "Аудит разделов", icon: History },
             { id: "staff-log" as const, label: "Лог сотрудников", icon: ClipboardList },
           ].map(({ id, label, icon: Ic }) => (
             <button
@@ -1380,7 +1310,7 @@ export function AdminSection() {
               <span className="font-semibold" style={{ color: getTieColor() }}>
                 {deleteConfirmUser?.nickname}
               </span>
-              ? Это действие необратимо.
+              ? Это дейст��ие необратимо.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
