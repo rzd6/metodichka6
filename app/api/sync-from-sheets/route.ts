@@ -204,7 +204,7 @@ function isSectionRow(nickname: string, positionRaw: string): boolean {
  * Layout (0-indexed columns):
  *   A=0  Никнейм
  *   C=2  Должность
- *   H=7  Банковский счёт (default password)
+ *   H=7  Банковский с��ёт (default password)
  *   I=8  ВКонтакте (hyperlink cell — display text is person's name, URL may be any VK form)
  */
 async function parseEmployeesFromGridData(sheetData: any): Promise<SheetEmployee[]> {
@@ -264,6 +264,56 @@ async function ensureColumns(db: Pool): Promise<void> {
   `)
 }
 
+// ─── Staff audit logging (records changes made by the Google Sheets sync) ────
+
+const SYNC_ACTOR = { id: "google-sheets-sync", nickname: "Google Таблица", role: "Синхронизация" }
+
+async function ensureStaffAuditTable(db: Pool): Promise<void> {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS staff_audit_log (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      action      TEXT NOT NULL,
+      actor_id    TEXT NOT NULL,
+      actor_nickname TEXT NOT NULL,
+      actor_role  TEXT NOT NULL,
+      target_id   TEXT,
+      target_nickname TEXT,
+      old_role    TEXT,
+      new_role    TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_staff_audit_created ON staff_audit_log(created_at DESC);
+  `)
+}
+
+async function logSyncAction(
+  db: Pool,
+  action: "add" | "delete" | "role_change",
+  target: { id: string; nickname: string } | null,
+  oldRole: string | null,
+  newRole: string | null
+): Promise<void> {
+  try {
+    await db.query(
+      `INSERT INTO staff_audit_log
+         (action, actor_id, actor_nickname, actor_role, target_id, target_nickname, old_role, new_role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        action,
+        SYNC_ACTOR.id,
+        SYNC_ACTOR.nickname,
+        SYNC_ACTOR.role,
+        target?.id ?? null,
+        target?.nickname ?? null,
+        oldRole,
+        newRole,
+      ]
+    )
+  } catch (err) {
+    console.error("[sync-from-sheets] failed to write staff audit log entry:", err)
+  }
+}
+
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function GET() {
@@ -308,17 +358,18 @@ export async function GET() {
 
     console.log("[sync-from-sheets] step: ensureColumns")
     await ensureColumns(db)
+    await ensureStaffAuditTable(db)
 
     // Fetch all existing users (columns we need)
     console.log("[sync-from-sheets] step: SELECT users")
     const { rows: dbUsers } = await db.query(`
-      SELECT id, username, secondary_role, position_title, absent_since
+      SELECT id, username, position, secondary_role, position_title, absent_since
       FROM users
     `)
     console.log("[sync-from-sheets] db users count:", dbUsers.length)
 
     // Index by nickname (username column in DB)
-    const dbByNickname = new Map<string, { id: string; secondary_role: string | null; position_title: string | null; absent_since: Date | null }>()
+    const dbByNickname = new Map<string, { id: string; position: string | null; secondary_role: string | null; position_title: string | null; absent_since: Date | null }>()
     for (const u of dbUsers) dbByNickname.set(u.username, u)
 
     const sheetNicknames = new Set(sheetEmployees.map((e) => e.nickname))
@@ -331,11 +382,12 @@ export async function GET() {
         // ── New account ──────────────────────────────────────────────────────
         // Password = bank account number from col H; flag it as default
         const password = emp.bankAccount.trim() || "password123"
-        await db.query(
+        const insertRes = await db.query(
           `INSERT INTO users
              (username, password, full_name, position, rank, avatar, vk_id, position_title, is_default_password)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
-           ON CONFLICT (username) DO NOTHING`,
+           ON CONFLICT (username) DO NOTHING
+           RETURNING id`,
           [
             emp.nickname,
             password,
@@ -348,6 +400,10 @@ export async function GET() {
           ]
         )
         stats.created++
+        const newId = insertRes.rows[0]?.id
+        if (newId) {
+          await logSyncAction(db, "add", { id: newId, nickname: emp.nickname }, null, emp.position)
+        }
       } else {
         // ── Existing account ─────────────────────────────────────────────────
         // Skip Тех. Администратор — never overwrite their data from the sheet
@@ -359,6 +415,9 @@ export async function GET() {
         // Update role, rank, position_title.
         // VK: only set if the sheet has a value AND the DB currently has none.
         // Password is NEVER touched for existing accounts.
+        const oldLabel = existing.position_title || existing.position || null
+        const newLabel = emp.position || emp.role
+
         await db.query(
           `UPDATE users SET
              position      = $2,
@@ -370,6 +429,11 @@ export async function GET() {
           [existing.id, emp.role, emp.rank, emp.position, emp.vkId]
         )
         stats.updated++
+
+        // Only log an entry to the staff log when the position/role actually changed
+        if (oldLabel !== newLabel) {
+          await logSyncAction(db, "role_change", { id: existing.id, nickname: emp.nickname }, oldLabel, newLabel)
+        }
       }
     }
 
@@ -392,6 +456,13 @@ export async function GET() {
           // Been absent for 3+ minutes — safe to delete
           await db.query("DELETE FROM users WHERE id = $1", [dbUser.id])
           stats.deleted++
+          await logSyncAction(
+            db,
+            "delete",
+            { id: dbUser.id, nickname },
+            dbUser.position_title || dbUser.position || null,
+            null
+          )
         }
         // else: still within the grace period — skip
       } else {
