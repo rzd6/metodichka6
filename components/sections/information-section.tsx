@@ -22,10 +22,12 @@ import { useTheme } from "@/contexts/theme-context"
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import type { UserRole } from "@/data/users"
+import { isTechAdmin } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
 
 interface InformationSectionProps {
   userRole?: UserRole
+  secondaryRole?: "Тех. Администратор" | "РЖД"
 }
 
 function ExpandableImage({ src, alt, label }: { src: string; alt: string; label?: string }) {
@@ -54,8 +56,14 @@ function ExpandableImage({ src, alt, label }: { src: string; alt: string; label?
   )
 }
 
-export function InformationSection({ userRole }: InformationSectionProps) {
+export function InformationSection({ userRole, secondaryRole }: InformationSectionProps) {
   const { theme } = useTheme()
+  // Тех. Администратор (основная или вторая роль) видит весь контент как "Руководство"
+  const effectiveRole: UserRole | undefined = userRole
+    ? isTechAdmin(userRole, secondaryRole)
+      ? "Руководство"
+      : userRole
+    : userRole
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isScrollingUp, setIsScrollingUp] = useState(false)
   const tocRef = useRef<HTMLDivElement>(null)
@@ -159,10 +167,8 @@ export function InformationSection({ userRole }: InformationSectionProps) {
       // },
     ]
 
-    if (!userRole) return allSections
+    if (!effectiveRole) return allSections
 
-    // Тех. Администратор sees the same content as Руководство
-    const effectiveRole = userRole === "Тех. Администратор" ? "Руководство" : userRole
     return allSections.filter((section) => section.roles.includes(effectiveRole))
   }
 
@@ -253,7 +259,7 @@ export function InformationSection({ userRole }: InformationSectionProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <DutiesSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+              <DutiesSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -272,7 +278,7 @@ export function InformationSection({ userRole }: InformationSectionProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <VehiclesSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+              <VehiclesSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -329,7 +335,7 @@ export function InformationSection({ userRole }: InformationSectionProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <CommandsSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+              <CommandsSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -396,22 +402,22 @@ export function InformationSection({ userRole }: InformationSectionProps) {
       {/* <div className="space-y-12">
         {sections.find((s) => s.id === "leadership") && <LeadershipSection getTieColor={getTieColor} theme={theme} />}
         {sections.find((s) => s.id === "duties") && (
-          <DutiesSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+          <DutiesSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
         )}
         {sections.find((s) => s.id === "vehicles") && (
-          <VehiclesSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+          <VehiclesSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
         )}
         {sections.find((s) => s.id === "rolling-stock") && (
           <RollingStockSection getTieColor={getTieColor} theme={theme} />
         )}
         {sections.find((s) => s.id === "tags") && (
-          <TagsSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+          <TagsSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
         )}
         {sections.find((s) => s.id === "duty-locations") && (
           <DutyLocationsSection getTieColor={getTieColor} theme={theme} />
         )}
         {sections.find((s) => s.id === "commands") && (
-          <CommandsSection getTieColor={getTieColor} theme={theme} userRole={userRole} />
+          <CommandsSection getTieColor={getTieColor} theme={theme} userRole={effectiveRole} />
         )}
         {sections.find((s) => s.id === "id-card") && <IdCardSection getTieColor={getTieColor} theme={theme} />}
         {sections.find((s) => s.id === "schedule") && <ScheduleSection getTieColor={getTieColor} theme={theme} />}
@@ -534,7 +540,7 @@ function LeadershipSection({ getTieColor, theme }: any) {
 
           <div className="space-y-3">
             <h3 className={`text-base font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-              Заместите��и начальников отделов
+              Замес��ите��и начальников отделов
             </h3>
             <div className="space-y-2">
               <PositionRow label="Заместитель начальника ЭО" positionTitle="Машинист-инструктор/Зам.Нач.ЭО" />
@@ -1437,7 +1443,7 @@ function TagsSection({ getTieColor, theme, userRole }: any) {
               <div
                 className={`p-4 rounded-xl border ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-200"}`}
               >
-                <p className={`font-bold mb-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>4 ранг:</p>
+                <p className={`font-bold mb-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>4 р��нг:</p>
                 <div className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                   <p>[ТЧМ] Машинист</p>
                   <p>[ТЧМ-3КМ] Машинист третьего класса</p>
@@ -1817,7 +1823,7 @@ function RoleplaySection({ getTieColor, theme }: any) {
           <p className={`${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
             Основой внутренней работой на железной дороге является управление составом для машиниста локомотива,
             контроль движения подвижных составов для поездных диспетчеров. Основной целью данной системы является
-            избавление отсутствия работы от сотрудников при любых обстоятельствах.
+            избавление отсутствия работы от сотрудников при ��юбых обстоятельствах.
           </p>
 
           <h3 className={`text-lg font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -1906,7 +1912,7 @@ function RetroTrainSection({ getTieColor, theme }: any) {
                 className={`text-sm leading-relaxed mb-3 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}
               >
                 В 1945 году конструктор Лев Лебедянский создал шедевр паровозостроения — магистральный паровоз серии
-                «Л». Это был настоящий прорыв: при весе всего 92 тонны машина развивала мощность 2200 л. с. и скорость
+                «Л». Это был настоящий прорыв: при весе всего 92 тонны машина развивала мощность 2200 л. с. и скоро��ть
                 до 80 км/ч.
               </p>
               <p

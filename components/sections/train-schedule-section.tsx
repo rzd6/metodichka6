@@ -62,6 +62,7 @@ interface TrainShift {
 interface TrainScheduleSectionProps {
   userRole: UserRole
   userNickname?: string
+  secondaryRole?: "Тех. Администратор" | "РЖД"
 }
 
 const ALL_CLASSES = ["Пассажирский", "Скоростной", "Туристический", "Пригородный"] as const
@@ -143,7 +144,7 @@ function validateDepartureTime(time: string, trainClass: string): boolean {
 }
 
 
-export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSectionProps) {
+export function TrainScheduleSection({ userRole, userNickname, secondaryRole }: TrainScheduleSectionProps) {
   const { theme } = useTheme()
   const { toast } = useToast()
 
@@ -256,7 +257,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   const handleClaimShift = async (trainNumber: number) => {
     const train = trains.find((t) => t.train_number === trainNumber)
     if (!train) {
-      toast({ title: "Рейс не найден", description: `Рейс №${trainNumber} отсутствует в базе данных`, variant: "destructive" })
+      toast({ title: "Рейс не найден", description: `Рейс №${trainNumber} отсутству��т в базе данных`, variant: "destructive" })
       return
     }
     const alreadyClaimed = shifts.find((s) => s.train_number === trainNumber)
@@ -576,8 +577,8 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
   }
 
   const canRemoveShift = (shift: TrainShift) => {
-    if (canDeleteAnyShift(userRole)) return true
-    if (canDeleteOwnShift(userRole) && shift.claimed_by_nickname === userNickname) return true
+    if (canDeleteAnyShift(userRole, secondaryRole)) return true
+    if (canDeleteOwnShift(userRole, secondaryRole) && shift.claimed_by_nickname === userNickname) return true
     return false
   }
 
@@ -609,7 +610,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
       </div>
 
       {/* ===== ЗАНЯТЬ РЕЙС — с переключением направления, датой, временем МСК и базой рейсов ===== */}
-      {canClaimShift(userRole) && (
+            {canClaimShift(userRole, secondaryRole) && (
         <div
           className="rounded-xl overflow-hidden"
           style={{ background: boardBg, border: `1px solid ${borderClr}` }}
@@ -632,7 +633,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
                 {moscowTime}
               </div>
             </div>
-            {canManageTrainDB(userRole) && (
+            {canManageTrainDB(userRole, secondaryRole) && (
               <button
                 onClick={() => { setShowAdminPanel((v) => !v); setEditingTrainId(null) }}
                 className="flex items-center gap-1.5 h-8 px-3 rounded text-sm font-medium text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-colors"
@@ -806,7 +807,7 @@ export function TrainScheduleSection({ userRole, userNickname }: TrainScheduleSe
       )}
 
       {/* ===== БАЗА РЕЙСОВ (admin panel) ===== */}
-      {canManageTrainDB(userRole) && showAdminPanel && (
+      {canManageTrainDB(userRole, secondaryRole) && showAdminPanel && (
         <div className="rounded-xl overflow-hidden" style={{ background: boardBg, border: `1px solid ${borderClr}` }}>
           {/* Header */}
           <div className="px-5 py-3 flex flex-wrap items-center gap-2" style={{ background: headerBg }}>

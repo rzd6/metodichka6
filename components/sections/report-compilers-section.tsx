@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import type { UserRole } from "@/data/users"
+import { isTechAdmin } from "@/data/users"
 import { ROLE_RANK } from "@/data/roles"
 import { BugReportButton } from "@/components/bug-report-button"
 import { Calendar } from "lucide-react"
@@ -49,6 +50,7 @@ interface ClaimedShift {
 interface ReportCompilerSectionProps {
   userRole?: UserRole
   userNickname?: string
+  secondaryRole?: "Тех. Администратор" | "РЖД"
 }
 
 function getMoscowDateISO(): string {
@@ -63,7 +65,7 @@ async function apiFetch(path: string, options?: RequestInit) {
   return res.json()
 }
 
-export function ReportCompilerSection({ userRole, userNickname }: ReportCompilerSectionProps) {
+export function ReportCompilerSection({ userRole, userNickname, secondaryRole }: ReportCompilerSectionProps) {
   // Рейсы пользователя (из расписания)
   const [myShifts, setMyShifts] = useState<ClaimedShift[]>([])
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(() => {
@@ -558,7 +560,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Невский на перегон до ст. Мирный.`,
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
-            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 2 путь ст. Мирный, машинист ${machinistName}.`,
+            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 2 пу��ь ст. Мирный, машинист ${machinistName}.`,
             `tr ${passNumber} Понятно, прибыли под посадку на 2 путь ст. Мирный, ожидайте 3 минуты.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 2 путь ст. Мирный, стоянка 3 минуты.`,
           ],
@@ -729,7 +731,7 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
         })
         segs.push({
           id: "seg-nevsky-priv",
-          title: "Перегон: Невский → Приволжск",
+          title: "Перегон: Невский → П��иволжск",
           delayMinutes: 0,
           reports: [
             `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,
@@ -909,7 +911,8 @@ export function ReportCompilerSection({ userRole, userNickname }: ReportCompiler
     }
   }
 
-  const canSeeTech = ROLE_RANK[userRole ?? "ПТО"] >= ROLE_RANK["Старший Состав"]
+  const canSeeTech =
+    isTechAdmin(userRole ?? "ПТО", secondaryRole) || ROLE_RANK[userRole ?? "ПТО"] >= ROLE_RANK["Старший Состав"]
   const isTechSelected = selectedCategory === "Технический"
 
   return (

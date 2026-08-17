@@ -295,7 +295,13 @@ function MainContentInner() {
                 </span>
               </div>
             )}
-            <ContentSection activeSection={activeSection} onSectionChange={handleSectionChange} userRole={user?.role} userNickname={user?.nickname} />
+            <ContentSection
+              activeSection={activeSection}
+              onSectionChange={handleSectionChange}
+              userRole={user?.role}
+              userNickname={user?.nickname}
+              secondaryRole={user?.secondaryRole}
+            />
           </div>
         </div>
       </main>
