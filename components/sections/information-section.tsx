@@ -523,7 +523,7 @@ function LeadershipSection({ getTieColor, theme }: any) {
             </h3>
             <div className="space-y-2">
               <PositionRow label="Зам. начальника депо по эксплуатации" positionTitle="Заместитель Начальника Депо по эксплуатации" />
-              <PositionRow label="Зам. начальника депо по работе с составом" positionTitle="Заместитель Начальника Депо по работе с составом" />
+              <PositionRow label="Зам. начальника депо по кадровой работе" positionTitle="Заместитель Начальника Депо по кадровой работе" />
             </div>
           </div>
 
@@ -1502,7 +1502,7 @@ function TagsSection({ getTieColor, theme, userRole }: any) {
                 <div className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                   <p>[ТЧЗ] Заместитель начальника депо</p>
                   <p>[ТЧЗэ] Заместитель начальника депо по эксплуатации</p>
-                  <p>[ТЧЗк] Заместитель начальника депо по работе с составом</p>
+                  <p>[ТЧЗк] Заместитель начальника депо по кадровой работе</p>
                   <p>[ТЧЗ-1] Первый заместитель начальника депо</p>
                 </div>
               </div>
