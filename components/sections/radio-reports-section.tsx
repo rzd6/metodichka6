@@ -11,14 +11,15 @@ import { getThemeColor } from "@/lib/theme-utils"
 import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 import { formatReportText } from "@/lib/report-text"
-import { getEffectiveReportTag } from "@/data/users"
+import { getEffectiveReportTag, isTechAdmin } from "@/data/users"
 import type { UserGender } from "@/data/roles"
 
 interface RadioReportsSectionProps {
   userRole?: UserRole
+  secondaryRole?: "Тех. Администратор" | "РЖД"
 }
 
-export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
+export function RadioReportsSection({ userRole, secondaryRole }: RadioReportsSectionProps) {
   const { theme } = useTheme()
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
   const [userTag, setUserTag] = useState("[ТЭГ]")
@@ -75,6 +76,8 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
 
   const canSeeReport = (reportRank: string): boolean => {
     if (!userRole) return true
+
+    if (isTechAdmin(userRole, secondaryRole)) return true
 
     if (reportRank === "duty") return true
 
@@ -327,7 +330,7 @@ export function RadioReportsSection({ userRole }: RadioReportsSectionProps) {
       {
         subtitle: "Дежурство на переезде [ДПП]",
         reports: [
-          { text: "r [ДПП] Занял ЗИЛ для отправки на место несения дежурства.", desc: "Перед выездом" },
+          { text: "r [ДПП] Занял ЗИЛ для отправки на место несения дежурства.", desc: "Перед выез��ом" },
           { text: "r [ДПП] Заступил на дежурство на переезде *название*.", desc: "Начало дежурства" },
           { text: "r [ДПП] Продолжаю дежурство на переезде *название*.", desc: "Каждые 10 минут" },
           {

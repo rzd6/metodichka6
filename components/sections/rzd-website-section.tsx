@@ -152,6 +152,7 @@ function AutoIframe({ src }: { src: string }) {
 interface RZDWebsiteSectionProps {
   userRole: UserRole
   userNickname?: string
+  secondaryRole?: "Тех. Администратор" | "РЖД"
 }
 
 const ALL_ROLES: UserRole[] = ["Руководство", "Тех. Администратор", "Заместитель", "Старший Состав", "ЦдУД", "ПТО"]
@@ -159,7 +160,7 @@ const ALL_ROLES: UserRole[] = ["Руководство", "Тех. Админис
 // Roles that can author and view announcements
 const AUTHOR_ROLES: UserRole[] = ["Руководство", "Заместитель", "Старший Состав", "Тех. Администратор"]
 
-export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionProps) {
+export function RZDWebsiteSection({ userRole, userNickname, secondaryRole }: RZDWebsiteSectionProps) {
   const { theme } = useTheme()
   const { toast } = useToast()
   const [articles, setArticles] = useState<Article[]>([])
@@ -174,9 +175,9 @@ export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionP
   const [deleteConfirmArticle, setDeleteConfirmArticle] = useState<Article | null>(null)
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
-  const canPost = canPostAsFaction(userRole) || userRole === "Заместитель" || userRole === "Старший Состав"
-  const canDelete = canPostAsFaction(userRole) // Only leadership/tech admin can delete any post
-  const canEdit = canPostAsFaction(userRole)
+  const canPost = canPostAsFaction(userRole, secondaryRole) || userRole === "Заместитель" || userRole === "Старший Состав"
+  const canDelete = canPostAsFaction(userRole, secondaryRole) // Only leadership/tech admin can delete any post
+  const canEdit = canPostAsFaction(userRole, secondaryRole)
 
   useEffect(() => {
     loadData()
@@ -559,7 +560,7 @@ export function RZDWebsiteSection({ userRole, userNickname }: RZDWebsiteSectionP
               </div>
 
               {/* Author toggle — only for Руководство / Тех. Администратор */}
-              {canPostAsFaction(userRole) && (
+              {canPostAsFaction(userRole, secondaryRole) && (
                 <div className="space-y-2">
                   <Label className="text-base font-medium">От чьего имени публикуется</Label>
                   <div

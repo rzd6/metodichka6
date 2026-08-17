@@ -50,6 +50,7 @@ interface ContentSectionProps {
   onSectionChange: (section: string) => void
   userRole?: UserRole
   userNickname?: string
+  secondaryRole?: "Тех. Администратор" | "РЖД"
 }
 
 function SectionWrapper({ activeSection, children }: { activeSection: string; children: React.ReactNode }) {
@@ -63,7 +64,7 @@ const BUILTIN_IDS = new Set([
   "report-compiler", "admin", "report-generation", "rzd-website", "train-schedule", "bug-report",
 ])
 
-export function ContentSection({ activeSection, onSectionChange, userRole, userNickname }: ContentSectionProps) {
+export function ContentSection({ activeSection, onSectionChange, userRole, userNickname, secondaryRole }: ContentSectionProps) {
   const [customSections, setCustomSections] = useState<CustomSection[]>([])
   const [customSectionsLoaded, setCustomSectionsLoaded] = useState(false)
 
@@ -101,13 +102,19 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
     }
     switch (activeSection) {
       case "information":
-        return <InformationSection userRole={userRole} />
+        return <InformationSection userRole={userRole} secondaryRole={secondaryRole} />
       case "duty":
         return <DutySection />
       case "reports-section":
-        return <RadioReportsSection userRole={userRole} />
+        return <RadioReportsSection userRole={userRole} secondaryRole={secondaryRole} />
       case "contents":
-        return <ContentsSection onSectionChange={onSectionChange} userRole={userRole || "ЦдУД"} />
+        return (
+          <ContentsSection
+            onSectionChange={onSectionChange}
+            userRole={userRole || "ЦдУД"}
+            secondaryRole={secondaryRole}
+          />
+        )
       case "lectures":
         return <LecturesSection />
       case "training":
@@ -127,15 +134,33 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "gov-wave":
         return <GovWaveSection />
       case "report-compiler":
-        return <ReportCompilerSection userRole={userRole || "ЦдУД"} userNickname={userNickname} />
+        return (
+          <ReportCompilerSection
+            userRole={userRole || "ЦдУД"}
+            userNickname={userNickname}
+            secondaryRole={secondaryRole}
+          />
+        )
       case "admin":
         return <AdminSection />
       case "report-generation":
         return <ReportGenerationSection />
       case "rzd-website":
-        return <RZDWebsiteSection userRole={userRole || "ЦдУД"} userNickname={userNickname} />
+        return (
+          <RZDWebsiteSection
+            userRole={userRole || "ЦдУД"}
+            userNickname={userNickname}
+            secondaryRole={secondaryRole}
+          />
+        )
       case "train-schedule":
-        return <TrainScheduleSection userRole={userRole || "ЦдУД"} userNickname={userNickname} />
+        return (
+          <TrainScheduleSection
+            userRole={userRole || "ЦдУД"}
+            userNickname={userNickname}
+            secondaryRole={secondaryRole}
+          />
+        )
       case "bug-report":
         return <BugReportSection />
       default:
@@ -156,7 +181,7 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
             </div>
           )
         }
-        return <InformationSection userRole={userRole} />
+        return <InformationSection userRole={userRole} secondaryRole={secondaryRole} />
     }
   })()
 

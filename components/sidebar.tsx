@@ -542,7 +542,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
     sections.push({ id: "rzd-website", label: "Официальные уведомления" })
   }
 
-  if (user.role !== "ПТО") {
+  if (user.role !== "ПТО" || isTechAdmin) {
     sections.push({ id: "train-schedule", label: "Расписание рейсов" })
   }
 
