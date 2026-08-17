@@ -30,6 +30,8 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { updateUser, getEffectiveReportTag } from "@/data/users"
 import { ImageCropModal } from "@/components/image-crop-modal"
+import { getOrderSignerName, setOrderSignerName } from "@/lib/order-signer"
+import { FileCheck } from "lucide-react"
 
 interface SettingsModalProps {
   open: boolean
@@ -50,6 +52,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
   const [profileError, setProfileError] = useState("")
+
+  // Имя Фамилия для постоянного блока подписи в приказах
+  const [orderSignerName, setOrderSignerNameState] = useState("")
+  const [orderSignerSaved, setOrderSignerSaved] = useState(false)
 
   // Password change
   const [oldPassword, setOldPassword] = useState("")
@@ -96,6 +102,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setProfileSaved(false)
       const cu = JSON.parse(localStorage.getItem("currentUser") || "null")
       setGender(cu?.gender === "female" ? "female" : "male")
+      setOrderSignerNameState(getOrderSignerName())
+      setOrderSignerSaved(false)
       // Load current tech mode from Supabase
       fetch("/api/tech-mode")
         .then((r) => r.json())
