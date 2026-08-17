@@ -297,6 +297,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }
   }
 
+  const handleSaveOrderSignerName = () => {
+    setOrderSignerName(orderSignerName)
+    setOrderSignerSaved(true)
+    window.setTimeout(() => setOrderSignerSaved(false), 2000)
+  }
+
   const previewTag = (() => {
     try {
       const u = JSON.parse(localStorage.getItem("currentUser") || "null")
@@ -597,6 +603,31 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
             <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>
               Тег выставляется автоматически в зависимости от вашей должности и не может быть изменён вручную.
             </p>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t" style={{ borderColor: getTieColor() + "30" }}>
+            <Label className={`text-base flex items-center gap-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
+              <FileCheck className="w-4 h-4" style={{ color: getTieColor() }} />
+              Имя Фамилия для приказов
+            </Label>
+            <input
+              type="text"
+              placeholder="Например: Иван Иванов"
+              value={orderSignerName}
+              onChange={(e) => { setOrderSignerNameState(e.target.value); setOrderSignerSaved(false) }}
+              className={`w-full h-10 rounded-lg border px-3 text-sm outline-none focus:ring-2 ${theme.mode === "dark" ? "bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:ring-white/20" : "bg-white border-gray-300 text-black placeholder:text-gray-400 focus:ring-gray-200"}`}
+            />
+            <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>
+              Подставляется в постоянный блок подписи «[Должность | Имя Фамилия]» в разделе «Приказы» и не сбрасывается после копирования. Хранится только на этом устройстве.
+            </p>
+            <button
+              onClick={handleSaveOrderSignerName}
+              disabled={!orderSignerName.trim()}
+              className="w-full h-10 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+              style={{ backgroundColor: getTieColor() }}
+            >
+              {orderSignerSaved ? "Сохранено" : "Сохранить имя и фамилию"}
+            </button>
           </div>
 
           <div className="space-y-3">
