@@ -938,7 +938,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                   style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                 >
                   <Image
-                    src="/images/design-mode/zil.png"
+                    src="https://avatars.mds.yandex.net/i?id=d3a24185aa4efa5a04c226fa88254764_l-5601751-images-thumbs&n=13"
                     alt="ЗИЛ-131"
                     width={1200}
                     height={800}
