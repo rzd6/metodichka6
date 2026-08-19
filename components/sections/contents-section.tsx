@@ -106,13 +106,6 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       canAccess: true, // Available to all roles
     },
     {
-      id: "report-generation",
-      icon: FileBarChart,
-      title: "Генерация отчётов",
-      description: "Создание отчётов для различных подразделений РЖД.",
-      canAccess: true, // Available to all roles
-    },
-    {
       id: "orders",
       icon: FileCheck,
       title: "Приказы",
