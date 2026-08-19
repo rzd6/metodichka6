@@ -540,7 +540,7 @@ function LeadershipSection({ getTieColor, theme }: any) {
 
           <div className="space-y-3">
             <h3 className={`text-base font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-              Замес��ите��и начальников отделов
+              Заместители начальников отделов
             </h3>
             <div className="space-y-2">
               <PositionRow label="Заместитель начальника ЭО" positionTitle="Машинист-инструктор/Зам.Нач.ЭО" />
@@ -579,7 +579,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
       <div className="flex items-center gap-3 pb-4 border-b" style={{ borderColor: getTieColor() + "40" }}>
         <Briefcase className="w-6 h-6" style={{ color: getTieColor() }} />
         <h2 className="text-2xl font-bold" style={{ color: getTieColor() }}>
-          Раздел II. Основные обязанности сотрудник��в
+          Раздел II. Основные обязанности сотрудников
         </h2>
       </div>
       <div className="space-y-6">
@@ -911,7 +911,7 @@ function DutiesSection({ getTieColor, theme, userRole }: any) {
 
 function VehiclesSection({ getTieColor, theme, userRole }: any) {
   const canSeePatriot =
-    !userRole || userRole === "Старший ��остав" || userRole === "Заместитель" || userRole === "Руководство"
+    !userRole || userRole === "Старший состав" || userRole === "Заместитель" || userRole === "Руководство"
   const canSeePAZ =
     !userRole || userRole === "Старший Состав" || userRole === "Заместитель" || userRole === "Руководство"
 
@@ -938,7 +938,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                   style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                 >
                   <Image
-                    src="/images/design-mode/zil.png"
+                    src="https://cdn.imgchest.com/files/6d84c24ecfa9.png"
                     alt="ЗИЛ-131"
                     width={1200}
                     height={800}
@@ -983,7 +983,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                   style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                 >
                   <Image
-                    src="/images/design-mode/buh.png"
+                    src="https://cdn.imgchest.com/files/8c72115f4f46.png"
                     alt='УАЗ-3309 "Буханка"'
                     width={1200}
                     height={800}
@@ -1029,7 +1029,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/patr.png"
+                      src="https://cdn.imgchest.com/files/337ff413e6ea.png"
                       alt='УАЗ-3163 "Патриот"'
                       width={1200}
                       height={800}
@@ -1073,7 +1073,7 @@ function VehiclesSection({ getTieColor, theme, userRole }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/paz.png"
+                      src="https://cdn.imgchest.com/files/152d0879b34a.png"
                       alt='ПАЗ-320405-04 "Вектор Next"'
                       width={1200}
                       height={800}
@@ -1138,7 +1138,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/tep.png"
+                      src="https://cdn.imgchest.com/files/4a7c657c9208.png"
                       alt="Тепловоз ТЭП70БС"
                       width={1200}
                       height={800}
@@ -1180,7 +1180,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/ep.png"
+                      src="https://cdn.imgchest.com/files/be2cc42c32bb.png"
                       alt="Электровоз ЭП1"
                       width={1200}
                       height={800}
@@ -1221,7 +1221,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/lv.png"
+                      src="https://cdn.imgchest.com/files/323bdf4890a0.png"
                       alt="Паровоз ЛВ"
                       width={1200}
                       height={800}
@@ -1269,7 +1269,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/plaz.png"
+                      src="https://cdn.imgchest.com/files/2bbada2496f2.png"
                       alt="Плацкартный вагон модели 61-4516"
                       width={1200}
                       height={800}
@@ -1308,7 +1308,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/kupe.png"
+                      src="https://cdn.imgchest.com/files/b3c97a673a44.png"
                       alt="Купейный вагон модели 61-4529"
                       width={1200}
                       height={800}
@@ -1347,7 +1347,7 @@ function RollingStockSection({ getTieColor, theme }: any) {
                     style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
                   >
                     <Image
-                      src="/images/design-mode/sid.png"
+                      src="https://cdn.imgchest.com/files/7d3f6c45c783.png"
                       alt="Сидячий вагон модели 61-4458"
                       width={1200}
                       height={800}
@@ -1501,7 +1501,7 @@ function TagsSection({ getTieColor, theme, userRole }: any) {
                 <p className={`font-bold mb-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>8 ранг:</p>
                 <div className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                   <p>[ТЧЗ] Заместитель начальника депо</p>
-                  <p>[ТЧЗэ] Заместитель начальника депо по эксплуатации</p>
+                  <p>[ТЧЗд] Заместитель начальника депо по эксплуатации</p>
                   <p>[ТЧЗк] Заместитель начальника депо по кадровой работе</p>
                   <p>[ТЧЗ-1] Первый заместитель начальника депо</p>
                 </div>
@@ -1579,7 +1579,7 @@ function CommandsSection({ getTieColor, theme, userRole }: any) {
               <p>/r [текст] - IC рация фракции. (с 1 ранга)</p>
               <p>/rb [текст] - OOC (NonRP) рация фракции. (с 1 ранга)</p>
               <p>/db [текст] - OOC (NonRP) общая рация всех фракций. (с 6 ранга)</p>
-              <p>/d [текст] - IC общая рация всех фракций. (с 6 ра��га)</p>
+              <p>/d [текст] - IC общая рация всех фракций. (с 6 ранга)</p>
             </div>
           </CardContent>
         </Card>
@@ -1758,7 +1758,7 @@ function OfficesSection({ getTieColor, theme }: any) {
               style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
             >
               <Image
-                src="/images/design-mode/kabinet.png"
+                src="https://cdn.imgchest.com/files/da1ce363a965.png"
                 alt="Распределение кабинетов"
                 width={1200}
                 height={800}
@@ -1774,14 +1774,14 @@ function OfficesSection({ getTieColor, theme }: any) {
         >
           <CardContent className="pt-6 space-y-4">
             <h3 className={`text-lg font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-              Ком��ата отдыха сотрудников
+              Комната отдыха сотрудников
             </h3>
             <div
               className="rounded-xl overflow-hidden border-2"
               style={{ borderColor: theme.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}
             >
               <Image
-                src="/images/design-mode/komnata.png"
+                src="https://cdn.imgchest.com/files/53deef00cdb8.png"
                 alt="Комната отдыха"
                 width={1200}
                 height={800}
@@ -1823,7 +1823,7 @@ function RoleplaySection({ getTieColor, theme }: any) {
           <p className={`${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
             Основой внутренней работой на железной дороге является управление составом для машиниста локомотива,
             контроль движения подвижных составов для поездных диспетчеров. Основной целью данной системы является
-            избавление отсутствия работы от сотрудников при ��юбых обстоятельствах.
+            избавление отсутствия работы от сотрудников при любых обстоятельствах.
           </p>
 
           <h3 className={`text-lg font-bold ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -1912,7 +1912,7 @@ function RetroTrainSection({ getTieColor, theme }: any) {
                 className={`text-sm leading-relaxed mb-3 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}
               >
                 В 1945 году конструктор Лев Лебедянский создал шедевр паровозостроения — магистральный паровоз серии
-                «Л». Это был настоящий прорыв: при весе всего 92 тонны машина развивала мощность 2200 л. с. и скоро��ть
+                «Л». Это был настоящий прорыв: при весе всего 92 тонны машина развивала мощность 2200 л. с. и скорость
                 до 80 км/ч.
               </p>
               <p
