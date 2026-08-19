@@ -444,12 +444,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
             </Label>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { value: "https://s.fotora.ru/6a96e5fca340f26e.png", label: "Железнодорожный Мост" },
-                { value: "https://s.fotora.ru/fb1e4a495e9b43b0.jpeg", label: "Двухэтажный поезд" },
-                { value: "https://s.fotora.ru/b23a8a0e74f1e61b.png", label: "Паровозы в Петергофе" },
-                { value: "https://s.fotora.ru/a6db37eb535c9e33.jpeg", label: "Грузовой поезд" },
-                { value: "https://s.fotora.ru/b1ff6c2d12440e4b.png", label: "Зимний Сапсан" },
-                { value: "https://s.fotora.ru/e15bd0c76b0d2cc9.jpeg", label: "Пассажирский ЭП2к" },
+                { value: "https://cdn.imgchest.com/files/44f2ed0b506b.jpg", label: "Железнодорожный Мост" },
+                { value: "https://cdn.imgchest.com/files/3a6ef907ed01.png", label: "Ночная москва" },
+                { value: "https://cdn.imgchest.com/files/9f1b7e5f6697.png", label: "Паровозы в Петергофе" },
+                { value: "https://cdn.imgchest.com/files/5e47b278eb29.jpg", label: "Грузовой поезд" },
+                { value: "https://cdn.imgchest.com/files/a6bee2b5595d.png", label: "Зимний Сапсан" },
+                { value: "https://cdn.imgchest.com/files/bfeee0bc92ce.png", label: "Пассажирский ЭП2к" },
               ].map((bg) => (
                 <button
                   key={bg.value}
