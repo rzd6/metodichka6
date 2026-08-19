@@ -445,7 +445,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
             <div className="grid grid-cols-2 gap-4">
               {[
                 { value: "https://cdn.imgchest.com/files/44f2ed0b506b.jpg", label: "Железнодорожный Мост" },
-                { value: "https://cdn.imgchest.com/files/3a6ef907ed01.png", label: "Ночная москва" },
+                { value: "https://cdn.imgchest.com/files/3a6ef907ed01.png", label: "Ночная Москва" },
                 { value: "https://cdn.imgchest.com/files/9f1b7e5f6697.png", label: "Паровозы в Петергофе" },
                 { value: "https://cdn.imgchest.com/files/5e47b278eb29.jpg", label: "Грузовой поезд" },
                 { value: "https://cdn.imgchest.com/files/a6bee2b5595d.png", label: "Зимний Сапсан" },
