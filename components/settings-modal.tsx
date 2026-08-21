@@ -30,6 +30,8 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { updateUser, getEffectiveReportTag } from "@/data/users"
 import { ImageCropModal } from "@/components/image-crop-modal"
+import { getOrderSignerName, setOrderSignerName } from "@/lib/order-signer"
+import { FileCheck } from "lucide-react"
 
 interface SettingsModalProps {
   open: boolean
@@ -50,6 +52,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
   const [profileError, setProfileError] = useState("")
+
+  // Имя Фамилия для постоянного блока подписи в приказах
+  const [orderSignerName, setOrderSignerNameState] = useState("")
+  const [orderSignerSaved, setOrderSignerSaved] = useState(false)
 
   // Password change
   const [oldPassword, setOldPassword] = useState("")
@@ -96,6 +102,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setProfileSaved(false)
       const cu = JSON.parse(localStorage.getItem("currentUser") || "null")
       setGender(cu?.gender === "female" ? "female" : "male")
+      setOrderSignerNameState(getOrderSignerName())
+      setOrderSignerSaved(false)
       // Load current tech mode from Supabase
       fetch("/api/tech-mode")
         .then((r) => r.json())
@@ -287,6 +295,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     } finally {
       setProfileSaving(false)
     }
+  }
+
+  const handleSaveOrderSignerName = () => {
+    setOrderSignerName(orderSignerName)
+    setOrderSignerSaved(true)
+    window.setTimeout(() => setOrderSignerSaved(false), 2000)
   }
 
   const previewTag = (() => {
@@ -589,6 +603,31 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
             <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>
               Тег выставляется автоматически в зависимости от вашей должности и не может быть изменён вручную.
             </p>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t" style={{ borderColor: getTieColor() + "30" }}>
+            <Label className={`text-base flex items-center gap-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
+              <FileCheck className="w-4 h-4" style={{ color: getTieColor() }} />
+              Имя Фамилия для приказов
+            </Label>
+            <input
+              type="text"
+              placeholder="Например: Иван Иванов"
+              value={orderSignerName}
+              onChange={(e) => { setOrderSignerNameState(e.target.value); setOrderSignerSaved(false) }}
+              className={`w-full h-10 rounded-lg border px-3 text-sm outline-none focus:ring-2 ${theme.mode === "dark" ? "bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:ring-white/20" : "bg-white border-gray-300 text-black placeholder:text-gray-400 focus:ring-gray-200"}`}
+            />
+            <p className={`text-xs ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>
+              Подставляется в постоянный блок подписи «[Должность | Имя Фамилия]» в разделе «Приказы» и не сбрасывается после копирования. Хранится только на этом устройстве.
+            </p>
+            <button
+              onClick={handleSaveOrderSignerName}
+              disabled={!orderSignerName.trim()}
+              className="w-full h-10 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+              style={{ backgroundColor: getTieColor() }}
+            >
+              {orderSignerSaved ? "Сохранено" : "Сохранить имя и фамилию"}
+            </button>
           </div>
 
           <div className="space-y-3">

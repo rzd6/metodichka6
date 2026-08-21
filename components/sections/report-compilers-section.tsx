@@ -308,7 +308,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
         })
         segs.push({
           id: "seg-mirny-depot",
-          title: "Перегон: Мирный → Депо",
+          title: "Перегон: М��рный → Депо",
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
@@ -411,7 +411,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
             `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 4 путь ст. Невский, машинист ${machinistName}.`,
-            `tr ${passNumber} Понятно, прибыли под посадку на 4 путь ст. Невский, ожидайте 1 минуту.`,
+            `tr ${passNumber} Понятно, прибыли под посадку на 4 путь ст. Невский, ��жидайте 1 минуту.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 4 путь ст. Невский, стоянка 1 минута.`,
           ],
         })
@@ -521,7 +521,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
             `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
-            `cr Заполнили документацию. Магистраль продули, башмаки убрали, состав готов к выезду на линию.`,
+            `cr Заполнили документацию. Магистр��ль продули, башмаки убрали, состав готов к выезду на линию.`,
             `tr ${passNumber} Понятно, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
             `tr ${passNumber} Заполнили документацию. Магистраль продули, башмаки убрали, ожидайте отправления.`,
             `cr Принято.`,
@@ -724,7 +724,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
           reports: [
             `r [${callSign}] Вижу Н1 зелёный, отправляемся со ст. Мирный на перегон до ст. Невский,..`,
             `r [${callSign}]...О.П. 47км без остановки.${assistantText}`,
-            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Н два жёлтых, верхний мигающий.`,
+            `r [${callSign}] Машинист ${lowerLocoPlural}-${locomotiveNumber} на приближении к ст. Невский, вижу Н два жёлтых, верхний ми��ающий.`,
             `r [${callSign}] Прибываем на 4 путь ст. Невский.${assistantText}`,
             `r [${callSign}] Прибыли на 4 путь ст. Невский. Интервал: 3 минуты.${assistantText}`,
           ],
@@ -892,7 +892,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
         : null
       if (!train) { setClaimDialogTrainNumber(null); return }
 
-      await apiFetch("/api/train-shifts", {
+      const { data: createdShift } = await apiFetch("/api/train-shifts", {
         method: "POST",
         body: JSON.stringify({
           train_id: train.id,
@@ -904,6 +904,20 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
       })
       // Refresh my shifts list
       await loadMyShifts()
+      // Сразу выбираем занятый рейс, чтобы опоздание синхронизировалось с расписанием
+      if (createdShift?.id) {
+        setSelectedShiftId(createdShift.id)
+      } else {
+        // ON CONFLICT DO NOTHING — рейс уже был занят кем-то другим ранее в этот момент.
+        // Пытаемся найти уже существующую запись по номеру рейса в свежем списке.
+        const { data: refreshedShifts } = await apiFetch(`/api/train-shifts?date=${date}&with_trains=1`)
+        const existing = Array.isArray(refreshedShifts)
+          ? refreshedShifts.find(
+              (s: any) => String(s.train_number) === claimDialogTrainNumber && s.claimed_by_nickname === userNickname
+            )
+          : null
+        if (existing) setSelectedShiftId(existing.id)
+      }
     } catch {
       // silent
     } finally {
