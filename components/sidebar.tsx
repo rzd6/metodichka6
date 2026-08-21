@@ -302,7 +302,10 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
         <rect x="14" y="14" width="7" height="7" rx="1" stroke={getIconColor(isActive)} strokeWidth="2" />
       </svg>
     ),
-    information: (isActive) => (
+    roleplays: (isActive) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 5h16v11H8l-4 4V5Z" stroke={getIconColor(isActive)} strokeWidth="2" strokeLinejoin="round"/><path d="M8 9h8M8 12h5" stroke={getIconColor(isActive)} strokeWidth="2" strokeLinecap="round"/></svg>
+  ),
+  information: (isActive) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="12" cy="12" r="10" stroke={getIconColor(isActive)} strokeWidth="2" />
         <path d="M12 16v-4M12 8h.01" stroke={getIconColor(isActive)} strokeWidth="2" strokeLinecap="round" />
@@ -508,6 +511,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
 
   sections.push({ id: "contents", label: "Содержание" })
   sections.push({ id: "information", label: "Информация" })
+  sections.push({ id: "roleplays", label: "РП отыгровки" })
 
   const sr = user.secondaryRole
 

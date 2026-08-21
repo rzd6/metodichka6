@@ -282,6 +282,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       localStorage.setItem("currentUser", JSON.stringify(updated))
       setProfileSaved(true)
       window.dispatchEvent(new Event("userDataUpdated"))
+  window.dispatchEvent(new Event("userGenderUpdated"))
     } catch {
       setProfileError("Ошибка соединения")
     } finally {

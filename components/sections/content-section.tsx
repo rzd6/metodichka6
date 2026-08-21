@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { LecturesSection } from "./lectures-section"
+import { RoleplaysSection } from "./roleplays-section"
 import { TrainingSection } from "./training-section"
 import { EventsSection } from "./events-section"
 import { ExamsSection } from "./exams-section"
@@ -28,6 +29,7 @@ const SECTION_LABELS: Record<string, string> = {
   contents: "Содержание",
   information: "Информация",
   lectures: "Лекции",
+  roleplays: "РП отыгровки",
   training: "Тренировки",
   events: "Мероприятия",
   exams: "Экзамены",
@@ -59,7 +61,7 @@ function SectionWrapper({ activeSection, children }: { activeSection: string; ch
 
 // Built-in section IDs — any activeSection NOT in this set is treated as a potential custom section
 const BUILTIN_IDS = new Set([
-  "contents", "information", "duty", "reports-section", "lectures", "training",
+  "contents", "information", "roleplays", "duty", "reports-section", "lectures", "training",
   "events", "exams", "interviews", "retro-train", "reports", "orders", "gov-wave",
   "report-compiler", "admin", "report-generation", "rzd-website", "train-schedule", "bug-report",
 ])
@@ -117,6 +119,8 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
         )
       case "lectures":
         return <LecturesSection />
+      case "roleplays":
+        return <RoleplaysSection />
       case "training":
         return <TrainingSection />
       case "events":
