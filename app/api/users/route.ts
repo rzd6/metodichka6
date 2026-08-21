@@ -9,7 +9,8 @@ let pool: Pool | null = null
 function getPool(): Pool {
   if (!pool) {
     pool = new Pool({
-      connectionString: process.env.POSTGRES_URL_NON_POOLING,
+      connectionString: process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING,
+      max: 3,
     })
   }
   return pool
