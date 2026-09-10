@@ -8,10 +8,8 @@ import { useTheme } from "@/contexts/theme-context"
 import {
   Settings,
   Check,
-  Camera,
   Upload,
   X,
-  User,
   ImageIcon,
   Lock,
   Eye,
@@ -27,8 +25,7 @@ import { type UserGender } from "@/data/roles"
 import { ColorPicker } from "@/components/ui/color-picker"
 import { getThemeColor } from "@/lib/theme-utils"
 import { useState, useRef, useEffect } from "react"
-import Image from "next/image"
-import { updateUser, getEffectiveReportTag } from "@/data/users"
+import { getEffectiveReportTag } from "@/data/users"
 import { ImageCropModal } from "@/components/image-crop-modal"
 
 interface SettingsModalProps {
@@ -39,10 +36,6 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalProps) {
   const { theme, updateTheme } = useTheme()
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [avatarUploading, setAvatarUploading] = useState(false)
-  const [avatarError, setAvatarError] = useState("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [techMode, setTechMode] = useState(false)
   const [techModeLoading, setTechModeLoading] = useState(false)
   const [settingsTab, setSettingsTab] = useState<"appearance" | "account">("appearance")
@@ -68,7 +61,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
   // Crop modal state
   const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const [cropMode, setCropMode] = useState<"avatar" | "background">("avatar")
+  const [cropMode, setCropMode] = useState<"background">("background")
 
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
@@ -83,7 +76,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     if (open) {
       if (initialTab) setSettingsTab(initialTab)
       const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null")
-      setAvatarPreview(currentUser?.customAvatar || null)
       const savedBg = localStorage.getItem("rzd-custom-bg")
       setCustomBgPreview(savedBg || null)
       // Reset password fields on open
@@ -173,14 +165,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }
   }
 
-  // Avatar: open file → show crop modal
-  const handleAvatarFileSelect = (file: File) => {
-    setAvatarError("")
-    const url = URL.createObjectURL(file)
-    setCropMode("avatar")
-    setCropSrc(url)
-  }
-
   // Background: open file → show crop modal
   const handleBgFileSelect = (file: File) => {
     const url = URL.createObjectURL(file)
@@ -188,62 +172,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     setCropSrc(url)
   }
 
-  // After crop confirmed — upload avatar
-  const handleAvatarCropped = async (dataUrl: string) => {
-    setAvatarPreview(dataUrl)
-    setAvatarUploading(true)
-    setAvatarError("")
-    try {
-      const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null")
-      if (!currentUser?.id) { setAvatarError("Пользователь не найден"); setAvatarUploading(false); return }
-
-      // Convert dataUrl → File for upload
-      const res = await fetch(dataUrl)
-      const blob = await res.blob()
-      const file = new File([blob], "avatar.png", { type: "image/png" })
-
-      const formData = new FormData()
-      formData.append("file", file)
-
-      const uploadRes = await fetch("/api/upload-to-imgbb", { method: "POST", body: formData })
-      const data = await uploadRes.json()
-
-      const url = data.urls?.[0]
-      if (!uploadRes.ok || !url) {
-        setAvatarError(data.error || "Ошибка загрузки")
-        setAvatarPreview(currentUser.customAvatar || null)
-        setAvatarUploading(false)
-        return
-      }
-
-      await updateUser(currentUser.id, { customAvatar: url })
-      localStorage.setItem("currentUser", JSON.stringify({ ...currentUser, customAvatar: url }))
-      setAvatarPreview(url)
-      window.dispatchEvent(new Event("userAvatarUpdated"))
-    } catch {
-      setAvatarError("Ошибка соединения")
-    } finally {
-      setAvatarUploading(false)
-    }
-  }
 
   // After crop confirmed — save background locally
   const handleBgCropped = (dataUrl: string) => {
     localStorage.setItem("rzd-custom-bg", dataUrl)
     setCustomBgPreview(dataUrl)
     window.dispatchEvent(new Event("customBgUpdated"))
-  }
-
-  const handleRemoveAvatar = async () => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null")
-    if (currentUser) {
-      await updateUser(currentUser.id, { customAvatar: "" })
-      const { customAvatar: _, ...rest } = currentUser
-      localStorage.setItem("currentUser", JSON.stringify(rest))
-      window.dispatchEvent(new Event("userAvatarUpdated"))
-    }
-    setAvatarPreview(null)
-    setAvatarError("")
   }
 
   const handleRemoveCustomBg = () => {
@@ -308,7 +242,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
           onOpenChange={(v) => { if (!v) setCropSrc(null) }}
           imageSrc={cropSrc}
           mode={cropMode}
-          onCrop={cropMode === "avatar" ? handleAvatarCropped : handleBgCropped}
+          onCrop={handleBgCropped}
         />
       )}
 
@@ -334,60 +268,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
           </TabsList>
 
           <TabsContent value="appearance" className="flex-1 overflow-y-auto space-y-6 pr-2 mt-0 data-[state=inactive]:hidden">
-
-          {/* Avatar */}
-          <div className="space-y-3">
-            <Label className={`text-base flex items-center gap-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>
-              <Camera className="w-4 h-4" style={{ color: getTieColor() }} />
-              Аватар профиля
-            </Label>
-            <div className="flex items-center gap-4">
-              {/* Preview */}
-              <div className="relative flex-shrink-0">
-                <div
-                  className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-2"
-                  style={{ borderColor: getTieColor() }}
-                >
-                  {avatarPreview ? (
-                    <Image src={avatarPreview} alt="Аватар" width={64} height={64} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center" style={{ background: getTieColor() + "20" }}>
-                      <User className="w-6 h-6" style={{ color: getTieColor() + "80" }} />
-                    </div>
-                  )}
-                </div>
-                {avatarPreview && (
-                  <button
-                    onClick={handleRemoveAvatar}
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow hover:bg-red-600 transition-colors"
-                    title="Удалить аватар"
-                  >
-                    <X className="w-2.5 h-2.5 text-white" />
-                  </button>
-                )}
-              </div>
-              {/* Upload */}
-              <div className="flex-1 space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarFileSelect(f); e.target.value = "" }}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={avatarUploading}
-                  className="w-full h-10 rounded-lg border-2 border-dashed flex items-center justify-center gap-2 text-sm font-medium transition-all hover:opacity-80 disabled:opacity-50"
-                  style={{ borderColor: getTieColor() + "60", color: getTieColor(), background: getTieColor() + "08" }}
-                >
-                  <Upload className="w-4 h-4" />
-                  {avatarUploading ? "Загрузка..." : avatarPreview ? "Заменить фото" : "Загрузить фото"}
-                </button>
-                {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
-              </div>
-            </div>
-          </div>
 
           {/* Custom background */}
           <div className="space-y-3">

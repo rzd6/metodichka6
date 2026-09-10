@@ -179,7 +179,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const [showSettings, setShowSettings] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<"appearance" | "account">("appearance")
   const [showNotifications, setShowNotifications] = useState(false)
-  const [customAvatar, setCustomAvatar] = useState<string | null>(null)
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [builtinOverrides, setBuiltinOverrides] = useState<Record<string, BuiltinSectionOverride>>({})
   const { theme } = useTheme()
@@ -217,12 +217,12 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
     const loadAvatar = () => {
       try {
         const stored = JSON.parse(localStorage.getItem("currentUser") || "null")
-        setCustomAvatar(stored?.customAvatar || stored?.custom_avatar || null)
+        setProfileAvatar(stored?.avatar || null)
         if (stored?.role) {
           setDisplayTag(getEffectiveReportTag(stored))
         }
       } catch {
-        setCustomAvatar(null)
+        setProfileAvatar(null)
         setDisplayTag("")
       }
     }
@@ -623,12 +623,12 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                     style={{ borderColor: getTieColor() }}
                   >
                     <Image
-                      src={proxyImageUrl(customAvatar || getAvatarForRole(user.role) || "/placeholder.svg")}
+                      src={proxyImageUrl(profileAvatar || getAvatarForRole(user.role) || "/placeholder.svg")}
                       alt="Avatar"
                       width={48}
                       height={48}
                       className="w-full h-full object-cover object-center scale-110"
-                      style={customAvatar ? undefined : { filter: getAvatarFilter() }}
+                      style={profileAvatar ? undefined : { filter: getAvatarFilter() }}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).src = getAvatarForRole(user.role) || "/placeholder.svg" }}
                     />
                   </div>
@@ -658,12 +658,12 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                 style={{ borderColor: getTieColor() }}
               >
                 <Image
-                  src={proxyImageUrl(customAvatar || getAvatarForRole(user.role) || "/placeholder.svg")}
+                  src={proxyImageUrl(profileAvatar || getAvatarForRole(user.role) || "/placeholder.svg")}
                   alt="Avatar"
                   width={48}
                   height={48}
                   className="w-full h-full object-cover object-center scale-110"
-                  style={customAvatar ? undefined : { filter: getAvatarFilter() }}
+                  style={profileAvatar ? undefined : { filter: getAvatarFilter() }}
                   onError={(e) => { (e.currentTarget as HTMLImageElement).src = getAvatarForRole(user.role) || "/placeholder.svg" }}
                 />
               </div>
@@ -733,7 +733,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                   variant="outline"
                   className={`flex-1 bg-transparent ${getTextColor()} hover:${getTextColor()} border-white/20 hover:border-white/40 h-9 px-2`}
                   onClick={() => setShowSettings(true)}
-                  title="Настройки"
+                  title="��астройки"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
