@@ -288,7 +288,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const getAvatarForRole = (role: UserRole) => {
     const avatarMap: Record<UserRole, string> = {
       Руководство: "/avatars/management.png",
-      Заместитель: "/avatars/management.png",
+      Заместитель: "/avatars/senior-staff.png",
       "Старший Состав": "/avatars/senior-staff.png",
       ЦдУД: "/avatars/cdud.png",
       ПТО: "/avatars/pto.png",

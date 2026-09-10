@@ -34,7 +34,7 @@ function RoleBadgeIcon({ role, color }: { role: string; color: string }) {
 
 const ROLE_AVATARS: Record<string, string> = {
   Руководство: "/avatars/management.png",
-  Заместитель: "/avatars/management.png",
+  Заместитель: "/avatars/senior-staff.png",
   "Старший Состав": "/avatars/senior-staff.png",
   ЦдУД: "/avatars/cdud.png",
   ПТО: "/avatars/pto.png",
@@ -71,8 +71,8 @@ export function NotificationsModal({ open, onOpenChange, userRole, secondaryRole
             const json = await res.json()
             const avatarMap: Record<string, string | null> = {}
             for (const u of json.data || []) {
-              if (u.custom_avatar) {
-                avatarMap[u.id] = u.custom_avatar
+              if (u.vk_avatar || u.avatar || u.custom_avatar) {
+                avatarMap[u.id] = u.vk_avatar || u.avatar || u.custom_avatar
               }
             }
             setAuthorAvatars(avatarMap)
