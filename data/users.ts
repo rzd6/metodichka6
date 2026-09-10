@@ -23,6 +23,7 @@ export interface User {
   role: UserRole
   createdAt: string
   vkId?: string
+  avatar?: string
   customAvatar?: string
   secondaryRole?: "Тех. Администратор" | "РЖД"
   reportTag?: string
@@ -52,6 +53,7 @@ function rowToUser(row: Record<string, unknown>): User {
     role,
     createdAt: String(row.created_at),
     vkId: row.vk_id ? String(row.vk_id) : undefined,
+    avatar: row.avatar ? String(row.avatar) : undefined,
     customAvatar: row.custom_avatar ? String(row.custom_avatar) : undefined,
     secondaryRole:
       row.secondary_role === "Тех. Администратор" || row.secondary_role === "РЖД"

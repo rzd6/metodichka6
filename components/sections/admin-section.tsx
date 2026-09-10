@@ -574,9 +574,9 @@ export function AdminSection() {
     }
   }
 
-  const getUserAvatar = (role: User["role"], customAvatar?: string) => {
-    const src = customAvatar || getAvatarForRole(role) || "/placeholder.svg"
-    const isCustom = !!customAvatar
+  const getUserAvatar = (role: User["role"], avatar?: string) => {
+    const src = avatar || getAvatarForRole(role) || "/placeholder.svg"
+    const isCustom = !!avatar
     return (
       <div
         className="w-12 h-12 flex-shrink-0 flex items-center justify-center overflow-hidden rounded-full border-2"
@@ -1146,7 +1146,7 @@ export function AdminSection() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {getUserAvatar(user.role, user.customAvatar)}
+                        {getUserAvatar(user.role, user.avatar)}
 
                         <div className="flex-1 min-w-0 flex items-center gap-2">
                           <div className="flex-1 min-w-0">
