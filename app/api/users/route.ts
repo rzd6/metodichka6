@@ -33,6 +33,7 @@ async function ensureTable() {
     );
     CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
     ALTER TABLE users ADD COLUMN IF NOT EXISTS vk_id TEXT DEFAULT NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS vk_avatar TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_avatar TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS secondary_role TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS report_tag TEXT DEFAULT NULL;
@@ -76,19 +77,19 @@ export async function GET(req: NextRequest) {
     const rows = res.rows
     const token = process.env.VK_SERVICE_TOKEN
     if (token) {
-      await Promise.all(rows.filter((row) => /^\\d+$/.test(String(row.vk_id ?? ""))).map(async (row) => {
+      await Promise.all(rows.filter((row) => /^\d+$/.test(String(row.vk_id ?? ""))).map(async (row) => {
         try {
           const url = new URL("https://api.vk.com/method/users.get")
           url.searchParams.set("user_ids", String(row.vk_id))
-          url.searchParams.set("fields", "photo_200")
+          url.searchParams.set("fields", "photo_200,photo_max_orig")
           url.searchParams.set("access_token", token)
           url.searchParams.set("v", "5.199")
           const vkRes = await fetch(url, { cache: "no-store" })
           const vkData = await vkRes.json()
-          const photo = vkData.response?.[0]?.photo_200
-          if (photo && photo !== row.avatar) {
-            await db.query("UPDATE users SET avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
-            row.avatar = photo
+          const photo = vkData.response?.[0]?.photo_max_orig || vkData.response?.[0]?.photo_200
+          if (photo && photo !== row.vk_avatar) {
+            await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
+            row.vk_avatar = photo
           }
         } catch {
           // Keep the last known VK avatar and let the UI use its role fallback if needed.
