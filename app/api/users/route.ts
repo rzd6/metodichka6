@@ -92,7 +92,24 @@ export async function GET(req: NextRequest) {
           const vkRes = await fetch(url, { cache: "no-store" })
           const vkData = await vkRes.json()
           const profile = vkData.response?.[0]
-          const photo = profile?.photo_max_orig || profile?.photo_200
+          let photo = profile?.photo_max_orig || profile?.photo_200
+
+          if (!photo) {
+            const profileRes = await fetch(`https://vk.com/id${encodeURIComponent(vkUserId)}`, {
+              cache: "no-store",
+              signal: AbortSignal.timeout(4000),
+              headers: { "User-Agent": "Mozilla/5.0", Accept: "text/html" },
+            })
+            if (profileRes.ok) {
+              const html = await profileRes.text()
+              const photoMatch =
+                html.match(/\\"photo_(?:max_orig|200)\\":\\"([^\\"]+)\\"/) ||
+                html.match(/property=[\\"']og:image[\\"'][^>]+content=[\\"']([^\\"']+)[\\"']/i) ||
+                html.match(/content=[\\"']([^\\"']+)[\\"'][^>]+property=[\\"']og:image[\\"']/i)
+              photo = photoMatch?.[1]?.replaceAll("\\\\/", "/")
+            }
+          }
+
           if (photo && /^https?:\/\//.test(photo) && photo !== row.vk_avatar) {
             await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
             row.vk_avatar = photo
