@@ -34,7 +34,7 @@ function RoleBadgeIcon({ role, color }: { role: string; color: string }) {
 
 const ROLE_AVATARS: Record<string, string> = {
   Руководство: "/avatars/management.png",
-  Заместитель: "/avatars/senior-staff.png",
+  Заместитель: "/avatars/management.png",
   "Старший Состав": "/avatars/senior-staff.png",
   ЦдУД: "/avatars/cdud.png",
   ПТО: "/avatars/pto.png",

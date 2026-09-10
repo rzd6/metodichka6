@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation"
 import type { JSX } from "react"
 import Image from "next/image"
 import type { UserRole } from "@/data/users"
-import { getEffectiveReportTag } from "@/data/users"
+import { getAllUsers, getEffectiveReportTag } from "@/data/users"
 import {
   canAccessManagement,
   canAccessReportCompiler,
@@ -214,12 +214,16 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   }, [loadBuiltinOverrides])
 
   useEffect(() => {
-    const loadAvatar = () => {
+    const loadAvatar = async () => {
       try {
         const stored = JSON.parse(localStorage.getItem("currentUser") || "null")
-        setProfileAvatar(stored?.avatar || null)
-        if (stored?.role) {
-          setDisplayTag(getEffectiveReportTag(stored))
+        const users = await getAllUsers(true)
+        const freshUser = users.find((candidate) => candidate.id === stored?.id)
+        const current = freshUser ? { ...stored, ...freshUser } : stored
+        if (freshUser) localStorage.setItem("currentUser", JSON.stringify(current))
+        setProfileAvatar(current?.avatar || null)
+        if (current?.role) {
+          setDisplayTag(getEffectiveReportTag(current))
         }
       } catch {
         setProfileAvatar(null)
@@ -284,7 +288,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
   const getAvatarForRole = (role: UserRole) => {
     const avatarMap: Record<UserRole, string> = {
       Руководство: "/avatars/management.png",
-      Заместитель: "/avatars/senior-staff.png",
+      Заместитель: "/avatars/management.png",
       "Старший Состав": "/avatars/senior-staff.png",
       ЦдУД: "/avatars/cdud.png",
       ПТО: "/avatars/pto.png",

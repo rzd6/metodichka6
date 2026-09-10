@@ -53,7 +53,7 @@ function rowToUser(row: Record<string, unknown>): User {
     role,
     createdAt: String(row.created_at),
     vkId: row.vk_id ? String(row.vk_id) : undefined,
-    avatar: row.avatar ? String(row.avatar) : undefined,
+    avatar: row.vk_avatar && /^https?:\/\//.test(String(row.vk_avatar)) ? String(row.vk_avatar) : undefined,
     customAvatar: row.custom_avatar ? String(row.custom_avatar) : undefined,
     secondaryRole:
       row.secondary_role === "Тех. Администратор" || row.secondary_role === "РЖД"
