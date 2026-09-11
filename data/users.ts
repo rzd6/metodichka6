@@ -23,6 +23,7 @@ export interface User {
   role: UserRole
   createdAt: string
   vkId?: string
+  vkAvatar?: string
   avatar?: string
   customAvatar?: string
   secondaryRole?: "Тех. Администратор" | "РЖД"
@@ -53,7 +54,8 @@ function rowToUser(row: Record<string, unknown>): User {
     role,
     createdAt: String(row.created_at),
     vkId: row.vk_id ? String(row.vk_id) : undefined,
-    avatar: row.vk_avatar && /^https?:\/\//.test(String(row.vk_avatar)) ? String(row.vk_avatar) : undefined,
+    vkAvatar: row.vk_avatar && /^https?:\/\//.test(String(row.vk_avatar)) ? String(row.vk_avatar) : undefined,
+    avatar: row.avatar && /^https?:\/\//.test(String(row.avatar)) ? String(row.avatar) : undefined,
     customAvatar: row.custom_avatar ? String(row.custom_avatar) : undefined,
     secondaryRole:
       row.secondary_role === "Тех. Администратор" || row.secondary_role === "РЖД"
@@ -264,7 +266,7 @@ function getRankFromRole(role: UserRole): number {
 function getAvatarFromRole(role: UserRole): string {
   const avatarMap: Record<UserRole, string> = {
     Руководство: "/avatars/management.png",
-    Заместитель: "/avatars/management.png",
+    Заместитель: "/avatars/senior-staff.png",
     "Старший Состав": "/avatars/senior-staff.png",
     ЦдУД: "/avatars/cdud.png",
     ПТО: "/avatars/pto.png",
