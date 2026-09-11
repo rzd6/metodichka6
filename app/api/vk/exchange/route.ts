@@ -2,10 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, device_id, state, code_verifier } = await request.json()
+    const body = await request.json()
+    const { code, device_id, state, code_verifier } = body
 
     if (!code || !device_id) {
-      return NextResponse.json({ error: "missing_params" }, { status: 400 })
+      console.error("[v0] VK exchange missing params", { hasCode: Boolean(code), hasDeviceId: Boolean(device_id) })
+      return NextResponse.json({ error: "missing_params", description: "VK не передал code или device_id" }, { status: 400 })
     }
 
     const clientId = process.env.VK_APP_ID || "54678517"

@@ -66,7 +66,8 @@ export default function LoginPage() {
 
   const vkidOnError = (err: any) => {
     console.error("[VK] error:", err)
-    setError("Ошибка авторизации через ВКонтакте. Попробуйте снова.")
+    const description = err instanceof Error ? err.message : ""
+    setError(description ? `Ошибка авторизации VK: ${description}` : "Ошибка авторизации через ВКонтакте. Попробуйте снова.")
   }
 
   // Re-initialise VK SDK when arriving at the page (covers the logout → login flow)
@@ -107,15 +108,15 @@ export default function LoginPage() {
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload: any) => {
-        const { code, device_id } = payload
+        const { code, device_id, state, code_verifier } = payload
         fetch("/api/vk/exchange", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, device_id }),
+          body: JSON.stringify({ code, device_id, state, code_verifier }),
         })
           .then(async (response) => {
             const result = await response.json()
-            if (!response.ok) throw new Error(result.error || "exchange_failed")
+            if (!response.ok) throw new Error(result.description || result.error || "exchange_failed")
             return result
           })
           .then(vkidOnSuccess)
@@ -227,7 +228,7 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className={theme.mode === "dark" ? "text-white" : "text-black"}>
-                  Парол��
+                  Пароль
                 </Label>
                 <Input
                   id="password"
