@@ -73,9 +73,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ data: res.rows[0] ?? null })
     }
 
-    const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
+    const syncVkId = searchParams.get("sync_vk_id")
+    const res = syncVkId
+      ? await db.query("SELECT * FROM users WHERE id = $1 LIMIT 1", [syncVkId])
+      : await db.query("SELECT * FROM users ORDER BY created_at ASC")
     const rows = res.rows
-    await Promise.all(rows.filter((row) => String(row.vk_id ?? "").trim()).map(async (row) => {
+    const rowsToSync = syncVkId ? rows : []
+    await Promise.all(rowsToSync.filter((row) => String(row.vk_id ?? "").trim()).map(async (row) => {
       try {
         const rawVkId = String(row.vk_id).trim()
         const vkUserId = rawVkId
