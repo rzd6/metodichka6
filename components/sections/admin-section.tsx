@@ -80,7 +80,6 @@ export function AdminSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [usersError, setUsersError] = useState(false)
-  const [avatarLoadingIds, setAvatarLoadingIds] = useState<Set<string>>(new Set())
   const [newVkId, setNewVkId] = useState("")
   const [newVkIdRaw, setNewVkIdRaw] = useState("")
   const [newVkResolving, setNewVkResolving] = useState(false)
@@ -93,19 +92,12 @@ export function AdminSection() {
   const [copiedVkId, setCopiedVkId] = useState<string | null>(null)
   const vkDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const newVkDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const avatarSyncKeyRef = useRef("")
 
   const loadUsers = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true)
     else setIsRefreshing(true)
     if (!silent) setUsersError(false)
     try {
-      const storedCurrent = getCurrentUser()
-      if (storedCurrent?.id && storedCurrent?.vkId) {
-        setAvatarLoadingIds(new Set([storedCurrent.id]))
-        await fetch(`/api/users?sync_vk_id=${encodeURIComponent(storedCurrent.id)}`, { cache: "no-store" })
-        setAvatarLoadingIds(new Set())
-      }
       const res = await fetch("/api/users", { headers: { "Content-Type": "application/json" } })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
@@ -126,7 +118,6 @@ export function AdminSection() {
     loadUsers()
 
     const handleUserDataUpdate = () => {
-      avatarSyncKeyRef.current = ""
       loadUsers(true)
     }
     window.addEventListener("userDataUpdated", handleUserDataUpdate)
@@ -136,32 +127,6 @@ export function AdminSection() {
     }
   }, [loadUsers])
 
-  useEffect(() => {
-    const candidates = users.filter((user) => user.vkId && !user.vkAvatar)
-    const syncKey = candidates.map((user) => user.id).join(",")
-    if (!syncKey || syncKey === avatarSyncKeyRef.current) return
-    avatarSyncKeyRef.current = syncKey
-    let cancelled = false
-
-    const syncInBatches = async () => {
-      for (let index = 0; index < candidates.length && !cancelled; index += 4) {
-        const batch = candidates.slice(index, index + 4)
-        setAvatarLoadingIds((current) => new Set([...current, ...batch.map((user) => user.id)]))
-        await Promise.all(batch.map((user) => fetch(`/api/users?sync_vk_id=${encodeURIComponent(user.id)}`, { cache: "no-store" })))
-        setAvatarLoadingIds((current) => {
-          const next = new Set(current)
-          batch.forEach((user) => next.delete(user.id))
-          return next
-        })
-        await loadUsers(true)
-      }
-    }
-
-    syncInBatches()
-    return () => {
-      cancelled = true
-    }
-  }, [users, loadUsers])
 
   const isCurrentTechAdmin = () =>
     isTechAdmin(currentUser?.role ?? "ЦдУД", currentUser?.secondaryRole)
@@ -609,7 +574,7 @@ export function AdminSection() {
     }
   }
 
-  const getUserAvatar = (role: User["role"], avatar?: string, isLoading = false) => {
+  const getUserAvatar = (role: User["role"], avatar?: string) => {
     const src = avatar || getAvatarForRole(role) || "/placeholder.svg"
     const isCustom = !!avatar
     return (
@@ -617,14 +582,14 @@ export function AdminSection() {
         className="w-12 h-12 flex-shrink-0 flex items-center justify-center overflow-hidden rounded-full border-2"
         style={{ borderColor: getTieColor() }}
       >
-        {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" style={{ color: getTieColor() }} /> : <Image
+        <Image
           src={src}
           alt={role}
           width={48}
           height={48}
           className="w-full h-full object-cover object-center scale-110"
           style={isCustom ? undefined : { filter: getAvatarFilter() }}
-        />}
+        />
       </div>
     )
   }
@@ -641,7 +606,7 @@ export function AdminSection() {
       case "Заместитель":
         icon = <Shield className={iconSize} style={{ color }} />
         break
-      case "Старший Соста��":
+      case "Старший Сост����":
         icon = <UsersRound className={iconSize} style={{ color }} />
         break
       case "ЦдУД":
@@ -1118,7 +1083,7 @@ export function AdminSection() {
                             </Select>
                           )
                         })()}
-                        {/* VK ID field — принимает ссылку, короткое имя или числовой ID */}
+                        {/* VK ID field — принимает ссылку, к��роткое имя или числовой ID */}
                         <div className="flex flex-col gap-1">
                           <div
                             className="flex items-center rounded-lg border overflow-hidden"
@@ -1181,7 +1146,7 @@ export function AdminSection() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {getUserAvatar(user.role, user.vkAvatar || user.avatar, avatarLoadingIds.has(user.id))}
+                        {getUserAvatar(user.role, user.vkAvatar || user.avatar)}
 
                         <div className="flex-1 min-w-0 flex items-center gap-2">
                           <div className="flex-1 min-w-0">

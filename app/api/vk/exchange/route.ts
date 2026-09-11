@@ -38,8 +38,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // tokenData.user_id contains the VK user id
-    return NextResponse.json(tokenData)
+    // Fetch the profile photo with the short-lived user token returned by VK.
+    let photo: string | undefined
+    try {
+      const profileUrl = new URL("https://api.vk.com/method/users.get")
+      profileUrl.searchParams.set("user_ids", String(tokenData.user_id))
+      profileUrl.searchParams.set("fields", "photo_200,photo_max_orig")
+      profileUrl.searchParams.set("access_token", tokenData.access_token)
+      profileUrl.searchParams.set("v", "5.199")
+      const profileRes = await fetch(profileUrl, { cache: "no-store" })
+      const profile = (await profileRes.json()).response?.[0]
+      photo = profile?.photo_max_orig || profile?.photo_200
+    } catch {
+      // Authentication still succeeds if VK does not return a photo.
+    }
+
+    return NextResponse.json({ ...tokenData, photo })
   } catch (err) {
     console.error("[v0] VK exchange route error:", err)
     return NextResponse.json({ error: "server_error" }, { status: 500 })

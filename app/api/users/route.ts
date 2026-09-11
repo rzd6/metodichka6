@@ -40,6 +40,13 @@ async function ensureTable() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'male';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS position_title TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_default_password BOOLEAN DEFAULT false;
+    CREATE TABLE IF NOT EXISTS user_avatar_cleanup (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      avatar_url TEXT NOT NULL,
+      delete_after TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    DELETE FROM user_avatar_cleanup WHERE delete_after <= NOW();
   `)
 }
 
@@ -73,44 +80,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ data: res.rows[0] ?? null })
     }
 
-    const syncVkId = searchParams.get("sync_vk_id")
-    const res = syncVkId
-      ? await db.query("SELECT * FROM users WHERE id = $1 LIMIT 1", [syncVkId])
-      : await db.query("SELECT * FROM users ORDER BY created_at ASC")
-    const rows = res.rows
-    const rowsToSync = syncVkId ? rows : []
-    await Promise.all(rowsToSync.filter((row) => String(row.vk_id ?? "").trim()).map(async (row) => {
-      try {
-        const rawVkId = String(row.vk_id).trim()
-        const vkUserId = rawVkId
-          .replace(/^https?:\/\/(?:m\.)?vk\.com\//i, "")
-          .replace(/^@/, "")
-          .split(/[/?#]/)[0]
-        const profileRes = await fetch(`https://vk.com/id${encodeURIComponent(vkUserId)}`, {
-          cache: "no-store",
-          signal: AbortSignal.timeout(7000),
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
-            Accept: "text/html,application/xhtml+xml",
-            "Accept-Language": "ru-RU,ru;q=0.9",
-          },
-        })
-        if (!profileRes.ok) return
-        const html = await profileRes.text()
-        const photoMatch =
-          html.match(/property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
-          html.match(/content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
-          html.match(/(?:photo_max_orig|photo_200)["']?\s*:\s*["']([^"']+)["']/i)
-        const photo = photoMatch?.[1]?.replaceAll("\\/", "/")
-        if (photo && /^https?:\/\//.test(photo) && photo !== row.vk_avatar) {
-          await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
-          row.vk_avatar = photo
-        }
-      } catch {
-        // Keep the last known VK avatar and use the role fallback when VK is unavailable.
-      }
-    }))
-    return NextResponse.json({ data: rows })
+    const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
+    return NextResponse.json({ data: res.rows })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
@@ -169,8 +140,24 @@ export async function DELETE(req: NextRequest) {
     const body = await req.json()
 
     if (body.id) {
+      const user = await db.query("SELECT vk_avatar FROM users WHERE id = $1 LIMIT 1", [body.id])
+      const avatarUrl = user.rows[0]?.vk_avatar
+      if (avatarUrl) {
+        await db.query(
+          "INSERT INTO user_avatar_cleanup (avatar_url, delete_after) VALUES ($1, NOW() + INTERVAL '1 day')",
+          [avatarUrl],
+        )
+      }
       await db.query("DELETE FROM users WHERE id = $1", [body.id])
     } else if (body.username) {
+      const user = await db.query("SELECT vk_avatar FROM users WHERE username = $1 LIMIT 1", [body.username])
+      const avatarUrl = user.rows[0]?.vk_avatar
+      if (avatarUrl) {
+        await db.query(
+          "INSERT INTO user_avatar_cleanup (avatar_url, delete_after) VALUES ($1, NOW() + INTERVAL '1 day')",
+          [avatarUrl],
+        )
+      }
       await db.query("DELETE FROM users WHERE username = $1", [body.username])
     } else {
       return NextResponse.json({ error: "id or username required" }, { status: 400 })
