@@ -159,6 +159,9 @@ export async function updateUser(
     if ("vkId" in updates) {
       body.vk_id = updates.vkId || null
     }
+    if ("vkAvatar" in updates) {
+      body.vk_avatar = updates.vkAvatar || null
+    }
     if ("customAvatar" in updates) {
       body.custom_avatar = updates.customAvatar || null
     }

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { authenticateUser, findUserByVkId } from "@/data/users"
+import { authenticateUser, findUserByVkId, updateUser } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 
@@ -49,6 +49,12 @@ export default function LoginPage() {
       if (!user) {
         setError(`VK ID ${vkUserId} не привязан ни к одному аккаунту. Попросите администратора прописать именно этот числовой ID в настройках пользователя.`)
         return
+      }
+
+      const vkPhoto = data?.photo
+      if (vkPhoto && /^https?:\/\//.test(vkPhoto)) {
+        const updatedUser = await updateUser(user.id, { vkAvatar: vkPhoto })
+        if (updatedUser) Object.assign(user, updatedUser)
       }
 
       localStorage.setItem("currentUser", JSON.stringify(user))
@@ -102,7 +108,16 @@ export default function LoginPage() {
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload: any) => {
         const { code, device_id } = payload
-        VKID.Auth.exchangeCode(code, device_id)
+        fetch("/api/vk/exchange", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, device_id }),
+        })
+          .then(async (response) => {
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || "exchange_failed")
+            return result
+          })
           .then(vkidOnSuccess)
           .catch(vkidOnError)
       })
@@ -212,7 +227,7 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className={theme.mode === "dark" ? "text-white" : "text-black"}>
-                  Пароль
+                  Парол��
                 </Label>
                 <Input
                   id="password"
