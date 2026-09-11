@@ -75,50 +75,37 @@ export async function GET(req: NextRequest) {
 
     const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
     const rows = res.rows
-    const token = process.env.VK_SERVICE_TOKEN
-    if (token) {
-      await Promise.all(rows.filter((row) => String(row.vk_id ?? "").trim()).map(async (row) => {
-        try {
-          const rawVkId = String(row.vk_id).trim()
-          const vkUserId = rawVkId
-            .replace(/^https?:\/\/(?:m\.)?vk\.com\//i, "")
-            .replace(/^@/, "")
-            .split(/[/?#]/)[0]
-          const url = new URL("https://api.vk.com/method/users.get")
-          url.searchParams.set("user_ids", vkUserId)
-          url.searchParams.set("fields", "photo_200,photo_max_orig")
-          url.searchParams.set("access_token", token)
-          url.searchParams.set("v", "5.199")
-          const vkRes = await fetch(url, { cache: "no-store" })
-          const vkData = await vkRes.json()
-          const profile = vkData.response?.[0]
-          let photo = profile?.photo_max_orig || profile?.photo_200
-
-          if (!photo) {
-            const profileRes = await fetch(`https://vk.com/id${encodeURIComponent(vkUserId)}`, {
-              cache: "no-store",
-              signal: AbortSignal.timeout(4000),
-              headers: { "User-Agent": "Mozilla/5.0", Accept: "text/html" },
-            })
-            if (profileRes.ok) {
-              const html = await profileRes.text()
-              const photoMatch =
-                html.match(/\\"photo_(?:max_orig|200)\\":\\"([^\\"]+)\\"/) ||
-                html.match(/property=[\\"']og:image[\\"'][^>]+content=[\\"']([^\\"']+)[\\"']/i) ||
-                html.match(/content=[\\"']([^\\"']+)[\\"'][^>]+property=[\\"']og:image[\\"']/i)
-              photo = photoMatch?.[1]?.replaceAll("\\\\/", "/")
-            }
-          }
-
-          if (photo && /^https?:\/\//.test(photo) && photo !== row.vk_avatar) {
-            await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
-            row.vk_avatar = photo
-          }
-        } catch {
-          // Keep the last known VK avatar and let the UI use its role fallback if needed.
+    await Promise.all(rows.filter((row) => String(row.vk_id ?? "").trim()).map(async (row) => {
+      try {
+        const rawVkId = String(row.vk_id).trim()
+        const vkUserId = rawVkId
+          .replace(/^https?:\/\/(?:m\.)?vk\.com\//i, "")
+          .replace(/^@/, "")
+          .split(/[/?#]/)[0]
+        const profileRes = await fetch(`https://vk.com/id${encodeURIComponent(vkUserId)}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(7000),
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml",
+            "Accept-Language": "ru-RU,ru;q=0.9",
+          },
+        })
+        if (!profileRes.ok) return
+        const html = await profileRes.text()
+        const photoMatch =
+          html.match(/property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+          html.match(/content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+          html.match(/(?:photo_max_orig|photo_200)["']?\s*:\s*["']([^"']+)["']/i)
+        const photo = photoMatch?.[1]?.replaceAll("\\/", "/")
+        if (photo && /^https?:\/\//.test(photo) && photo !== row.vk_avatar) {
+          await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
+          row.vk_avatar = photo
         }
-      }))
-    }
+      } catch {
+        // Keep the last known VK avatar and use the role fallback when VK is unavailable.
+      }
+    }))
     return NextResponse.json({ data: rows })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
