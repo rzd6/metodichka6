@@ -137,7 +137,7 @@ export function AdminSection() {
   }, [loadUsers])
 
   useEffect(() => {
-    const candidates = users.filter((user) => user.vkId && !user.avatar)
+    const candidates = users.filter((user) => user.vkId && !user.vkAvatar)
     const syncKey = candidates.map((user) => user.id).join(",")
     if (!syncKey || syncKey === avatarSyncKeyRef.current) return
     avatarSyncKeyRef.current = syncKey
@@ -641,7 +641,7 @@ export function AdminSection() {
       case "Заместитель":
         icon = <Shield className={iconSize} style={{ color }} />
         break
-      case "Старший Состав":
+      case "Старший Соста��":
         icon = <UsersRound className={iconSize} style={{ color }} />
         break
       case "ЦдУД":
@@ -1181,7 +1181,7 @@ export function AdminSection() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {getUserAvatar(user.role, user.avatar, avatarLoadingIds.has(user.id))}
+                        {getUserAvatar(user.role, user.vkAvatar || user.avatar, avatarLoadingIds.has(user.id))}
 
                         <div className="flex-1 min-w-0 flex items-center gap-2">
                           <div className="flex-1 min-w-0">
