@@ -12,8 +12,10 @@ import { authenticateUser, findUserByVkId } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 
-// App ID из официального кода VK
+// VK ID разрешает только redirect URL, добавленные в настройках приложения.
 const VK_APP_ID = Number(process.env.NEXT_PUBLIC_VK_APP_ID || 54678517)
+const VK_REDIRECT_URI =
+  process.env.NEXT_PUBLIC_VK_REDIRECT_URI || "https://metodichka-rzd6.vercel.app/login"
 
 export default function LoginPage() {
   const [nickname, setNickname] = useState("")
@@ -40,7 +42,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          redirect_uri: `${window.location.origin}/login`,
+          redirect_uri: VK_REDIRECT_URI,
         }),
       })
       const exchanged = await exchangeResponse.json()
@@ -94,7 +96,7 @@ export default function LoginPage() {
 
     VKID.Config.init({
       app: VK_APP_ID,
-      redirectUrl: `${window.location.origin}/login`,
+      redirectUrl: VK_REDIRECT_URI,
       responseMode: VKID.ConfigResponseMode.Callback,
       source: VKID.ConfigSource.LOWCODE,
       scope: "",

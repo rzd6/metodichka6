@@ -30,10 +30,12 @@ export async function POST(request: NextRequest) {
     const clientId = process.env.VK_APP_ID || "54678517"
     const requestOrigin = new URL(request.url).origin
     const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
-    const configuredRedirectUri = process.env.VK_REDIRECT_URI || (configuredAppUrl ? `${configuredAppUrl}/login` : null)
-    const redirectUri = requestedRedirectUri && new URL(requestedRedirectUri).origin === requestOrigin
-      ? requestedRedirectUri
-      : configuredRedirectUri || `${requestOrigin}/login`
+    const configuredRedirectUri =
+      process.env.VK_REDIRECT_URI ||
+      process.env.NEXT_PUBLIC_VK_REDIRECT_URI ||
+      (configuredAppUrl ? `${configuredAppUrl}/login` : "https://metodichka-rzd6.vercel.app/login")
+    // VK validates redirect_uri against the exact URL configured in the app.
+    const redirectUri = configuredRedirectUri
 
     const params: Record<string, string> = {
       grant_type: "authorization_code",
