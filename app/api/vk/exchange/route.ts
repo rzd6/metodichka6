@@ -3,13 +3,14 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { code, device_id, state, code_verifier, access_token, user_id } = body
+    const accessToken = body.access_token ?? body.accessToken ?? body.user?.access_token
+    const userId = body.user_id ?? body.userId ?? body.user?.id
 
-    if (access_token && user_id) {
+    if (accessToken && userId) {
       const profileUrl = new URL("https://api.vk.com/method/users.get")
-      profileUrl.searchParams.set("user_ids", String(user_id))
+      profileUrl.searchParams.set("user_ids", String(userId))
       profileUrl.searchParams.set("fields", "photo_200,photo_max_orig")
-      profileUrl.searchParams.set("access_token", String(access_token))
+      profileUrl.searchParams.set("access_token", String(accessToken))
       profileUrl.searchParams.set("v", "5.199")
       const profileRes = await fetch(profileUrl, { cache: "no-store" })
       const profileData = await profileRes.json()
