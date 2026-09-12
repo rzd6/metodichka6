@@ -100,6 +100,10 @@ export function invalidateUserCache() {
   lastFetchTime = 0
 }
 
+export function getUserAvatar(user: Pick<User, "customAvatar" | "vkAvatar" | "avatar"> | null | undefined): string | undefined {
+  return user?.customAvatar || user?.vkAvatar || user?.avatar
+}
+
 export async function addUser(
   nickname: string,
   password: string,

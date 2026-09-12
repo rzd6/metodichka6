@@ -13,7 +13,7 @@ import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 
 // App ID из официального кода VK
-const VK_APP_ID = 54573548
+const VK_APP_ID = Number(process.env.NEXT_PUBLIC_VK_APP_ID || 54678517)
 
 export default function LoginPage() {
   const [nickname, setNickname] = useState("")
@@ -35,8 +35,19 @@ export default function LoginPage() {
 
   const vkidOnSuccess = async (data: any) => {
     try {
+      const exchangeResponse = await fetch("/api/vk/exchange", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          redirect_uri: `${window.location.origin}/login`,
+        }),
+      })
+      const exchanged = await exchangeResponse.json()
+      if (!exchangeResponse.ok || exchanged.error) throw new Error(exchanged.description || exchanged.error)
+
       const vkUserId = String(
-        data?.user_id ?? data?.user?.id ?? data?.id ?? ""
+        exchanged?.user_id ?? exchanged?.user?.id ?? data?.user_id ?? data?.user?.id ?? data?.id ?? ""
       )
       if (!vkUserId || vkUserId === "undefined") {
         setError("Не удалось получить числовой ID ВКонтакте.")
@@ -50,7 +61,19 @@ export default function LoginPage() {
         return
       }
 
-      localStorage.setItem("currentUser", JSON.stringify(user))
+      const photo = exchanged?.photo
+      const updatedUser = photo
+        ? (await fetch("/api/users", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: user.id, vk_avatar: photo }),
+          }).then(async (response) => {
+            const result = await response.json()
+            return response.ok && result.data ? { ...user, ...result.data, vkAvatar: photo } : { ...user, vkAvatar: photo }
+          }).catch(() => ({ ...user, vkAvatar: photo })))
+        : user
+
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser))
       router.push("/")
     } catch {
       setError("Ошибка авторизации через ВКонтакте. Попробуйте снова.")
@@ -71,7 +94,7 @@ export default function LoginPage() {
 
     VKID.Config.init({
       app: VK_APP_ID,
-      redirectUrl: "https://v0-rzd6-test.vercel.app/login",
+      redirectUrl: `${window.location.origin}/login`,
       responseMode: VKID.ConfigResponseMode.Callback,
       source: VKID.ConfigSource.LOWCODE,
       scope: "",
