@@ -38,6 +38,16 @@ export default function LoginPage() {
       const vkUserId = String(
         data?.user_id ?? data?.user?.id ?? data?.id ?? ""
       )
+      let vkPhoto = data?.photo
+      if (!vkPhoto && data?.access_token && vkUserId) {
+        const profileResponse = await fetch("/api/vk/exchange", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: data.access_token, user_id: vkUserId }),
+        })
+        const profileData = await profileResponse.json()
+        vkPhoto = profileData.photo
+      }
 
       if (!vkUserId || vkUserId === "undefined") {
         setError("Не удалось получить числовой ID ВКонтакте.")
@@ -51,7 +61,6 @@ export default function LoginPage() {
         return
       }
 
-      const vkPhoto = data?.photo
       if (vkPhoto && /^https?:\/\//.test(vkPhoto)) {
         const updatedUser = await updateUser(user.id, { vkAvatar: vkPhoto })
         if (updatedUser) Object.assign(user, updatedUser)
