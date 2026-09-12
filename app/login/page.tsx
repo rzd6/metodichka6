@@ -75,7 +75,7 @@ export default function LoginPage() {
 
   const vkidOnError = (err: any) => {
     console.error("[VK] error:", err)
-    const description = err instanceof Error ? err.message : ""
+    const description = err?.message || err?.text || ""
     setError(description ? `Ошибка авторизации VK: ${description}` : "Ошибка авторизации через ВКонтакте. Попробуйте снова.")
   }
 
