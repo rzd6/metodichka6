@@ -12,6 +12,7 @@ const PROXIED_HOSTS = [
   "i.ibb.co",
   "ibb.co",
   "i.imgbb.com",
+  "vkuserphoto.ru",
 ]
 
 export function proxyImageUrl(url: string | null | undefined): string {
