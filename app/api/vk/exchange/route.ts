@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { code, device_id, state, code_verifier } = body
     const accessToken = body.access_token ?? body.accessToken ?? body.user?.access_token
+    const requestedRedirectUri = typeof body.redirect_uri === "string" ? body.redirect_uri : null
     const userId = body.user_id ?? body.userId ?? body.user?.id
 
     if (accessToken && userId) {
@@ -27,7 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     const clientId = process.env.VK_APP_ID || "54678517"
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin}/login`
+    const requestOrigin = new URL(request.url).origin
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
+    const configuredRedirectUri = process.env.VK_REDIRECT_URI || (configuredAppUrl ? `${configuredAppUrl}/login` : null)
+    const redirectUri = requestedRedirectUri && new URL(requestedRedirectUri).origin === requestOrigin
+      ? requestedRedirectUri
+      : configuredRedirectUri || `${requestOrigin}/login`
 
     const params: Record<string, string> = {
       grant_type: "authorization_code",
