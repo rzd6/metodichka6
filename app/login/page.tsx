@@ -79,24 +79,15 @@ export default function LoginPage() {
     setError(description ? `Ошибка авторизации VK: ${description}` : "Ошибка авторизации через ВКонтакте. Попробуйте снова.")
   }
 
-  // Re-initialise VK SDK when arriving at the page (covers the logout → login flow)
-  useEffect(() => {
-    const win = window as any
-    if ("VKIDSDK" in win) {
-      initVkSdk()
-    }
-  }, [])
-
   // Вызывается после загрузки SDK — сразу рендерим виджет без ручной кнопки
   const initVkSdk = () => {
     const win = window as any
-    if (!("VKIDSDK" in win)) return
+    if (!("VKIDSDK" in win) || floatingOneTapRef.current) return
     const VKID = win.VKIDSDK
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
     VKID.Config.init({
       app: VK_APP_ID,
-      redirectUrl: `${appUrl}/login`,
+      redirectUrl: `${window.location.origin}/login`,
       responseMode: VKID.ConfigResponseMode.Callback,
       source: VKID.ConfigSource.LOWCODE,
       scope: "",
