@@ -161,7 +161,7 @@ export default function LoginPage() {
     <>
       {/* VK ID SDK — загружается один раз, инициализация сразу после загрузки */}
       <Script
-        src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"
+        src="https://unpkg.com/@vkid/sdk@2.6.8/dist-sdk/umd/index.js"
         strategy="afterInteractive"
         onLoad={initVkSdk}
       />
