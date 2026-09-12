@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation"
 import type { JSX } from "react"
 import Image from "next/image"
 import type { UserRole } from "@/data/users"
-import { getAllUsers, getEffectiveReportTag } from "@/data/users"
+import { getAllUsers, getEffectiveReportTag, getUserAvatar } from "@/data/users"
 import {
   canAccessManagement,
   canAccessReportCompiler,
@@ -221,7 +221,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
         const freshUser = users.find((candidate) => candidate.id === stored?.id)
         const current = freshUser ? { ...stored, ...freshUser } : stored
         if (freshUser) localStorage.setItem("currentUser", JSON.stringify(current))
-        setProfileAvatar(current?.avatar || null)
+        setProfileAvatar(getUserAvatar(current) || null)
         if (current?.role) {
           setDisplayTag(getEffectiveReportTag(current))
         }
