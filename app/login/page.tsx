@@ -108,17 +108,8 @@ export default function LoginPage() {
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload: any) => {
-        const { code, device_id, state, code_verifier } = payload
-        fetch("/api/vk/exchange", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, device_id, state, code_verifier }),
-        })
-          .then(async (response) => {
-            const result = await response.json()
-            if (!response.ok) throw new Error(result.description || result.error || "exchange_failed")
-            return result
-          })
+        const { code, device_id } = payload
+        VKID.Auth.exchangeCode(code, device_id)
           .then(vkidOnSuccess)
           .catch(vkidOnError)
       })
