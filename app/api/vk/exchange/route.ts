@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const { code, device_id, state, code_verifier } = body
     const accessToken = body.access_token ?? body.accessToken ?? body.user?.access_token
     const userId = body.user_id ?? body.userId ?? body.user?.id
 
