@@ -101,7 +101,8 @@ export function invalidateUserCache() {
 }
 
 export function getUserAvatar(user: Pick<User, "customAvatar" | "vkAvatar" | "avatar"> | null | undefined): string | undefined {
-  return user?.customAvatar || user?.vkAvatar || user?.avatar
+  // When VK is linked, its current profile photo must take precedence over an old custom avatar.
+  return user?.vkAvatar || user?.customAvatar || user?.avatar
 }
 
 export async function addUser(
