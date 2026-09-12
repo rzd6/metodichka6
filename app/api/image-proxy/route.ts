@@ -6,6 +6,7 @@ const ALLOWED_HOSTS = [
   "i.ibb.co",
   "ibb.co",
   "i.imgbb.com",
+  "vkuserphoto.ru",
 ]
 
 export async function GET(req: NextRequest) {

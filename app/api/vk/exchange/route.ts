@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { code, device_id, state, code_verifier } = body
     const accessToken = body.access_token ?? body.accessToken ?? body.user?.access_token
+    const requestedRedirectUri = typeof body.redirect_uri === "string" ? body.redirect_uri : null
     const userId = body.user_id ?? body.userId ?? body.user?.id
 
     if (accessToken && userId) {
@@ -27,7 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     const clientId = process.env.VK_APP_ID || "54678517"
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin}/login`
+    const requestOrigin = new URL(request.url).origin
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
+    const configuredRedirectUri =
+      process.env.VK_REDIRECT_URI ||
+      process.env.NEXT_PUBLIC_VK_REDIRECT_URI ||
+      (configuredAppUrl ? `${configuredAppUrl}/login` : "https://metodichka-rzd6.vercel.app/login")
+    // VK validates redirect_uri against the exact URL configured in the app.
+    const redirectUri = configuredRedirectUri
 
     const params: Record<string, string> = {
       grant_type: "authorization_code",
@@ -56,17 +64,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch the profile photo with the short-lived user token returned by VK.
+    // VK ID access tokens are resolved through VK ID's user_info endpoint.
+    // Calling api.vk.com/users.get with this token can succeed for auth while
+    // returning no profile photo, which is why the widget's avatar was lost.
     let photo: string | undefined
     try {
-      const profileUrl = new URL("https://api.vk.com/method/users.get")
-      profileUrl.searchParams.set("user_ids", String(tokenData.user_id))
-      profileUrl.searchParams.set("fields", "photo_200,photo_max_orig")
-      profileUrl.searchParams.set("access_token", tokenData.access_token)
-      profileUrl.searchParams.set("v", "5.199")
-      const profileRes = await fetch(profileUrl, { cache: "no-store" })
-      const profile = (await profileRes.json()).response?.[0]
-      photo = profile?.photo_max_orig || profile?.photo_200
+      const userInfoRes = await fetch("https://id.vk.ru/oauth2/user_info", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          access_token: String(tokenData.access_token),
+        }),
+        cache: "no-store",
+      })
+      const userInfo = await userInfoRes.json()
+      const profile = userInfo.user ?? userInfo.response?.user ?? userInfo.response
+      photo = profile?.avatar || profile?.photo_max_orig || profile?.photo_200 || profile?.photo
     } catch {
       // Authentication still succeeds if VK does not return a photo.
     }
