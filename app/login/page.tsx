@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { authenticateUser, findUserByVkId, updateUser } from "@/data/users"
+import { authenticateUser, findUserByVkId } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 
 // App ID из официального кода VK
-const VK_APP_ID = 54678517
+const VK_APP_ID = 54573548
 
 export default function LoginPage() {
   const [nickname, setNickname] = useState("")
@@ -38,17 +38,6 @@ export default function LoginPage() {
       const vkUserId = String(
         data?.user_id ?? data?.user?.id ?? data?.id ?? ""
       )
-      let vkPhoto = data?.photo
-      if (!vkPhoto && (data?.access_token || data?.accessToken || data?.user?.access_token) && vkUserId) {
-        const profileResponse = await fetch("/api/vk/exchange", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ access_token: data.access_token ?? data.accessToken ?? data.user?.access_token, user_id: vkUserId }),
-        })
-        const profileData = await profileResponse.json()
-        vkPhoto = profileData.photo
-      }
-
       if (!vkUserId || vkUserId === "undefined") {
         setError("Не удалось получить числовой ID ВКонтакте.")
         return
@@ -59,11 +48,6 @@ export default function LoginPage() {
       if (!user) {
         setError(`VK ID ${vkUserId} не привязан ни к одному аккаунту. Попросите администратора прописать именно этот числовой ID в настройках пользователя.`)
         return
-      }
-
-      if (vkPhoto && /^https?:\/\//.test(vkPhoto)) {
-        const updatedUser = await updateUser(user.id, { vkAvatar: vkPhoto })
-        if (updatedUser) Object.assign(user, updatedUser)
       }
 
       localStorage.setItem("currentUser", JSON.stringify(user))
@@ -87,7 +71,7 @@ export default function LoginPage() {
 
     VKID.Config.init({
       app: VK_APP_ID,
-      redirectUrl: `${window.location.origin}/login`,
+      redirectUrl: "https://v0-rzd6-test.vercel.app/login",
       responseMode: VKID.ConfigResponseMode.Callback,
       source: VKID.ConfigSource.LOWCODE,
       scope: "",
@@ -103,32 +87,17 @@ export default function LoginPage() {
     oneTap
       .render({
         container,
-        showAlternativeLogin: false,
+        showAlternativeLogin: true,
         styles: { borderRadius: 8, width: container.offsetWidth || 340 },
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload: any) => {
-        try {
-          const authResult = await VKID.Auth.exchangeCode(payload.code, payload.device_id)
-          let profile = authResult
-          if (typeof VKID.Auth.userInfo === "function") {
-            profile = { ...authResult, ...(await VKID.Auth.userInfo()) }
-          }
-          await vkidOnSuccess({
-            ...profile,
-            user_id: profile?.user_id ?? profile?.user?.id ?? profile?.id,
-            access_token: profile?.access_token ?? profile?.user?.access_token,
-            photo:
-              profile?.photo_max_orig ??
-              profile?.photo_200 ??
-              profile?.avatar ??
-              profile?.user?.photo_max_orig ??
-              profile?.user?.photo_200 ??
-              profile?.user?.avatar,
-          })
-        } catch (error) {
-          vkidOnError(error)
-        }
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload: any) {
+        const code = payload.code
+        const deviceId = payload.device_id
+
+        VKID.Auth.exchangeCode(code, deviceId)
+          .then(vkidOnSuccess)
+          .catch(vkidOnError)
       })
 
     // Если виджет загрузился но пустой — пользователь не авторизован в ВК
