@@ -13,9 +13,26 @@ export async function POST(request: NextRequest) {
 
     const raw = input.trim()
 
-    // 1. Already a numeric ID
+    // 1. Already a numeric ID. Resolve the photo server-side when a service
+    // token is configured, without exposing the token to the browser.
     if (/^\d+$/.test(raw)) {
-      return NextResponse.json({ user_id: raw })
+      const result: { user_id: string; photo?: string } = { user_id: raw }
+      const token = process.env.VK_SERVICE_TOKEN
+      if (token) {
+        try {
+          const profileUrl = new URL("https://api.vk.com/method/users.get")
+          profileUrl.searchParams.set("user_ids", raw)
+          profileUrl.searchParams.set("fields", "photo_max_orig,photo_200")
+          profileUrl.searchParams.set("access_token", token)
+          profileUrl.searchParams.set("v", "5.199")
+          const profileData = await (await fetch(profileUrl, { cache: "no-store" })).json()
+          const profile = profileData.response?.[0]
+          if (profile?.photo_max_orig || profile?.photo_200) result.photo = profile.photo_max_orig || profile.photo_200
+        } catch (error) {
+          console.error("[v0] VK service photo lookup failed:", error)
+        }
+      }
+      return NextResponse.json(result)
     }
 
     // 2. Extract screen_name from various forms:

@@ -85,6 +85,25 @@ export async function POST(request: NextRequest) {
       // Authentication still succeeds if VK does not return a photo.
     }
 
+    // VK ID user_info may omit the avatar. Use the configured service token as
+    // a server-side fallback for the numeric VK user ID returned by OAuth.
+    if (!photo && tokenData.user_id && process.env.VK_SERVICE_TOKEN) {
+      try {
+        const profileUrl = new URL("https://api.vk.com/method/users.get")
+        profileUrl.searchParams.set("user_ids", String(tokenData.user_id))
+        profileUrl.searchParams.set("fields", "photo_max_orig,photo_200")
+        profileUrl.searchParams.set("access_token", process.env.VK_SERVICE_TOKEN)
+        profileUrl.searchParams.set("v", "5.199")
+        const profileRes = await fetch(profileUrl, { cache: "no-store" })
+        const profileData = await profileRes.json()
+        if (profileData.error) console.error("[v0] VK service profile error:", profileData.error)
+        const profile = profileData.response?.[0]
+        photo = profile?.photo_max_orig || profile?.photo_200
+      } catch (error) {
+        console.error("[v0] VK service profile request failed:", error)
+      }
+    }
+
     return NextResponse.json({ ...tokenData, photo })
   } catch (err) {
     console.error("[v0] VK exchange route error:", err)
