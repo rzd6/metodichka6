@@ -1,5 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+async function getVkPhoto(userId: string) {
+  const token = process.env.VK_SERVICE_TOKEN
+  if (!token) return undefined
+  try {
+    const url = new URL("https://api.vk.com/method/users.get")
+    url.searchParams.set("user_ids", userId)
+    url.searchParams.set("fields", "photo_max_orig,photo_200")
+    url.searchParams.set("access_token", token)
+    url.searchParams.set("v", "5.199")
+    const data = await (await fetch(url, { cache: "no-store" })).json()
+    if (data.error) console.error("[v0] VK avatar lookup error", data.error)
+    const profile = data.response?.[0]
+    return profile?.photo_max_orig || profile?.photo_200
+  } catch (error) {
+    console.error("[v0] VK avatar lookup failed", error)
+    return undefined
+  }
+}
+
 // Resolves a VK short name / profile link to a numeric user ID.
 // Strategy 1: utils.resolveScreenName — works without token for most cases.
 // Strategy 2: Parse og:url from the public VK profile page (no token needed).
@@ -13,9 +32,10 @@ export async function POST(request: NextRequest) {
 
     const raw = input.trim()
 
-    // 1. Already a numeric ID
+    // 1. Already a numeric ID. Resolve the photo server-side when a service
+    // token is configured, without exposing the token to the browser.
     if (/^\d+$/.test(raw)) {
-      return NextResponse.json({ user_id: raw })
+      return NextResponse.json({ user_id: raw, photo: await getVkPhoto(raw) })
     }
 
     // 2. Extract screen_name from various forms:
@@ -33,7 +53,7 @@ export async function POST(request: NextRequest) {
     // 3. id<number> pattern → return number directly
     const idMatch = screenName.match(/^id(\d+)$/i)
     if (idMatch) {
-      return NextResponse.json({ user_id: idMatch[1] })
+      return NextResponse.json({ user_id: idMatch[1], photo: await getVkPhoto(idMatch[1]) })
     }
 
     if (!screenName) {
@@ -55,7 +75,8 @@ export async function POST(request: NextRequest) {
         console.log("[v0] resolveScreenName response:", JSON.stringify(resolveData))
 
         if (resolveData.response && resolveData.response.object_id) {
-          return NextResponse.json({ user_id: String(resolveData.response.object_id) })
+          const userId = String(resolveData.response.object_id)
+          return NextResponse.json({ user_id: userId, photo: await getVkPhoto(userId) })
         }
 
         // Empty response means user not found (not an error)
