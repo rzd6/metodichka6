@@ -18,10 +18,18 @@ function getDrive() {
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_2
   if (!privateKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_2 is not configured")
 
+  let normalizedKey = privateKey.replace(/\\n/g, "\n").trim()
+  try {
+    const parsed = JSON.parse(normalizedKey)
+    if (typeof parsed.private_key === "string") normalizedKey = parsed.private_key.replace(/\\n/g, "\n")
+  } catch {
+    // The project variable may contain either the raw PEM key or the service-account JSON.
+  }
+
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: SERVICE_ACCOUNT_EMAIL,
-      private_key: privateKey.replace(/\\n/g, "\n"),
+      private_key: normalizedKey,
     },
     scopes: ["https://www.googleapis.com/auth/drive"],
   })

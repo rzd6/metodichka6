@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
     }
 
     const files = []
+    let totalSize = 0
+    const maxTotalSize = 3.5 * 1024 * 1024
     for (const entry of entries) {
       if (!(entry instanceof File)) continue
       if (!entry.type.startsWith("image/") && !entry.type.startsWith("application/pdf")) {
@@ -24,6 +26,10 @@ export async function POST(request: NextRequest) {
       if (entry.size > 15 * 1024 * 1024) {
         return NextResponse.json({ error: "Each file must be smaller than 15 MB" }, { status: 413 })
       }
+      totalSize += entry.size
+      if (totalSize > maxTotalSize) {
+        return NextResponse.json({ error: "The combined upload must be smaller than 3.5 MB" }, { status: 413 })
+      }
       files.push({ name: entry.name, type: entry.type, buffer: Buffer.from(await entry.arrayBuffer()) })
     }
 
@@ -31,6 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error("[v0] Google Drive upload failed", error)
-    return NextResponse.json({ error: "Google Drive upload failed" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Unknown upload error"
+    return NextResponse.json({ error: "Google Drive upload failed", details: message }, { status: 500 })
   }
 }
