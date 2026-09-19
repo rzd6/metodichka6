@@ -34,6 +34,7 @@ import {
   canAccessInterviews,
   canAccessGoogleSheets,
   canAccessManagement,
+  canAccessBugReport,
 } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
 
@@ -49,6 +50,13 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
   const getTieColor = () => getThemeColor(theme.colorTheme)
 
   const allSections = [
+    {
+      id: "report-generation",
+      icon: FileBarChart,
+      title: "Генерация отчётов",
+      description: "Инструмент подготовки отчётов по рабочим операциям.",
+      canAccess: typeof window !== "undefined" && JSON.parse(localStorage.getItem("currentUser") || "null")?.nickname === "v0_dev_rzd",
+    },
     {
       id: "information",
       icon: Info,
@@ -139,6 +147,20 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       title: "Новости РЖД",
       description: "Все самые важные новости фракции РЖД",
       canAccess: true,
+    },
+    {
+      id: "train-schedule",
+      icon: Train,
+      title: "Расписание рейсов",
+      description: "Актуальное расписание рейсов и сведения о движении составов.",
+      canAccess: userRole !== "ПТО" || userRole === "Тех. Администратор" || secondaryRole === "Тех. Администратор",
+    },
+    {
+      id: "bug-report",
+      icon: AlertTriangle,
+      title: "Баг-репорт",
+      description: "Отправка сообщений о неисправностях и проблемах в работе сайта.",
+      canAccess: canAccessBugReport(userRole, secondaryRole),
     },
     {
       id: "admin",

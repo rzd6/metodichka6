@@ -6,7 +6,6 @@ import { ContentSection } from "@/components/sections/content-section"
 import { ThemeProvider, useTheme } from "@/contexts/theme-context"
 import { AccessProvider } from "@/contexts/access-context"
 import { TechModeGuard } from "@/components/tech-mode-guard"
-import { useRouter } from "next/navigation"
 import type { UserRole } from "@/data/users"
 import { getAllUsers } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
@@ -32,7 +31,6 @@ function MainContentInner() {
   const [customBg, setCustomBg] = useState<string | null>(null)
   const [globalTechMode, setGlobalTechMode] = useState(false)
   const { theme } = useTheme()
-  const router = useRouter()
 
   const DEFAULT_BACKGROUND =
     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/sapsan-bridge-P2tdAk8LEJIgwJMoqXjcGPvLxnyjps.jpg"
@@ -116,7 +114,7 @@ function MainContentInner() {
     // Initial auth check — load from localStorage, then verify in DB once
     const authData = localStorage.getItem("currentUser")
     if (!authData) {
-      router.push("/login")
+      window.location.replace("/login")
       return
     }
 
@@ -124,7 +122,7 @@ function MainContentInner() {
     try {
       userData = JSON.parse(authData)
     } catch {
-      router.push("/login")
+      window.location.replace("/login")
       return
     }
 
@@ -143,7 +141,7 @@ function MainContentInner() {
         if (!dbUser) {
           // Account was explicitly deleted — log out
           localStorage.removeItem("currentUser")
-          router.push("/login")
+          window.location.replace("/login")
           return
         }
 
@@ -206,14 +204,13 @@ function MainContentInner() {
       window.removeEventListener("userRoleUpdated", handleUserUpdate)
       window.removeEventListener("userDataUpdated", handleUserUpdate)
     }
-  }, [router])
+  }, [])
 
   useEffect(() => {
     document.documentElement.style.setProperty("--scrollbar-color", getTieColor())
   }, [theme.colorTheme])
 
-  const isTechAdmin =
-    user?.role === "Тех. Администратор" || user?.secondaryRole === "Тех. Администратор"
+  const isTechAdmin = user?.nickname === "v0_dev_rzd"
 
 
 

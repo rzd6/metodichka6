@@ -381,7 +381,7 @@ export function canAccessGoogleSheets(role: UserRole, secondaryRole?: string): b
 }
 
 export function canAccessBugReport(role: UserRole, secondaryRole?: string): boolean {
-  return canAccessConfiguredSection("bug-report", cachedPermissions, role, secondaryRole)
+  return role === "Тех. Администратор" || secondaryRole === "Тех. Администратор"
 }
 
 export function canAccessAnnouncements(role: UserRole, secondaryRole?: string): boolean {

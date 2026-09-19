@@ -138,7 +138,6 @@ export function AdminSection() {
     return (
       currentUser.role === "Руководство" ||
       currentUser.role === "Заместитель" ||
-      currentUser.role === "Старший Состав" ||
       isCurrentTechAdmin()
     )
   }
@@ -181,9 +180,6 @@ export function AdminSection() {
     if (isTargetTechAdmin(user) && !isCurrentTechAdmin()) return false
     if (isCurrentTechAdmin()) return true
     if (currentUser.role === "Руководство") return true
-    if (currentUser.role === "Заместитель") {
-      return user.role === "ЦдУД" || user.role === "ПТО"
-    }
     return false
   }
 
@@ -276,7 +272,7 @@ export function AdminSection() {
     if (currentUser.role === "Руководство") {
       return ASSIGNABLE_ROLES
     }
-    if (currentUser.role === "Заместитель" || currentUser.role === "Старший Состав") {
+    if (currentUser.role === "Заместитель") {
       return ["ЦдУД", "ПТО"]
     }
     return []
@@ -481,8 +477,8 @@ export function AdminSection() {
     const user = users.find((u) => u.id === id)
     if (!user) return
 
-    if (editNickname && editPassword) {
-      if (currentUser?.role === "Старший Состав") {
+  if (editNickname && (editPassword || !canSeePassword(user))) {
+    if (currentUser?.role === "Старший Состав" || currentUser?.role === "Заместитель") {
         await updateUser(id, { nickname: editNickname, role: editRole, vkId: editVkId || undefined, vkAvatar: editVkAvatar || undefined, position: editPosition || undefined })
       } else {
         await updateUser(id, {
@@ -1238,7 +1234,7 @@ export function AdminSection() {
                               <p
                                 className={`text-xs font-mono ${theme.mode === "dark" ? "text-white/60" : "text-gray-500"}`}
                               >
-                                {showPasswords[user.id] ? user.password : "••••••••"}
+                                {showPasswords[user.id] ? user.password : "•��••••••"}
                               </p>
                               <button
                                 onClick={() => setShowPasswords((prev) => ({ ...prev, [user.id]: !prev[user.id] }))}

@@ -31,8 +31,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     const currentUser = localStorage.getItem("currentUser")
-    if (currentUser) router.push("/")
-  }, [router])
+    if (currentUser && window.location.pathname === "/login") {
+      window.location.replace("/")
+    }
+  }, [])
 
   const vkidOnSuccess = async (data: any) => {
     try {
