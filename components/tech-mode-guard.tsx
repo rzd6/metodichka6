@@ -3,7 +3,6 @@
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import { Terminal, AlertTriangle, Wrench, LogIn, LogOut } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 interface TechModeGuardProps {
   children: React.ReactNode
@@ -15,7 +14,6 @@ interface TechModeGuardProps {
 export function TechModeGuard({ children, isTechAdmin, currentUserNickname, techMode }: TechModeGuardProps) {
   const { theme } = useTheme()
   const tieColor = getThemeColor(theme.colorTheme)
-  const router = useRouter()
 
   // If tech mode is off, or user is a tech admin — show content as usual
   if (!techMode || isTechAdmin) {
@@ -24,7 +22,7 @@ export function TechModeGuard({ children, isTechAdmin, currentUserNickname, tech
 
   const handleSwitchAccount = () => {
     localStorage.removeItem("currentUser")
-    router.push("/login")
+    window.location.replace("/login")
   }
 
   // Full-screen maintenance screen for everyone else
