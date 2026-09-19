@@ -659,7 +659,7 @@ export function AdminSection() {
             </button>
           ))}
         </div>
-        <div className="relative flex items-center gap-3 pb-3 border-b pr-40" style={{ borderColor: getTieColor() + "40" }}>
+        <div className="relative flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
           <div
             className="p-3 rounded-xl"
             style={{ background: `linear-gradient(135deg, ${getTieColor()}20, ${getTieColor()}10)` }}
@@ -674,7 +674,7 @@ export function AdminSection() {
               Управление системными разделами приложения
             </p>
           </div>
-          <div className="ml-auto">
+          <div className="absolute top-0 right-0">
             <BugReportButton sectionLabel="admin" />
           </div>
         </div>
@@ -735,7 +735,7 @@ export function AdminSection() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b pr-40" style={{ borderColor: getTieColor() + "40" }}>
+      <div className="relative flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
         <div
           className="p-3 rounded-xl"
           style={{

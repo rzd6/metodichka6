@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { BugReportButton } from "@/components/bug-report-button"
 import { RefreshCw, UserPlus, Trash2, ArrowUp, ArrowDown, Terminal, Crown, ChevronDown, ChevronUp, Users } from "lucide-react"
 
 export interface StaffAuditEntry {
@@ -104,6 +105,7 @@ export function StaffAuditTab({ tieColor, isDark }: Props) {
             Добавление, удаление и изменение ролей
           </p>
         </div>
+        <BugReportButton sectionLabel="staff-log" />
         <Button
           variant="outline"
           size="sm"
