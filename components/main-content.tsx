@@ -293,6 +293,9 @@ function MainContentInner() {
                 </span>
               </div>
             )}
+            <div className="flex justify-end pb-1">
+              <BugReportButton />
+            </div>
             <ContentSection
               activeSection={activeSection}
               onSectionChange={handleSectionChange}
@@ -300,9 +303,6 @@ function MainContentInner() {
               userNickname={user?.nickname}
               secondaryRole={user?.secondaryRole}
             />
-            <div className="flex justify-end pt-2">
-              <BugReportButton />
-            </div>
           </div>
         </div>
       </main>
