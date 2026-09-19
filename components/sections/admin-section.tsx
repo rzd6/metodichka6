@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { BugReportButton } from "@/components/bug-report-button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { getAllUsers, addUser, updateUser, deleteUser, isTechAdmin, type User } from "@/data/users"
@@ -658,7 +659,7 @@ export function AdminSection() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
+        <div className="relative flex items-center gap-3 pb-3 border-b pr-40" style={{ borderColor: getTieColor() + "40" }}>
           <div
             className="p-3 rounded-xl"
             style={{ background: `linear-gradient(135deg, ${getTieColor()}20, ${getTieColor()}10)` }}
@@ -672,6 +673,9 @@ export function AdminSection() {
             <p className={`text-sm ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
               Управление системными разделами приложения
             </p>
+          </div>
+          <div className="ml-auto">
+            <BugReportButton sectionLabel="admin" />
           </div>
         </div>
         {currentUser && (
@@ -731,7 +735,7 @@ export function AdminSection() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
+      <div className="flex items-center gap-3 pb-3 border-b pr-40" style={{ borderColor: getTieColor() + "40" }}>
         <div
           className="p-3 rounded-xl"
           style={{
@@ -783,8 +787,10 @@ export function AdminSection() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-                  <Button
+          <div className="absolute right-0 top-0 flex items-center gap-2">
+            <BugReportButton sectionLabel="admin" />
+            <Button
+
             variant="outline"
             size="sm"
             onClick={async () => {
