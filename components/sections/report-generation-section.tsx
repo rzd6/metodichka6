@@ -215,7 +215,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприя��ие": ["межфракционное мероприятие"],
+    "межфракционное мероприя����ие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -485,7 +485,8 @@ export function ReportGenerationSection() {
 
   const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string } | null>(null)
 
-  const MAX_FILE_SIZE = 32 * 1024 * 1024 // 32 MB per file (ImgBB limit)
+  const MAX_FILE_SIZE = 15 * 1024 * 1024
+  const MAX_BATCH_SIZE = 3.5 * 1024 * 1024 // Leave room for multipart/form-data overhead on hosted runtimes
 
   // Helper function to load data from localStorage for specific report types
   const loadReportData = (key: string, setter: React.Dispatch<React.SetStateAction<any>>, preservePosition = false) => {
@@ -755,7 +756,7 @@ export function ReportGenerationSection() {
       const response = await fetch("/api/upload-to-drive", { method: "POST", body: formData })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Не удалось загрузить файлы в Google Drive")
-      return (result.files as Array<{ webViewLink: string }>).map((file) => file.webViewLink)
+      return [result.folderUrl as string]
     } finally {
       setIsUploading(false)
     }
