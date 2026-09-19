@@ -237,27 +237,6 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       </Card>
 
       <Card
-        className={`overflow-hidden rounded-2xl border-2 ${theme.mode === "dark" ? "border-white/10 bg-[#0f1419]/70" : "border-gray-200 bg-white"}`}
-      >
-        <CardContent className="flex items-center gap-4 px-4 py-3 sm:px-5">
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-            style={{ background: `linear-gradient(135deg, ${getTieColor()}30, ${getTieColor()}10)` }}
-          >
-            <PenLine className="h-6 w-6" style={{ color: getTieColor() }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${theme.mode === "dark" ? "text-white/50" : "text-gray-500"}`}>
-              Автор методички
-            </p>
-            <p className="mt-1 text-xl font-bold" style={{ color: getTieColor() }}>
-              Egoriy_Bobryshev
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card
         className={`border-2 rounded-2xl overflow-hidden ${theme.mode === "dark" ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"
           }`}
       >
