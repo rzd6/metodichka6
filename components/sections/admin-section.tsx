@@ -1234,7 +1234,7 @@ export function AdminSection() {
                               <p
                                 className={`text-xs font-mono ${theme.mode === "dark" ? "text-white/60" : "text-gray-500"}`}
                               >
-                                {showPasswords[user.id] ? user.password : "•��••••••"}
+                                {showPasswords[user.id] ? user.password : "••••••••"}
                               </p>
                               <button
                                 onClick={() => setShowPasswords((prev) => ({ ...prev, [user.id]: !prev[user.id] }))}
