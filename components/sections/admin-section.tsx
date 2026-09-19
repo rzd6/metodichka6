@@ -658,6 +658,22 @@ export function AdminSection() {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
+          <div
+            className="p-3 rounded-xl"
+            style={{ background: `linear-gradient(135deg, ${getTieColor()}20, ${getTieColor()}10)` }}
+          >
+            <Wrench className="w-6 h-6" style={{ color: getTieColor() }} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
+              Встроенные разделы
+            </h2>
+            <p className={`text-sm ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
+              Управление системными разделами приложения
+            </p>
+          </div>
+        </div>
         {currentUser && (
           <BuiltinSectionsTab currentUser={{ nickname: currentUser.nickname, role: currentUser.role }} />
         )}
@@ -801,7 +817,7 @@ export function AdminSection() {
       ) : usersError ? (
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${theme.mode === "dark" ? "bg-red-900/20 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600"}`}>
           <div className="w-2 h-2 rounded-full bg-current flex-shrink-0" />
-          <p className="text-sm">Не удалось подключиться к базе данных. Проверьте соединение и попробуйте обновить страницу.</p>
+          <p className="text-sm">Не удалось подключиться к базе данных. Проверьте соединение и попр��буйте обновить страницу.</p>
         </div>
       ) : (
         <>

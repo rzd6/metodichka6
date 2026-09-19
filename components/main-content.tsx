@@ -267,8 +267,8 @@ function MainContentInner() {
             transition: "backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease",
           }}
         >
-          <div className="p-4 space-y-3">
-            <div className="flex justify-end">
+          <div className="relative p-4 space-y-3">
+            <div className="absolute top-4 right-4 z-10">
               <BugReportButton sectionLabel={activeSection} />
             </div>
             {/* Default password warning banner */}
