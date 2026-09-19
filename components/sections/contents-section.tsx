@@ -198,7 +198,7 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
         className={`rounded-2xl overflow-hidden border-2 leading-[0rem] ${theme.mode === "dark" ? "bg-red-950/30 border-red-500/30" : "bg-red-50 border-red-300"
           }`}
       >
-        <CardContent className="pt-6">
+        <CardContent className="pt-4">
           <div className="flex items-start gap-4">
             <div className="p-2 rounded-lg bg-red-500/20">
               <AlertTriangle className="w-6 h-6 text-red-500" />

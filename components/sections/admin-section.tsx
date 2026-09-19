@@ -1026,7 +1026,7 @@ export function AdminSection() {
                         {canSeePassword(user) && (
                           <div className="relative">
                             <Input
-                              type={showEditPassword ? "text" : "password"}
+                              type="password"
                               value={editPassword}
                               onChange={(e) => setEditPassword(e.target.value)}
                               placeholder="Пароль"

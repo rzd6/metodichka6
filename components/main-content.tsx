@@ -9,6 +9,7 @@ import { TechModeGuard } from "@/components/tech-mode-guard"
 import type { UserRole } from "@/data/users"
 import { getAllUsers } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
+import { BugReportButton } from "@/components/bug-report-button"
 import { proxyImageUrl } from "@/lib/image-proxy"
 
 interface LocalUser {
@@ -292,6 +293,9 @@ function MainContentInner() {
                 </span>
               </div>
             )}
+            <div className="flex justify-end pb-1">
+              <BugReportButton />
+            </div>
             <ContentSection
               activeSection={activeSection}
               onSectionChange={handleSectionChange}

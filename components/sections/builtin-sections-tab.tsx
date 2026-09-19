@@ -21,18 +21,18 @@ import { getIconComponent, ICON_OPTIONS } from "@/components/section-editor/sect
 import type { UserRole } from "@/data/roles"
 
 const BUILTIN_SECTIONS: { id: string; defaultTitle: string; hasContent?: boolean }[] = [
-  { id: "contents",          defaultTitle: "Содержание" },
+  { id: "contents",          defaultTitle: "Содержание",      hasContent: true },
   { id: "information",       defaultTitle: "Информация" },
   { id: "lectures",          defaultTitle: "Лекции",        hasContent: true },
   { id: "training",          defaultTitle: "Тренировки",    hasContent: true },
-  { id: "events",            defaultTitle: "Мероприятия" },
+  { id: "events",            defaultTitle: "Мероприятия",    hasContent: true },
   { id: "exams",             defaultTitle: "Экзамены",      hasContent: true },
   { id: "interviews",        defaultTitle: "Собеседования", hasContent: true },
-  { id: "retro-train",       defaultTitle: "Ретропоезд" },
+  { id: "retro-train",       defaultTitle: "Ретропоезд",     hasContent: true },
   { id: "duty",              defaultTitle: "Дежурство" },
-  { id: "orders",            defaultTitle: "Приказы" },
+  { id: "orders",            defaultTitle: "Приказы",         hasContent: true },
   { id: "reports-section",   defaultTitle: "Доклады в рацию" },
-  { id: "gov-wave",          defaultTitle: "Гос. волна" },
+  { id: "gov-wave",          defaultTitle: "Гос. волна",      hasContent: true },
   { id: "report-generation", defaultTitle: "Генерация отчётов" },
   { id: "report-compiler",   defaultTitle: "Составитель докладов" },
   { id: "rzd-website",       defaultTitle: "Официальные уведомления" },
@@ -50,6 +50,10 @@ function getStaticContent(sectionId: string): { main?: any[]; additional?: any[]
   }
   if (sectionId === "exams") return { main: (contentData as any).exams?.theoretical ?? [], additional: (contentData as any).exams?.practical ?? [] }
   if (sectionId === "interviews") return { main: (contentData as any).interviews ?? [] }
+  if (["contents", "events", "retro-train", "orders", "gov-wave"].includes(sectionId)) {
+    const section = (contentData as any)[sectionId]
+    return { main: Array.isArray(section) ? section : section?.main ?? [] }
+  }
   return null
 }
 
