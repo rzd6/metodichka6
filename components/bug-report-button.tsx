@@ -8,7 +8,7 @@ import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 
 interface BugReportButtonProps {
-  sectionLabel: string
+  sectionLabel?: string
 }
 
 const SECTION_LABELS: Record<string, string> = {
@@ -69,8 +69,8 @@ export function BugReportButton({ sectionLabel }: BugReportButtonProps) {
           sender_role: user.role,
           sender_secondary_role: user.secondaryRole ?? null,
           sender_position: user.position,
-          sender_avatar: user.customAvatar ?? null,
-          from_section: sectionLabel,
+          sender_avatar: user.vkAvatar ?? user.customAvatar ?? null,
+          from_section: "Общий баг-репорт",
           message: message.trim(),
         }),
       })
@@ -151,13 +151,6 @@ export function BugReportButton({ sectionLabel }: BugReportButtonProps) {
           </DialogHeader>
 
           <div className="space-y-4 pt-1">
-            <div
-              className={`text-xs px-3 py-2 rounded-lg ${theme.mode === "dark" ? "bg-white/5 text-white/50" : "bg-gray-100 text-gray-500"
-                }`}
-            >
-              Раздел: <span className="font-medium" style={{ color: tieColor }}>{sectionLabel}</span>
-            </div>
-
             <Textarea
               placeholder="Опишите проблему или баг..."
               value={message}
