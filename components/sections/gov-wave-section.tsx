@@ -6,7 +6,6 @@ import { Copy, Check, Radio } from "lucide-react"
 import { useTheme } from "@/contexts/theme-context"
 import { contentData } from "@/data/content"
 import { getThemeColor } from "@/lib/theme-utils"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 
 export function GovWaveSection() {
@@ -47,8 +46,7 @@ export function GovWaveSection() {
             Шаблоны объявлений для государственной волны
           </p>
         </div>
-        <BugReportButton sectionLabel="gov-wave" />
-      </div>
+             </div>
 
       <Accordion type="single" collapsible className="space-y-4">
         {waveCategories.map((category) => (

@@ -9,7 +9,6 @@ import type { UserGender } from "@/data/roles"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import { getBuiltinOverrides } from "@/data/custom-sections"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 
 type Roleplay = { id: string; number: number; title: string; content: string[] }
@@ -79,8 +78,7 @@ export function RoleplaysSection() {
       <div className="flex items-center gap-3 border-b pb-4" style={{ borderColor: `${tieColor}40` }}>
         <div className="rounded-xl p-3" style={{ background: `linear-gradient(135deg, ${tieColor}20, ${tieColor}10)` }}><MessagesSquare className="size-6" style={{ color: tieColor }} /></div>
         <div className="flex-1"><h2 className="text-3xl font-bold" style={{ color: tieColor }}>РП отыгровки</h2><p className={isDark ? "text-sm text-white/70" : "text-sm text-gray-600"}>Готовые игровые действия для всех сотрудников</p></div>
-        <BugReportButton sectionLabel="РП отыгровки" />
-      </div>
+            </div>
       <div className="flex gap-3">
         {(["main", "additional"] as const).map((category) => (
           <button key={category} onClick={() => setSelectedCategory(category)} className={`rounded-xl border-2 px-6 py-3 font-medium transition-all ${selectedCategory === category ? "text-white shadow-lg" : isDark ? "border-white/10 bg-[#0f1419]/50 text-white/70 hover:border-white/30" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`} style={selectedCategory === category ? { backgroundColor: tieColor, borderColor: tieColor } : undefined}>

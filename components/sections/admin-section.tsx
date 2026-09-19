@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { getAllUsers, addUser, updateUser, deleteUser, isTechAdmin, type User } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
-import { BugReportButton } from "@/components/bug-report-button"
 import { ASSIGNABLE_ROLES, sortUsersByRole, POSITIONS_BY_ROLE, type UserRole } from "@/data/users"
 import {
   Trash2,
@@ -769,8 +768,7 @@ export function AdminSection() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <BugReportButton sectionLabel="Управление" />
-          <Button
+                  <Button
             variant="outline"
             size="sm"
             onClick={async () => {

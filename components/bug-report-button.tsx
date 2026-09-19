@@ -70,7 +70,7 @@ export function BugReportButton({ sectionLabel }: BugReportButtonProps) {
           sender_secondary_role: user.secondaryRole ?? null,
           sender_position: user.position,
           sender_avatar: user.vkAvatar ?? user.customAvatar ?? null,
-          from_section: "Общий баг-репорт",
+          from_section: sectionLabel ? SECTION_LABELS[sectionLabel] ?? sectionLabel : "Общий баг-репорт",
           message: message.trim(),
         }),
       })

@@ -6,7 +6,6 @@ import { Copy, Check, Calendar } from "lucide-react"
 import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 
 export function EventsSection() {
@@ -137,8 +136,7 @@ export function EventsSection() {
             Различные мероприятия и осмотры
           </p>
         </div>
-        <BugReportButton sectionLabel="Мероприятия" />
-      </div>
+            </div>
 
       <div className="flex gap-3">
         <button

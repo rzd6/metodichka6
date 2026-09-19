@@ -8,7 +8,6 @@ import { useTheme } from "@/contexts/theme-context"
 import type { UserRole } from "@/data/users"
 import { useState, useEffect } from "react"
 import { getThemeColor } from "@/lib/theme-utils"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 import { formatReportText } from "@/lib/report-text"
 import { getEffectiveReportTag, isTechAdmin } from "@/data/users"
@@ -302,7 +301,7 @@ export function RadioReportsSection({ userRole, secondaryRole }: RadioReportsSec
           subtitle: "Сопровождение диспетчером",
           reports: [
             {
-              text: "tr 1/2/3/4 На перегоне *название* - *название* ведутся ремонтные работы, будьте бдительны.",
+              text: "tr 1/2/3/4 На перегоне *название* - *название* ведутся ремонтные работы, ��удьте бдительны.",
               desc: "Доклад диспетчера машинисту",
             },
             {
@@ -315,7 +314,7 @@ export function RadioReportsSection({ userRole, secondaryRole }: RadioReportsSec
             },
             { text: "r [ПЧ] - [ДНЦ] Путь свободен!", desc: "Ответ монтёра" },
             {
-              text: "r [ПЧ] - [ДНЦ] Поезд проследовал перегон без замечаний.",
+              text: "r [ПЧ] - [ДНЦ] Поезд проследовал перегон без з��мечаний.",
               desc: "После проследования",
             },
           ],
@@ -538,8 +537,7 @@ export function RadioReportsSection({ userRole, secondaryRole }: RadioReportsSec
             Полный справочник докладов и команд для радиосвязи
           </p>
         </div>
-        <BugReportButton sectionLabel="reports-section" />
-      </div>
+            </div>
 
       <Card
         className={`border-2 rounded-2xl overflow-hidden ${
