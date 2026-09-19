@@ -9,8 +9,8 @@ import { TechModeGuard } from "@/components/tech-mode-guard"
 import type { UserRole } from "@/data/users"
 import { getAllUsers } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
-import { BugReportButton } from "@/components/bug-report-button"
 import { proxyImageUrl } from "@/lib/image-proxy"
+import { BugReportButton } from "@/components/bug-report-button"
 
 interface LocalUser {
   id: string
@@ -267,7 +267,12 @@ function MainContentInner() {
             transition: "backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease",
           }}
         >
-          <div className="p-4 space-y-3">
+          <div className="relative p-4 space-y-3">
+            {activeSection !== "admin" && (
+              <div className="absolute top-4 right-4 z-10">
+                <BugReportButton sectionLabel={activeSection} />
+              </div>
+            )}
             {/* Default password warning banner */}
             {user?.isDefaultPassword && (
               <div
@@ -293,9 +298,6 @@ function MainContentInner() {
                 </span>
               </div>
             )}
-            <div className="flex justify-end pb-1">
-              <BugReportButton />
-            </div>
             <ContentSection
               activeSection={activeSection}
               onSectionChange={handleSectionChange}

@@ -6,7 +6,6 @@ import { Copy, Check, Briefcase } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 import { formatReportText } from "@/lib/report-text"
 import type { UserGender } from "@/data/roles"
@@ -130,8 +129,7 @@ export function InterviewsSection() {
             Этапы проведения собеседования
           </p>
         </div>
-        <BugReportButton sectionLabel="Собеседования" />
-      </div>
+            </div>
 
       <Accordion type="single" collapsible className="space-y-4">
         {(contentOverride?.main ?? contentData.interviews).map((interview: any) => (

@@ -3,7 +3,6 @@ import { contentData } from "@/data/content"
 import { Copy, Check, FileCheck } from "lucide-react"
 import { useState } from "react"
 import { useTheme } from "@/contexts/theme-context"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -152,8 +151,7 @@ export function OrdersSection() {
             Шаблоны приказов для различных ситуаций
           </p>
         </div>
-        <BugReportButton sectionLabel="Приказы" />
-      </div>
+            </div>
 
       <div className="flex gap-3 flex-wrap">
         {categories.map((category) => (

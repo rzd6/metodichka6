@@ -9,7 +9,6 @@ import { Crown, Shield, UsersRound, Train, Wrench, Trash2, RefreshCw, Bug, Termi
 import Image from "next/image"
 import { getAvatarFilterFromColor } from "@/lib/color-utils"
 import type { UserRole } from "@/data/users"
-import { BugReportButton } from "@/components/bug-report-button"
 
 interface BugReport {
   id: string
@@ -122,8 +121,7 @@ export function BugReportSection() {
           <p className={`text-sm ${textMuted}`}>Сообщения об ошибках от сотрудников</p>
         </div>
         <div className="flex items-center gap-2">
-          <BugReportButton sectionLabel="Баг-репорт" />
-          <Button
+                  <Button
             variant="outline"
             size="sm"
             onClick={fetchReports}
@@ -231,12 +229,7 @@ export function BugReportSection() {
                         </div>
 
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap"
-                            style={{ backgroundColor: tieColor + "18", color: tieColor }}
-                          >
-                            {report.from_section}
-                          </span>
+
                           <Button
                             variant="ghost"
                             size="icon"

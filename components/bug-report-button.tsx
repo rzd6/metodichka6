@@ -70,7 +70,7 @@ export function BugReportButton({ sectionLabel }: BugReportButtonProps) {
           sender_secondary_role: user.secondaryRole ?? null,
           sender_position: user.position,
           sender_avatar: user.vkAvatar ?? user.customAvatar ?? null,
-          from_section: "Общий баг-репорт",
+          from_section: sectionLabel ? SECTION_LABELS[sectionLabel] ?? sectionLabel : "Общий баг-репорт",
           message: message.trim(),
         }),
       })
@@ -113,16 +113,6 @@ export function BugReportButton({ sectionLabel }: BugReportButtonProps) {
           </svg>
           Баг-репорт
         </Button>
-        <span
-          className="text-[11px] leading-none font-medium tracking-wide px-1.5 py-0.5 rounded"
-          style={{
-            color: tieColor,
-            backgroundColor: tieColor + "18",
-            border: `1px solid ${tieColor}35`,
-          }}
-        >
-          by Egoriy_Bobryshev
-        </span>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

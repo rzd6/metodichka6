@@ -6,7 +6,6 @@ import { Copy, Check, GraduationCap, X, Circle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 import { getBuiltinOverrides } from "@/data/custom-sections"
 
@@ -360,8 +359,7 @@ export function ExamsSection() {
             Теоретические и практические экзамены
           </p>
         </div>
-        <BugReportButton sectionLabel="Экзамены" />
-      </div>
+            </div>
 
       <div className="flex gap-3">
         <button

@@ -6,7 +6,6 @@ import { useState, useEffect } from "react"
 import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import { getBuiltinOverrides } from "@/data/custom-sections"
-import { BugReportButton } from "@/components/bug-report-button"
 import { clipboardCopy } from "@/lib/clipboard"
 
 export function LecturesSection() {
@@ -137,8 +136,7 @@ export function LecturesSection() {
             Обучающие материалы для сотрудников РЖД
           </p>
         </div>
-        <BugReportButton sectionLabel="Лекции" />
-      </div>
+            </div>
 
       <div className="flex gap-3">
         <button

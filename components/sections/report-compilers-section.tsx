@@ -12,7 +12,6 @@ import { getThemeColor } from "@/lib/theme-utils"
 import type { UserRole } from "@/data/users"
 import { isTechAdmin } from "@/data/users"
 import { ROLE_RANK } from "@/data/roles"
-import { BugReportButton } from "@/components/bug-report-button"
 import { Calendar } from "lucide-react"
 import { clipboardCopy } from "@/lib/clipboard"
 import {
@@ -308,7 +307,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
         })
         segs.push({
           id: "seg-mirny-depot",
-          title: "Перегон: Мирный → Депо",
+          title: "Пер��гон: Мирный → Депо",
           delayMinutes: 0,
           isLastSegment: true,
           reports: [
@@ -411,7 +410,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
             `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 4 путь ст. Невский, машинист ${machinistName}.`,
-            `tr ${passNumber} Понятно, прибыли под посадку на 4 путь ст. Невский, ожидайте 1 минуту.`,
+            `tr ${passNumber} Понятно, прибыли под посадку на 4 путь ст. Не��ский, ожидайте 1 минуту.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 4 путь ст. Невский, стоянка 1 минута.`,
           ],
         })
@@ -520,7 +519,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
           reports: [
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
-            `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвоили позывной ${callSign}.`,
+            `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвои��и позывной ${callSign}.`,
             `cr Заполнили документацию. Магистраль продули, башмаки убрали, состав готов к выезду на линию.`,
             `tr ${passNumber} Понятно, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
             `tr ${passNumber} Заполнили документацию. Магистраль продули, башмаки убрали, ожидайте отправления.`,
@@ -960,8 +959,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
             Генератор докладов для рейсов на поезде
           </p>
         </div>
-        <BugReportButton sectionLabel="Составитель докладов" />
-      </div>
+            </div>
 
       <Card className={`border-2 rounded-2xl overflow-hidden ${isDark ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}>
         <CardHeader className="border-b pb-6" style={{ borderColor: getTieColor() }}>

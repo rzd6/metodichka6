@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { BugReportButton } from "@/components/bug-report-button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { getAllUsers, addUser, updateUser, deleteUser, isTechAdmin, type User } from "@/data/users"
 import { useTheme } from "@/contexts/theme-context"
-import { BugReportButton } from "@/components/bug-report-button"
 import { ASSIGNABLE_ROLES, sortUsersByRole, POSITIONS_BY_ROLE, type UserRole } from "@/data/users"
 import {
   Trash2,
@@ -659,6 +659,25 @@ export function AdminSection() {
             </button>
           ))}
         </div>
+        <div className="relative flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
+          <div
+            className="p-3 rounded-xl"
+            style={{ background: `linear-gradient(135deg, ${getTieColor()}20, ${getTieColor()}10)` }}
+          >
+            <Wrench className="w-6 h-6" style={{ color: getTieColor() }} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-3xl font-bold" style={{ color: getTieColor() }}>
+              Встроенные разделы
+            </h2>
+            <p className={`text-sm ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
+              Управление системными разделами приложения
+            </p>
+          </div>
+          <div className="absolute top-0 right-0">
+            <BugReportButton sectionLabel="admin" />
+          </div>
+        </div>
         {currentUser && (
           <BuiltinSectionsTab currentUser={{ nickname: currentUser.nickname, role: currentUser.role }} />
         )}
@@ -716,7 +735,7 @@ export function AdminSection() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
+      <div className="relative flex items-center gap-3 pb-3 border-b" style={{ borderColor: getTieColor() + "40" }}>
         <div
           className="p-3 rounded-xl"
           style={{
@@ -768,9 +787,10 @@ export function AdminSection() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <BugReportButton sectionLabel="Управление" />
-          <Button
+          <div className="absolute right-0 top-0 flex items-center gap-2">
+            <BugReportButton sectionLabel="admin" />
+            <Button
+
             variant="outline"
             size="sm"
             onClick={async () => {
@@ -803,7 +823,7 @@ export function AdminSection() {
       ) : usersError ? (
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${theme.mode === "dark" ? "bg-red-900/20 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600"}`}>
           <div className="w-2 h-2 rounded-full bg-current flex-shrink-0" />
-          <p className="text-sm">Не удалось подключиться к базе данных. Проверьте соединение и попробуйте обновить страницу.</p>
+          <p className="text-sm">Не удалось подключиться к базе данных. Проверьте соединение и попр��буйте обновить страницу.</p>
         </div>
       ) : (
         <>
@@ -1234,7 +1254,7 @@ export function AdminSection() {
                               <p
                                 className={`text-xs font-mono ${theme.mode === "dark" ? "text-white/60" : "text-gray-500"}`}
                               >
-                                {showPasswords[user.id] ? user.password : "•��••••••"}
+                                {showPasswords[user.id] ? user.password : "••••••••"}
                               </p>
                               <button
                                 onClick={() => setShowPasswords((prev) => ({ ...prev, [user.id]: !prev[user.id] }))}
