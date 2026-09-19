@@ -196,7 +196,7 @@ export default function LoginPage() {
               РЖД
             </CardTitle>
             <CardDescription className={`text-base ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-              Мето��ичка РЖД — Вход в систему
+              Методичка РЖД — Вход в систему
             </CardDescription>
           </CardHeader>
 

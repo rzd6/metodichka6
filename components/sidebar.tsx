@@ -737,7 +737,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
                   variant="outline"
                   className={`flex-1 bg-transparent ${getTextColor()} hover:${getTextColor()} border-white/20 hover:border-white/40 h-9 px-2`}
                   onClick={() => setShowSettings(true)}
-                  title="��астройки"
+                  title="Настройки"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
