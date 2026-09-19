@@ -23,7 +23,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [copiedVkId, setCopiedVkId] = useState(false)
-  const [vkWidgetEmpty, setVkWidgetEmpty] = useState(false)
   const floatingOneTapRef = useRef<any>(null)
   const router = useRouter()
   const { theme } = useTheme()
@@ -102,17 +101,16 @@ export default function LoginPage() {
       scope: "",
     })
 
-    floatingOneTapRef.current = VKID
-
     // Рендерим виджет сразу после инициализации
     const container = document.getElementById("vk-onetap-container")
     if (!container) return
+    floatingOneTapRef.current = VKID
 
     const oneTap = new VKID.OneTap()
     oneTap
       .render({
         container,
-        showAlternativeLogin: true,
+        showAlternativeLogin: false,
         styles: { borderRadius: 8, width: container.offsetWidth || 340 },
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
@@ -125,12 +123,6 @@ export default function LoginPage() {
           .catch(vkidOnError)
       })
 
-    // Если виджет загрузился но пустой — пользователь не авторизован в ВК
-    setTimeout(() => {
-      if (container.children.length === 0 || container.innerHTML.trim() === "") {
-        setVkWidgetEmpty(true)
-      }
-    }, 2000)
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -204,7 +196,7 @@ export default function LoginPage() {
               РЖД
             </CardTitle>
             <CardDescription className={`text-base ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
-              Методичка РЖД — Вход в систему
+              Мето��ичка РЖД — Вход в систему
             </CardDescription>
           </CardHeader>
 
@@ -295,23 +287,14 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* VK OneTap виджет — скрываем полностью если пользователь не авторизован в ВК */}
-            {!vkWidgetEmpty && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className={`flex-1 h-px ${theme.mode === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
-                  <span className={`text-xs ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}>
-                    или
-                  </span>
-                  <div className={`flex-1 h-px ${theme.mode === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
-                </div>
-                <div id="vk-onetap-container" className="w-full overflow-hidden rounded-lg" />
-              </>
-            )}
-            {/* Держим скрытый контейнер пока идёт проверка (SDK рендерит виджет внутри) */}
-            {vkWidgetEmpty && (
-              <div id="vk-onetap-container" className="hidden" />
-            )}
+            <div className="flex items-center gap-3">
+              <div className={`flex-1 h-px ${theme.mode === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
+              <span className={`text-xs ${theme.mode === "dark" ? "text-white/40" : "text-gray-400"}`}>
+                или
+              </span>
+              <div className={`flex-1 h-px ${theme.mode === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
+            </div>
+            <div id="vk-onetap-container" className="min-h-11 w-full overflow-hidden rounded-lg" />
           </CardContent>
         </Card>
       </div>
