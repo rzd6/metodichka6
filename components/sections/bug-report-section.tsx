@@ -229,12 +229,7 @@ export function BugReportSection() {
                         </div>
 
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap"
-                            style={{ backgroundColor: tieColor + "18", color: tieColor }}
-                          >
-                            {report.from_section}
-                          </span>
+
                           <Button
                             variant="ghost"
                             size="icon"

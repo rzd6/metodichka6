@@ -105,8 +105,9 @@ export function StaffAuditTab({ tieColor, isDark }: Props) {
             Добавление, удаление и изменение ролей
           </p>
         </div>
-        <BugReportButton sectionLabel="staff-log" />
-        <Button
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <BugReportButton sectionLabel="staff-log" />
+          <Button
           variant="outline"
           size="sm"
           onClick={() => load(true)}
@@ -118,8 +119,9 @@ export function StaffAuditTab({ tieColor, isDark }: Props) {
           }`}
         >
           <RefreshCw className={`w-3 h-3 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
-          Обновить
-        </Button>
+            Обновить
+          </Button>
+        </div>
       </div>
 
       {loading ? (

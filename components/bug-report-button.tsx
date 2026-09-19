@@ -113,16 +113,6 @@ export function BugReportButton({ sectionLabel }: BugReportButtonProps) {
           </svg>
           Баг-репорт
         </Button>
-        <span
-          className="text-[11px] leading-none font-medium tracking-wide px-1.5 py-0.5 rounded"
-          style={{
-            color: tieColor,
-            backgroundColor: tieColor + "18",
-            border: `1px solid ${tieColor}35`,
-          }}
-        >
-          by Egoriy_Bobryshev
-        </span>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
