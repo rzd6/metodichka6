@@ -196,6 +196,26 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       </div>
 
       <Card
+        className={`rounded-2xl overflow-hidden border-2 leading-[0rem] ${theme.mode === "dark" ? "bg-red-950/30 border-red-500/30" : "bg-red-50 border-red-300"
+          }`}
+      >
+        <CardContent className="pt-4">
+          <div className="flex items-start gap-4">
+            <div className="p-2 rounded-lg bg-red-500/20">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <div className="flex-1">
+              <p className={`text-sm leading-relaxed ${theme.mode === "dark" ? "text-red-200" : "text-red-900"}`}>
+                Официальный ресурс государственной фракции. За слив любой информации из данного
+                ресурса в руки лиц, кроме сотрудников данной фракции или администрации 6 сервера, игрок и администратор
+                может быть наказан согласно ОЧС 0.1.16
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card
         className={`overflow-hidden rounded-2xl border-2 ${theme.mode === "dark" ? "border-white/10 bg-[#0f1419]/70" : "border-gray-200 bg-white"}`}
       >
         <CardContent className="flex items-center gap-4 px-4 py-3 sm:px-5">
@@ -212,26 +232,6 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
             <p className="mt-1 text-xl font-bold" style={{ color: getTieColor() }}>
               Egoriy_Bobryshev
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card
-        className={`rounded-2xl overflow-hidden border-2 leading-[0rem] ${theme.mode === "dark" ? "bg-red-950/30 border-red-500/30" : "bg-red-50 border-red-300"
-          }`}
-      >
-        <CardContent className="pt-4">
-          <div className="flex items-start gap-4">
-            <div className="p-2 rounded-lg bg-red-500/20">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
-            </div>
-            <div className="flex-1">
-              <p className={`text-sm leading-relaxed ${theme.mode === "dark" ? "text-red-200" : "text-red-900"}`}>
-                Официальный ресурс государственной фракции. За слив любой информации из данного
-                ресурса в руки лиц, кроме сотрудников данной фракции или администрации 6 сервера, игрок и администратор
-                может быть наказан согласно ОЧС 0.1.16
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>

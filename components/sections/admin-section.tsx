@@ -787,7 +787,7 @@ export function AdminSection() {
             </div>
           )}
         </div>
-          <div className="absolute right-0 top-0 flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <BugReportButton sectionLabel="admin" />
             <Button
 
