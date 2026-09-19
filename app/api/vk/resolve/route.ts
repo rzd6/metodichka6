@@ -116,13 +116,13 @@ export async function POST(request: NextRequest) {
     // Primary: "user_id":<number> — appears consistently as the page owner's ID
     const userIdMatch = html.match(/"user_id":([1-9]\d*)/)
     if (userIdMatch) {
-      return NextResponse.json({ user_id: userIdMatch[1] })
+      return NextResponse.json({ user_id: userIdMatch[1], photo: await getVkPhoto(userIdMatch[1]) })
     }
 
     // Fallback: "owner_id":<non-zero number>
     const ownerMatch = html.match(/"owner_id":([1-9]\d*)/)
     if (ownerMatch) {
-      return NextResponse.json({ user_id: ownerMatch[1] })
+      return NextResponse.json({ user_id: ownerMatch[1], photo: await getVkPhoto(ownerMatch[1]) })
     }
 
     // Fallback: og:url meta tag with /id<number>
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       html.match(/property=["']og:url["'][^>]*content=["'][^"']*\/id(\d+)["']/i) ||
       html.match(/content=["'][^"']*\/id(\d+)["'][^>]*property=["']og:url["']/i)
     if (ogMatch) {
-      return NextResponse.json({ user_id: ogMatch[1] })
+      return NextResponse.json({ user_id: ogMatch[1], photo: await getVkPhoto(ogMatch[1]) })
     }
 
     // Fallback: canonical link
