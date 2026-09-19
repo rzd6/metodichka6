@@ -81,10 +81,12 @@ export function AdminSection() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [usersError, setUsersError] = useState(false)
   const [newVkId, setNewVkId] = useState("")
+  const [newVkAvatar, setNewVkAvatar] = useState("")
   const [newVkIdRaw, setNewVkIdRaw] = useState("")
   const [newVkResolving, setNewVkResolving] = useState(false)
   const [newVkResolveError, setNewVkResolveError] = useState("")
   const [editVkId, setEditVkId] = useState("")
+  const [editVkAvatar, setEditVkAvatar] = useState("")
   const [editVkIdRaw, setEditVkIdRaw] = useState("")
   const [vkResolving, setVkResolving] = useState(false)
   const [vkResolveError, setVkResolveError] = useState("")
@@ -98,7 +100,7 @@ export function AdminSection() {
     else setIsRefreshing(true)
     if (!silent) setUsersError(false)
     try {
-      const res = await fetch("/api/users", { headers: { "Content-Type": "application/json" } })
+      const res = await fetch("/api/users?hydrate_vk=1", { headers: { "Content-Type": "application/json" }, cache: "no-store" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (!Array.isArray(json.data)) throw new Error("no data")
@@ -292,8 +294,8 @@ export function AdminSection() {
       const added = await addUser(newNickname, newPassword, derivedRole, newVkId || undefined)
 
       // Set position on the newly created user
-      if (added && newPosition) {
-        await updateUser(added.id, { position: newPosition })
+      if (added && (newPosition || newVkAvatar)) {
+        await updateUser(added.id, { position: newPosition || undefined, vkAvatar: newVkAvatar || undefined })
       }
 
       const updatedUsers = await getAllUsers()
@@ -315,6 +317,7 @@ export function AdminSection() {
       setNewRole("ПТО")
       setNewPosition("")
       setNewVkId("")
+      setNewVkAvatar("")
       setNewVkIdRaw("")
       setNewVkResolveError("")
       setShowAddForm(false)
@@ -360,6 +363,7 @@ export function AdminSection() {
       setEditPosition(user.position ?? "")
       const existingVkId = (user as any).vkId || ""
       setEditVkId(existingVkId)
+      setEditVkAvatar(user.vkAvatar || "")
       setEditVkIdRaw(existingVkId)
       setVkResolveError("")
     }
@@ -378,6 +382,7 @@ export function AdminSection() {
       const data = await res.json()
       if (data.user_id) {
         setEditVkId(data.user_id)
+        setEditVkAvatar(data.photo || "")
         setVkResolveError("")
       } else {
         setVkResolveError(data.error || "Не найдено")
@@ -403,6 +408,7 @@ export function AdminSection() {
       const data = await res.json()
       if (data.user_id) {
         setNewVkId(data.user_id)
+        setNewVkAvatar(data.photo || "")
         setNewVkResolveError("")
       } else {
         setNewVkResolveError(data.error || "Не найдено")
@@ -477,13 +483,14 @@ export function AdminSection() {
 
     if (editNickname && editPassword) {
       if (currentUser?.role === "Старший Состав") {
-        await updateUser(id, { nickname: editNickname, role: editRole, vkId: editVkId || undefined, position: editPosition || undefined })
+        await updateUser(id, { nickname: editNickname, role: editRole, vkId: editVkId || undefined, vkAvatar: editVkAvatar || undefined, position: editPosition || undefined })
       } else {
         await updateUser(id, {
           nickname: editNickname,
           password: editPassword,
           role: editRole,
           vkId: editVkId || undefined,
+          vkAvatar: editVkAvatar || undefined,
           position: editPosition || undefined,
         })
       }

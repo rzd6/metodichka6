@@ -81,6 +81,28 @@ export async function GET(req: NextRequest) {
     }
 
     const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
+    const hydrateVk = searchParams.get("hydrate_vk") === "1"
+    if (hydrateVk && process.env.VK_SERVICE_TOKEN) {
+      const pending = res.rows.filter((row) => row.vk_id && !row.vk_avatar).slice(0, 25)
+      await Promise.all(pending.map(async (row) => {
+        try {
+          const url = new URL("https://api.vk.com/method/users.get")
+          url.searchParams.set("user_ids", String(row.vk_id))
+          url.searchParams.set("fields", "photo_max_orig,photo_200")
+          url.searchParams.set("access_token", process.env.VK_SERVICE_TOKEN as string)
+          url.searchParams.set("v", "5.199")
+          const data = await (await fetch(url, { cache: "no-store" })).json()
+          const profile = data.response?.[0]
+          const photo = profile?.photo_max_orig || profile?.photo_200
+          if (photo) {
+            await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
+            row.vk_avatar = photo
+          }
+        } catch (error) {
+          console.error("[v0] VK avatar hydration failed", error)
+        }
+      }))
+    }
     return NextResponse.json({ data: res.rows })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
