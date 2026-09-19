@@ -120,7 +120,7 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "lectures":
         return <LecturesSection />
       case "roleplays":
-        return <RoleplaysSection />
+        return null
       case "training":
         return <TrainingSection />
       case "events":
@@ -148,7 +148,7 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "admin":
         return <AdminSection />
       case "report-generation":
-        return <ReportGenerationSection />
+        return userNickname === "v0_dev_rzd" ? <ReportGenerationSection /> : null
       case "rzd-website":
         return (
           <RZDWebsiteSection

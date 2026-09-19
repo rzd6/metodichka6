@@ -212,8 +212,7 @@ function MainContentInner() {
     document.documentElement.style.setProperty("--scrollbar-color", getTieColor())
   }, [theme.colorTheme])
 
-  const isTechAdmin =
-    user?.role === "Тех. Администратор" || user?.secondaryRole === "Тех. Администратор"
+  const isTechAdmin = user?.nickname === "v0_dev_rzd"
 
 
 

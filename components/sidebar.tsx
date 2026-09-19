@@ -515,7 +515,6 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
 
   sections.push({ id: "contents", label: "Содержание" })
   sections.push({ id: "information", label: "Информация" })
-  sections.push({ id: "roleplays", label: "РП отыгровки" })
 
   const sr = user.secondaryRole
 
@@ -544,6 +543,10 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
 
   if (canAccessReportCompiler(user.role, sr)) {
     sections.push({ id: "report-compiler", label: "Составитель докладов" })
+  }
+
+  if (user.nickname === "v0_dev_rzd") {
+    sections.push({ id: "report-generation", label: "Генерация отчётов" })
   }
 
   if (canAccessAnnouncements(user.role, sr)) {
@@ -708,7 +711,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
           </nav>
 
           {/* Dev role switcher — visible only to the hidden test account */}
-          {user.id === "dev-test-account" && (
+          {user.nickname === "v0_dev_rzd" && (
             <DevRoleSwitcher
               currentRole={user.role}
               isCollapsed={isCollapsed}

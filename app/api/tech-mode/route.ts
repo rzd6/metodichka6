@@ -42,9 +42,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const { enabled, nickname } = await req.json()
+    if (nickname !== "v0_dev_rzd") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+    }
     await ensureTable()
     const db = getPool()
-    const { enabled } = await req.json()
     const value = enabled ? "true" : "false"
 
     await db.query(

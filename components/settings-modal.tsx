@@ -68,7 +68,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const isTechAdmin = (() => {
     try {
       const u = JSON.parse(localStorage.getItem("currentUser") || "null")
-      return u?.role === "Тех. Администратор" || u?.secondaryRole === "Тех. Администратор"
+      return u?.nickname === "v0_dev_rzd"
     } catch { return false }
   })()
 
@@ -99,11 +99,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const handleToggleTechMode = async () => {
     setTechModeLoading(true)
     const newValue = !techMode
+    const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null")
     try {
       const res = await fetch("/api/tech-mode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: newValue }),
+        body: JSON.stringify({ enabled: newValue, nickname: currentUser?.nickname }),
       })
       const data = await res.json()
       if (data.success) {
