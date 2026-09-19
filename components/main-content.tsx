@@ -269,7 +269,7 @@ function MainContentInner() {
         >
           <div className="relative p-4 space-y-3">
             {activeSection !== "admin" && (
-              <div className="absolute top-4 right-4 z-10">
+              <div className="absolute top-1/2 right-4 z-10 -translate-y-1/2 sm:top-6 sm:translate-y-0">
                 <BugReportButton sectionLabel={activeSection} />
               </div>
             )}
