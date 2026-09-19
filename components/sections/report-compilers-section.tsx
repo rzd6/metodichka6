@@ -520,7 +520,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
           reports: [
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
-            `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
+            `cr Машинист ${machinistName}, приняли ${lowerLoco}-${locomotiveNumber}, Присвоили позывной ${callSign}.`,
             `cr Заполнили документацию. Магистраль продули, башмаки убрали, состав готов к выезду на линию.`,
             `tr ${passNumber} Понятно, приняли ${lowerLoco}-${locomotiveNumber}, Присвоен позывной ${callSign}.`,
             `tr ${passNumber} Заполнили документацию. Магистраль продули, башмаки убрали, ожидайте отправления.`,
@@ -560,7 +560,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} отправляется со ст. Невский на перегон до ст. Мирный.`,
             `cr Диспетчер!`,
             `tr ${passNumber} ДНЦ ${dispatcherName}, слушаю.`,
-            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 2 пу��ь ст. Мирный, машинист ${machinistName}.`,
+            `cr ${loco}-${locomotiveNumber} ${callSign} прибыл под посадку на 2 путь ст. Мирный, машинист ${machinistName}.`,
             `tr ${passNumber} Понятно, прибыли под посадку на 2 путь ст. Мирный, ожидайте 3 минуты.`,
             `r [ДНЦ] ${loco}-${locomotiveNumber} ${callSign} прибыл на 2 путь ст. Мирный, стоянка 3 минуты.`,
           ],
@@ -731,7 +731,7 @@ export function ReportCompilerSection({ userRole, userNickname, secondaryRole }:
         })
         segs.push({
           id: "seg-nevsky-priv",
-          title: "Перегон: Невский → П��иволжск",
+          title: "Перегон: Невский → Приволжск",
           delayMinutes: 0,
           reports: [
             `r [${callSign}] Вижу Н4 зелёный, отправляемся со ст. Невский на перегон до ст. Приволжск,..`,

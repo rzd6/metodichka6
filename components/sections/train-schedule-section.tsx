@@ -257,7 +257,7 @@ export function TrainScheduleSection({ userRole, userNickname, secondaryRole }: 
   const handleClaimShift = async (trainNumber: number) => {
     const train = trains.find((t) => t.train_number === trainNumber)
     if (!train) {
-      toast({ title: "Рейс не найден", description: `Рейс №${trainNumber} отсутству��т в базе данных`, variant: "destructive" })
+      toast({ title: "Рейс не найден", description: `Рейс №${trainNumber} отсутствует в базе данных`, variant: "destructive" })
       return
     }
     const alreadyClaimed = shifts.find((s) => s.train_number === trainNumber)

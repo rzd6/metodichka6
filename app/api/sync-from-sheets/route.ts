@@ -204,7 +204,7 @@ function isSectionRow(nickname: string, positionRaw: string): boolean {
  * Layout (0-indexed columns):
  *   A=0  Никнейм
  *   C=2  Должность
- *   H=7  Банковский с��ёт (default password)
+ *   H=7  Банковский счёт (default password)
  *   I=8  ВКонтакте (hyperlink cell — display text is person's name, URL may be any VK form)
  */
 async function parseEmployeesFromGridData(sheetData: any): Promise<SheetEmployee[]> {

@@ -1443,7 +1443,7 @@ function TagsSection({ getTieColor, theme, userRole }: any) {
               <div
                 className={`p-4 rounded-xl border ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-200"}`}
               >
-                <p className={`font-bold mb-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>4 р��нг:</p>
+                <p className={`font-bold mb-2 ${theme.mode === "dark" ? "text-white" : "text-gray-900"}`}>4 ранг:</p>
                 <div className={`text-sm space-y-1 ${theme.mode === "dark" ? "text-white/70" : "text-gray-600"}`}>
                   <p>[ТЧМ] Машинист</p>
                   <p>[ТЧМ-3КМ] Машинист третьего класса</p>

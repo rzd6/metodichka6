@@ -613,7 +613,7 @@ export function AdminSection() {
       case "Заместитель":
         icon = <Shield className={iconSize} style={{ color }} />
         break
-      case "Старший Сост����":
+      case "Старший Состав":
         icon = <UsersRound className={iconSize} style={{ color }} />
         break
       case "ЦдУД":
@@ -1090,7 +1090,7 @@ export function AdminSection() {
                             </Select>
                           )
                         })()}
-                        {/* VK ID field — принимает ссылку, к��роткое имя или числовой ID */}
+                        {/* VK ID field — принимает ссылку, короткое имя или числовой ID */}
                         <div className="flex flex-col gap-1">
                           <div
                             className="flex items-center rounded-lg border overflow-hidden"
@@ -1317,7 +1317,7 @@ export function AdminSection() {
               <span className="font-semibold" style={{ color: getTieColor() }}>
                 {deleteConfirmUser?.nickname}
               </span>
-              ? Это дейст��ие необратимо.
+              ? Это действие необратимо.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
