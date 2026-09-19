@@ -215,7 +215,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприятие": ["межфракционное мероприятие"],
+    "межфракционное мероприя��ие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -742,45 +742,20 @@ export function ReportGenerationSection() {
     return batches
   }
 
-  const uploadToImgBB = async (files: File[]): Promise<string[]> => {
+  const uploadToDrive = async (files: File[], target: typeof currentUploadTarget, title: string): Promise<string[]> => {
     setIsUploading(true)
     try {
+      const category = target === "weekly" ? "weekly" : target === "pto" || target === "leader-pto" ? "pto" : target === "cdud" || target === "leader-cdud" ? "cdud" : target === "warning" ? "warning" : "leader"
       const formData = new FormData()
+      formData.append("category", category)
+      formData.append("nickname", currentUser?.nickname || nickname || "Без ника")
+      formData.append("activityTitle", title)
       files.forEach((file) => formData.append("file", file))
 
-      const response = await fetch("/api/upload-to-imgbb", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type")
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json()
-          if (errorData.details) throw new Error(errorData.details)
-          throw new Error(errorData.error || "Не удалось загрузить файлы")
-        } else {
-          const errorText = await response.text()
-          if (response.status === 413) {
-            throw new Error("Файлы слишком большие. ImgBB поддерживает до 32 МБ на файл.")
-          }
-          throw new Error(`Ошибка загрузки (${response.status}): ${errorText.substring(0, 200)}`)
-        }
-      }
-
+      const response = await fetch("/api/upload-to-drive", { method: "POST", body: formData })
       const result = await response.json()
-
-      if (result.partialSuccess && result.failedFiles?.length > 0) {
-        toast({
-          title: "Частичная загрузка",
-          description: `Загружено ${result.filesUploaded} из ${result.totalFiles} файлов. Не удалось загрузить: ${result.failedFiles.join(", ")}`,
-          variant: "default",
-        })
-      }
-
-      return result.urls as string[]
-    } catch (error) {
-      throw error
+      if (!response.ok) throw new Error(result.error || "Не удалось загрузить файлы в Google Drive")
+      return (result.files as Array<{ webViewLink: string }>).map((file) => file.webViewLink)
     } finally {
       setIsUploading(false)
     }
@@ -834,7 +809,7 @@ export function ReportGenerationSection() {
 
 
 
-    uploadToImgBB(files)
+    uploadToDrive(files, target, finalTitle)
       .then((folderUrls) => {
         const newEntry: WorkEntry = {
           id: `${Date.now()}`,
@@ -2640,7 +2615,7 @@ export function ReportGenerationSection() {
               <CardTitle>Выполненные требования ({cdudReportData.workEntries.length})</CardTitle>
               <CardDescription>
                 {cdudReportData.workEntries.length > 0
-                  ? "Загруженные доказательства выполнения требований"
+                  ? "Загруженные доказательства в��полнения требований"
                   : "Здесь будут отображаться загруженные доказательства"}
               </CardDescription>
             </CardHeader>
@@ -3531,7 +3506,7 @@ export function ReportGenerationSection() {
             <DialogDescription className={theme.mode === "dark" ? "text-white/70" : "text-gray-600"}>
               {currentUploadTarget === "pto" || currentUploadTarget === "cdud"
                 ? "Выберите требование, которое вы выполнили"
-                : "Укажите тип и название выполненной работы"}
+                : "Ук��жите тип и название выполненной работы"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
