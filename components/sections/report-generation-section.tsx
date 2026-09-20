@@ -747,16 +747,23 @@ export function ReportGenerationSection() {
     setIsUploading(true)
     try {
       const category = target === "weekly" ? "weekly" : target === "pto" || target === "leader-pto" ? "pto" : target === "cdud" || target === "leader-cdud" ? "cdud" : target === "warning" ? "warning" : "leader"
-      const formData = new FormData()
-      formData.append("category", category)
-      formData.append("nickname", currentUser?.nickname || nickname || "Без ника")
-      formData.append("activityTitle", title)
-      files.forEach((file) => formData.append("file", file))
+      const batches = splitFilesIntoBatches(files)
+      const folderUrls: string[] = []
+      for (const batch of batches) {
+        const formData = new FormData()
+        formData.append("category", category)
+        formData.append("nickname", currentUser?.nickname || nickname || "Без ника")
+        formData.append("activityTitle", title)
+        batch.forEach((file) => formData.append("file", file))
 
-      const response = await fetch("/api/upload-to-drive", { method: "POST", body: formData })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || "Не удалось загрузить файлы в Google Drive")
-      return [result.folderUrl as string]
+        const response = await fetch("/api/upload-to-drive", { method: "POST", body: formData })
+        const result = await response.json().catch(() => ({}))
+        if (!response.ok) {
+          throw new Error(result.error || result.details || `Не удалось загрузить файлы в Google Drive (${response.status})`)
+        }
+        if (result.folderUrl && !folderUrls.includes(result.folderUrl)) folderUrls.push(result.folderUrl)
+      }
+      return folderUrls
     } finally {
       setIsUploading(false)
     }
