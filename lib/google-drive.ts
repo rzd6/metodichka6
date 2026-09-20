@@ -76,18 +76,36 @@ export async function uploadReportFiles(input: {
 
   const uploaded = []
   for (const file of input.files) {
-    const created = await drive.files.create({
-      requestBody: { name: file.name, parents: [activityFolder.id] },
-      media: { mimeType: file.type || "application/octet-stream", body: Readable.from(file.buffer) },
-      fields: "id,name,mimeType,size,webViewLink,webContentLink",
-      supportsAllDrives: true,
-    })
-    if (!created.data.id) continue
-    await drive.permissions.create({
-      fileId: created.data.id,
-      requestBody: { type: "anyone", role: "reader" },
-      supportsAllDrives: true,
-    })
+    let created
+    let lastError: unknown
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        created = await drive.files.create({
+          requestBody: { name: file.name, parents: [activityFolder.id] },
+          media: { mimeType: file.type || "application/octet-stream", body: Readable.from(file.buffer) },
+          fields: "id,name,mimeType,size,webViewLink,webContentLink",
+          uploadType: "resumable",
+          supportsAllDrives: true,
+        })
+        break
+      } catch (error) {
+        lastError = error
+        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 700))
+      }
+    }
+    if (!created?.data.id) {
+      const message = lastError instanceof Error ? lastError.message : "unknown upload error"
+      throw new Error(`Не удалось загрузить файл ${file.name}: ${message}`)
+    }
+    try {
+      await drive.permissions.create({
+        fileId: created.data.id,
+        requestBody: { type: "anyone", role: "reader" },
+        supportsAllDrives: true,
+      })
+    } catch (error) {
+      console.error("[v0] Drive file uploaded but public permission failed", { file: file.name, error })
+    }
     uploaded.push({ ...created.data, webViewLink: `https://drive.google.com/file/d/${created.data.id}/view` })
   }
 
