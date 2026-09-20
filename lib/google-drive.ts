@@ -14,8 +14,20 @@ export const DRIVE_CATEGORIES = {
 export type DriveCategory = keyof typeof DRIVE_CATEGORIES
 
 function getDrive() {
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN
+  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+
+  if (refreshToken && clientId && clientSecret) {
+    const auth = new google.auth.OAuth2(clientId, clientSecret)
+    auth.setCredentials({ refresh_token: refreshToken })
+    return google.drive({ version: "v3", auth })
+  }
+
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_2
-  if (!privateKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_2 is not configured")
+  if (!privateKey) {
+    throw new Error("Google OAuth is not configured: set GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET")
+  }
 
   let normalizedKey = privateKey.replace(/\\n/g, "\n").trim()
   let clientEmail = ""
@@ -66,7 +78,7 @@ export async function uploadReportFiles(input: {
   files: Array<{ name: string; type: string; buffer: Buffer }>
 }) {
   const drive = getDrive()
-  const categoryFolders = new Map<DriveCategory, { id?: string }>()
+  const categoryFolders = new Map<DriveCategory, { id?: string | null }>()
   for (const [key, name] of Object.entries(DRIVE_CATEGORIES) as Array<[DriveCategory, string]>) {
     categoryFolders.set(key, await findOrCreateFolder(drive, name, ROOT_FOLDER_ID))
   }
