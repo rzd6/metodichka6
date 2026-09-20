@@ -56,7 +56,10 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       icon: FileBarChart,
       title: "Генерация отчётов",
       description: "Инструмент подготовки отчётов по рабочим операциям.",
-      canAccess: typeof window !== "undefined" && JSON.parse(localStorage.getItem("currentUser") || "null")?.nickname === "v0_dev_rzd",
+      canAccess:
+        userRole === "Тех. Администратор" ||
+        secondaryRole === "Тех. Администратор" ||
+        (typeof window !== "undefined" && JSON.parse(localStorage.getItem("currentUser") || "null")?.nickname === "v0_dev_rzd"),
     },
     {
       id: "information",
@@ -154,7 +157,7 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       icon: Train,
       title: "Расписание рейсов",
       description: "Актуальное расписание рейсов и сведения о движении составов.",
-      canAccess: userRole !== "ПТО" || userRole === "Тех. Администратор" || secondaryRole === "Тех. Администратор",
+      canAccess: userRole !== "ПТО" || secondaryRole === "Тех. Администратор",
     },
     {
       id: "bug-report",

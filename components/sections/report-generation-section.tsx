@@ -40,6 +40,7 @@ import {
   getReprimandCriteriaForPosition,
   getReprimandPointsRequired,
   getRoleFromPosition,
+  allPositions,
   type Position,
 } from "@/data/positions"
 import { getAllUsers } from "@/data/users"
@@ -215,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприя��������ие": ["межфракционное мероприятие"],
+    "межфракционное мероприя����������ие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -367,8 +368,7 @@ const getActivityTypeFromRequirement = (requirement: string): string => {
   return "Экзамен"
 }
 
-const getRequirementsForReportType = (type: "pto" | "cdud"): string[] | null => {
-  const position = localStorage.getItem("currentUser") ? JSON.parse(localStorage.getItem("currentUser")!).position : ""
+const getRequirementsForReportType = (type: "pto" | "cdud", position: string): string[] | null => {
   if (!position) return null
 
   switch (type) {
@@ -483,7 +483,8 @@ export function ReportGenerationSection() {
   const [isCopied, setIsCopied] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
-  const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string; role?: string; secondaryRole?: string } | null>(null)
+  const [previewPosition, setPreviewPosition] = useState("")
 
   const MAX_FILE_SIZE = 15 * 1024 * 1024
   const MAX_BATCH_SIZE = 3.5 * 1024 * 1024 // Leave room for multipart/form-data overhead on hosted runtimes
@@ -532,10 +533,14 @@ export function ReportGenerationSection() {
         const parsedUser = JSON.parse(savedUser)
         const userPosition = parsedUser.position || ""
 
-        setCurrentUser({
-          nickname: parsedUser.nickname,
-          position: userPosition,
-        })
+    setCurrentUser({
+      nickname: parsedUser.nickname,
+      position: userPosition,
+      role: parsedUser.role,
+      secondaryRole: parsedUser.secondaryRole,
+    })
+    setPreviewPosition(userPosition)
+
 
         if (!initialReportTypeSet && userPosition) {
           const role = getRoleFromPosition(userPosition as Position)
@@ -1045,7 +1050,7 @@ export function ReportGenerationSection() {
 
     let report = `Начальнику Центральной дирекции Управления Движением\nОАО "РЖД" по Республике Провинция\nот ${cdudReportData.fullNameGenitive}\n\n`
     report += `Отчёт о проделанной работе ЦдУД\n\n`
-    report += `Я, ${cdudReportData.fullName}, находящийся в должности ${cdudReportData.position}, оставляю отчёт о проделанной работе для повышения в должности с ${formatDate(cdudReportData.dateFrom)} по ${formatDate(cdudReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
+    report += `Я, ${cdudReportData.fullName}, находящийся в должности ${cdudReportData.position}, оставляю отчёт о проделанной работе для повыше��ия в должности с ${formatDate(cdudReportData.dateFrom)} по ${formatDate(cdudReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
 
     cdudReportData.workEntries.forEach((entry, index) => {
       report += `${index + 1}. ${entry.title} - «${formatFolderUrls(entry.folderUrl)}»\n`
@@ -1367,7 +1372,9 @@ export function ReportGenerationSection() {
     }
 
     // Pass reportType to isRequirementFulfilled
-    const requirementResults = requirements.map((req) => isRequirementFulfilled(reportType, req))
+    const requirementResults = requirements.map((req) =>
+      isRequirementFulfilled(reportType === "leader" ? "weekly" : reportType, req),
+    )
     const totalPercentage = requirementResults.reduce((sum, result) => sum + result.percentage, 0)
     const progress = requirements.length > 0 ? totalPercentage / requirements.length : 0
     const fulfilledCount = requirementResults.filter((result) => result.fulfilled).length
@@ -1600,7 +1607,7 @@ export function ReportGenerationSection() {
         if (!reportData.position || !reportData.fullName || !reportData.fullNameGenitive) {
           toast({
             title: "Ошибка",
-            description: "Заполните все обязательные поля",
+            description: "Заполни��е все обязательные поля",
             variant: "destructive",
           })
           return
@@ -1773,6 +1780,34 @@ export function ReportGenerationSection() {
           </p>
         </div>
       </div>
+
+      {(currentUser?.role === "Тех. Администратор" ||
+        currentUser?.secondaryRole === "Тех. Администратор" ||
+        currentUser?.nickname === "v0_dev_rzd") && (
+        <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-3">
+          <Label htmlFor="report-preview-position">Временная должность для генерации</Label>
+          <Select
+            value={previewPosition}
+            onValueChange={(value) => {
+              setPreviewPosition(value)
+              setReportData((prev) => ({ ...prev, position: value }))
+              setPTOReportData((prev) => ({ ...prev, position: value }))
+              setCDUDReportData((prev) => ({ ...prev, position: value }))
+              setWarningReportData((prev) => ({ ...prev, position: value }))
+            }}
+          >
+            <SelectTrigger id="report-preview-position" className="mt-2 max-w-md">
+              <SelectValue placeholder="Выберите должность для проверки" />
+            </SelectTrigger>
+            <SelectContent>
+              {allPositions.map((position) => (
+                <SelectItem key={position} value={position}>{position}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-amber-200/80">Только для проверки этого раздела; профиль в остальных разделах не меняется.</p>
+        </div>
+      )}
 
       <RequirementsDialog />
 
@@ -3544,7 +3579,7 @@ export function ReportGenerationSection() {
                     className={theme.mode === "dark" ? "bg-[#0f1419] border-white/10" : "bg-white border-gray-200"}
                   >
                     {(() => {
-                      const requirements = getRequirementsForReportType(currentUploadTarget === "pto" ? "pto" : "cdud")
+                      const requirements = getRequirementsForReportType(currentUploadTarget === "pto" ? "pto" : "cdud", previewPosition || currentUser?.position || "")
                       return requirements
                         ? requirements.map((req, index) => (
                           <SelectItem
