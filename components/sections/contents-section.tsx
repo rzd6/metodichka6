@@ -145,8 +145,8 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
     {
       id: "rzd-website",
       icon: Globe,
-      title: "Новости РЖД",
-      description: "Все самые важные новости фракции РЖД",
+      title: "Уведомления",
+      description: "Служебные сообщения для старшего состава, заместителей и руководства",
       canAccess: true,
     },
     {
