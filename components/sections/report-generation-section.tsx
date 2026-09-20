@@ -215,7 +215,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприя����ие": ["межфракционное мероприятие"],
+    "межфракционное мероприя������ие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -753,6 +753,7 @@ export function ReportGenerationSection() {
         const formData = new FormData()
         formData.append("category", category)
         formData.append("nickname", currentUser?.nickname || nickname || "Без ника")
+        formData.append("activityType", activityType)
         formData.append("activityTitle", title)
         batch.forEach((file) => formData.append("file", file))
 
@@ -2306,7 +2307,7 @@ export function ReportGenerationSection() {
 
                 <div className="space-y-2">
                   <p className="text-lg font-medium">
-                    {isDragging ? "Отпустите файлы для загрузки" : "Перетащите скриншоты сюда"}
+                    {isDragging ? "Отпустите файлы для загрузки" : "Перетащи��е скриншоты сюда"}
                   </p>
                   <p className="text-sm text-muted-foreground">или</p>
                   <Button

@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const category = String(formData.get("category") ?? "")
     const nickname = String(formData.get("nickname") ?? "").trim()
+    const activityType = String(formData.get("activityType") ?? "").trim()
     const activityTitle = String(formData.get("activityTitle") ?? "").trim()
     const entries = formData.getAll("file")
 
@@ -33,7 +34,8 @@ export async function POST(request: NextRequest) {
       files.push({ name: entry.name, type: entry.type, buffer: Buffer.from(await entry.arrayBuffer()) })
     }
 
-    const result = await uploadReportFiles({ category, nickname, activityTitle, files })
+    const folderActivityTitle = activityType ? `${activityType} "${activityTitle}"` : activityTitle
+    const result = await uploadReportFiles({ category, nickname, activityTitle: folderActivityTitle, files })
     return NextResponse.json(result)
   } catch (error) {
     console.error("[v0] Google Drive upload failed", error)
