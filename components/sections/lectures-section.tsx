@@ -136,7 +136,7 @@ export function LecturesSection() {
             Обучающие материалы для сотрудников РЖД
           </p>
         </div>
-            </div>
+      </div>
 
       <div className="flex gap-3">
         <button

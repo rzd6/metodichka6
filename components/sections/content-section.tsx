@@ -24,6 +24,7 @@ import { TrainScheduleSection } from "./train-schedule-section"
 import { CustomSectionView } from "./custom-section-view"
 import { getCustomSections, type CustomSection } from "@/data/custom-sections"
 import type { UserRole } from "@/data/users"
+import { BugReportButton } from "@/components/bug-report-button"
 
 const SECTION_LABELS: Record<string, string> = {
   contents: "Содержание",
@@ -189,5 +190,17 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
     }
   })()
 
-  return <SectionWrapper activeSection={activeSection}>{inner}</SectionWrapper>
+  const showBugReport = activeSection !== "admin" && activeSection !== "bug-report"
+  return (
+    <SectionWrapper activeSection={activeSection}>
+      <div className="relative">
+        {showBugReport && (
+          <div className="absolute right-0 top-1 z-20">
+            <BugReportButton />
+          </div>
+        )}
+        {inner}
+      </div>
+    </SectionWrapper>
+  )
 }
