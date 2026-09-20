@@ -43,6 +43,15 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[v0] Google Drive upload failed", error)
     const message = error instanceof Error ? error.message : "Unknown upload error"
-    return NextResponse.json({ error: "Google Drive upload failed", details: message }, { status: 500 })
+    const isQuotaError = message.includes("Service Accounts do not have storage quota")
+    return NextResponse.json(
+      {
+        error: isQuotaError
+          ? "Google Drive не принимает файлы от этого сервисного аккаунта: у него нет квоты хранилища. Нужен Shared Drive или OAuth-доступ пользователя."
+          : "Google Drive upload failed",
+        details: message,
+      },
+      { status: isQuotaError ? 503 : 500 },
+    )
   }
 }

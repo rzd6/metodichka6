@@ -268,11 +268,6 @@ function MainContentInner() {
           }}
         >
           <div className="relative p-4 space-y-3">
-            {activeSection !== "admin" && activeSection !== "bug-report" && (
-              <div className="absolute top-1/2 right-4 z-10 -translate-y-1/2">
-                <BugReportButton />
-              </div>
-            )}
             {/* Default password warning banner */}
             {user?.isDefaultPassword && (
               <div
