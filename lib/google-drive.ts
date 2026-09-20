@@ -2,7 +2,6 @@ import { google } from "googleapis"
 import { PassThrough } from "node:stream"
 
 const ROOT_FOLDER_ID = "1LJrFBjo9h5uDJaOjAJW3S3Q5Kx6GP87Q"
-const SERVICE_ACCOUNT_EMAIL = "rzdmtaprov6@generatsia-otchetov.iam.gserviceaccount.com"
 
 export const DRIVE_CATEGORIES = {
   weekly: "Еженедельный Отчёт",
@@ -19,16 +18,20 @@ function getDrive() {
   if (!privateKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_2 is not configured")
 
   let normalizedKey = privateKey.replace(/\\n/g, "\n").trim()
+  let clientEmail = ""
   try {
     const parsed = JSON.parse(normalizedKey)
     if (typeof parsed.private_key === "string") normalizedKey = parsed.private_key.replace(/\\n/g, "\n")
+    if (typeof parsed.client_email === "string") clientEmail = parsed.client_email
   } catch {
     // The project variable may contain either the raw PEM key or the service-account JSON.
   }
 
+  if (!clientEmail) clientEmail = "rzdmtaprov6@generatsia-otchetov.iam.gserviceaccount.com"
+
   const auth = new google.auth.GoogleAuth({
     credentials: {
-      client_email: SERVICE_ACCOUNT_EMAIL,
+      client_email: clientEmail,
       private_key: normalizedKey,
     },
     scopes: ["https://www.googleapis.com/auth/drive"],

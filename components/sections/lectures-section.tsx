@@ -7,7 +7,6 @@ import { useTheme } from "@/contexts/theme-context"
 import { getThemeColor } from "@/lib/theme-utils"
 import { getBuiltinOverrides } from "@/data/custom-sections"
 import { clipboardCopy } from "@/lib/clipboard"
-import { BugReportButton } from "@/components/bug-report-button"
 
 export function LecturesSection() {
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
@@ -137,7 +136,6 @@ export function LecturesSection() {
             Обучающие материалы для сотрудников РЖД
           </p>
         </div>
-        <BugReportButton />
       </div>
 
       <div className="flex gap-3">

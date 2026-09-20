@@ -10,7 +10,6 @@ import type { UserRole } from "@/data/users"
 import { getAllUsers } from "@/data/users"
 import { getThemeColor } from "@/lib/theme-utils"
 import { proxyImageUrl } from "@/lib/image-proxy"
-import { BugReportButton } from "@/components/bug-report-button"
 
 interface LocalUser {
   id: string
