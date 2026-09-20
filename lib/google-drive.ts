@@ -1,5 +1,5 @@
 import { google } from "googleapis"
-import { Readable } from "node:stream"
+import { PassThrough } from "node:stream"
 
 const ROOT_FOLDER_ID = "1LJrFBjo9h5uDJaOjAJW3S3Q5Kx6GP87Q"
 const SERVICE_ACCOUNT_EMAIL = "rzdmtaprov6@generatsia-otchetov.iam.gserviceaccount.com"
@@ -82,9 +82,15 @@ export async function uploadReportFiles(input: {
       try {
         created = await drive.files.create({
           requestBody: { name: file.name, parents: [activityFolder.id] },
-          media: { mimeType: file.type || "application/octet-stream", body: Readable.from(file.buffer) },
+          media: {
+            mimeType: file.type || "application/octet-stream",
+            body: (() => {
+              const stream = new PassThrough()
+              stream.end(file.buffer)
+              return stream
+            })(),
+          },
           fields: "id,name,mimeType,size,webViewLink,webContentLink",
-          uploadType: "resumable",
           supportsAllDrives: true,
         })
         break
