@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
     }
 
     const folderActivityTitle = activityType ? `${activityType} "${activityTitle}"` : activityTitle
+    if (files.length === 0) {
+      return NextResponse.json({ error: "No valid files were received" }, { status: 400 })
+    }
     const result = await uploadReportFiles({ category, nickname, activityTitle: folderActivityTitle, files })
     return NextResponse.json(result)
   } catch (error) {
