@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракцио��ное мероприятие": ["межфракционное мероприятие"],
+    "межфракцио����ное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -830,7 +830,7 @@ export function ReportGenerationSection() {
     if (!finalTitle) {
       toast({
         title: "Ошибка",
-        description: "Пожалуйста, укажите название работы или выбранное требование",
+        description: "Пожалуйста, укажите название ра��оты или выбранное требование",
         variant: "destructive",
       })
       return
@@ -1288,7 +1288,9 @@ export function ReportGenerationSection() {
 
     let requiredCount = 1
 
-    if (requirementParts.length > 1) {
+    if (reportType === "pto" || reportType === "cdud") {
+      requiredCount = 1
+    } else if (requirementParts.length > 1) {
       // Multiple alternatives - find the minimum count across all parts
       const counts = requirementParts.map((part) => extractNumberFromRequirement(part)).filter((count) => count > 0)
 
@@ -1601,11 +1603,11 @@ export function ReportGenerationSection() {
                         )}
                         <div className="flex-1">
                           <p className={`text-sm ${result.fulfilled ? "line-through opacity-70" : ""}`}>{req}</p>
-                          {!result.fulfilled && result.progress !== "0/1" && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Выполнено: {result.progress} ({Math.round(result.percentage)}%)
-                            </p>
-                          )}
+                  {(result.fulfilled || result.progress !== "0/1") && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Выполнено: {result.fulfilled ? "100%" : `${result.progress} (${Math.round(result.percentage)}%)`}
+                    </p>
+                  )}
                         </div>
                       </div>
                     )
@@ -3622,23 +3624,7 @@ export function ReportGenerationSection() {
                 : "Укажите тип и название выполненной работы"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-5 md:grid-cols-[1.35fr_1fr]">
-            <div className="min-h-56 rounded-xl border border-dashed border-white/15 bg-black/10 p-3">
-              <div className="mb-3 flex items-center justify-between text-sm text-muted-foreground">
-                <span>Выбранные скриншоты</span>
-                <span>{pendingFiles.length} файлов</span>
-              </div>
-              <div className="grid max-h-[360px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
-                {previewUrls.map((url, index) => (
-                  <div key={url} className={`relative aspect-video overflow-hidden rounded-lg border border-white/10 ${isUploading ? "animate-pulse" : ""}`}>
-                    <img src={url} alt={`Предпросмотр скриншота ${index + 1}`} className="h-full w-full object-cover" />
-                    {isUploading && <div className="absolute inset-0 flex items-center justify-center bg-black/35"><Upload className="h-5 w-5 animate-bounce text-white" /></div>}
-                    <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] text-white">{index + 1}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-4">
+          <div className="space-y-4">
             <div className="rounded-xl border border-dashed border-white/15 bg-black/10 p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
@@ -3773,7 +3759,6 @@ export function ReportGenerationSection() {
                 </div>
               </>
             )}
-            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button
