@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1059,7 +1059,7 @@ export function ReportGenerationSection() {
   const generatePTOReport = (): string => {
     const today = new Date().toLocaleDateString("ru-RU")
 
-    let report = `Начальнику Производственно-технического отдела\nОАО "РЖД" по Республике Провинция\nот ${ptoReportData.fullNameGenitive}\n\n`
+    let report = `Начальнику Производственн��-технического отдела\nОАО "РЖД" по Республике Провинция\nот ${ptoReportData.fullNameGenitive}\n\n`
     report += `Отчёт о проделанной работе ПТО\n\n`
     report += `Я, ${ptoReportData.fullName}, находящийся в должности ${ptoReportData.position}, оставляю отчёт о проделанной работе для повышения в должности с ${formatDate(ptoReportData.dateFrom)} по ${formatDate(ptoReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
 
