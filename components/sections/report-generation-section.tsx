@@ -334,6 +334,19 @@ const extractNumberFromRequirement = (requirement: string): number => {
   return 1 // Default to 1 if no number found
 }
 
+const getRequiredEvidenceCount = (requirement: string): number => {
+  const normalized = requirement.toLowerCase()
+  if (normalized.includes("вступительную") || normalized.includes("монтёр путей") || normalized.includes("авария")) return 2
+  if (normalized.includes("экзамен")) return 1
+  if (normalized.includes("отработать 7")) return 7
+  if (normalized.includes("отстоять 30 минут на одном")) return 4
+  if (normalized.includes("40 меток")) return 40
+  if (normalized.includes("двух разных переездах")) return 8
+  if (normalized.includes("тренировке")) return 2
+  if (normalized.includes("мероприятиях")) return 2
+  return 1
+}
+
 const getActivityTypeFromRequirement = (requirement: string): string => {
   const req = requirement.toLowerCase()
 
@@ -471,6 +484,7 @@ export function ReportGenerationSection() {
   const [showRequirementsDialog, setShowRequirementsDialog] = useState(false)
 
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [entryTitle, setEntryTitle] = useState("")
   const [activityType, setActivityType] = useState("")
   const [customActivityType, setCustomActivityType] = useState("") // Added state for custom activity type
@@ -668,6 +682,12 @@ export function ReportGenerationSection() {
   useEffect(() => {
     saveReportData("leaderReportData", leaderReportData)
   }, [leaderReportData])
+
+  useEffect(() => {
+    const urls = pendingFiles.map((file) => URL.createObjectURL(file))
+    setPreviewUrls(urls)
+    return () => urls.forEach((url) => URL.revokeObjectURL(url))
+  }, [pendingFiles])
 
   const processFiles = (files: File[], target: typeof currentUploadTarget = currentUploadTarget) => {
     setPendingFiles(files)
@@ -1050,7 +1070,7 @@ export function ReportGenerationSection() {
 
     let report = `Начальнику Центральной дирекции Управления Движением\nОАО "РЖД" по Республике Провинция\nот ${cdudReportData.fullNameGenitive}\n\n`
     report += `Отчёт о проделанной работе ЦдУД\n\n`
-    report += `Я, ${cdudReportData.fullName}, находящийся в должности ${cdudReportData.position}, оставляю отчёт о проделанной работе для повыше��ия в должности с ${formatDate(cdudReportData.dateFrom)} по ${formatDate(cdudReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
+    report += `Я, ${cdudReportData.fullName}, находящийся в должнос��и ${cdudReportData.position}, оставляю отчёт о проделанной работе для повыше��ия в должности с ${formatDate(cdudReportData.dateFrom)} по ${formatDate(cdudReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
 
     cdudReportData.workEntries.forEach((entry, index) => {
       report += `${index + 1}. ${entry.title} - «${formatFolderUrls(entry.folderUrl)}»\n`
@@ -1754,6 +1774,17 @@ export function ReportGenerationSection() {
         variant: "destructive",
       })
       return
+    }
+    if (currentUploadTarget === "pto" || currentUploadTarget === "cdud") {
+      const requiredCount = getRequiredEvidenceCount(entryTitle)
+      if (pendingFiles.length !== requiredCount) {
+        toast({
+          title: "Неверное количество скриншотов",
+          description: `Для этого критерия нужно загрузить ровно ${requiredCount}. Выбрано: ${pendingFiles.length}.`,
+          variant: "destructive",
+        })
+        return
+      }
     }
     if (pendingFiles.length > 0) {
       addEntry(pendingFiles, currentUploadTarget)
@@ -2829,7 +2860,7 @@ export function ReportGenerationSection() {
                   <Label htmlFor="warningFullNameGenitive">ФИО (Родительный падеж) *</Label>
                   <Input
                     id="warningFullNameGenitive"
-                    placeholder="Иванова Ивана Ивановича"
+                    placeholder="Иванова ��вана Ивановича"
                     value={warningReportData.fullNameGenitive}
                     onChange={(e) => setWarningReportData({ ...warningReportData, fullNameGenitive: e.target.value })}
                     className={`h-12 ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-white border-gray-300"}`}
@@ -3540,7 +3571,7 @@ export function ReportGenerationSection() {
       {/* Upload Dialog */}
       <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
         <DialogContent
-          className={`sm:max-w-md ${theme.mode === "dark" ? "bg-[#0f1419] border-white/10" : "bg-white border-gray-200"}`}
+          className={`sm:max-w-4xl ${theme.mode === "dark" ? "bg-[#0f1419] border-white/10" : "bg-white border-gray-200"}`}
         >
           <DialogHeader>
             <DialogTitle className={theme.mode === "dark" ? "text-white" : "text-gray-900"}>
@@ -3552,7 +3583,23 @@ export function ReportGenerationSection() {
                 : "Ук��жите тип и название выполненной работы"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="grid gap-5 md:grid-cols-[1.35fr_1fr]">
+            <div className="min-h-56 rounded-xl border border-dashed border-white/15 bg-black/10 p-3">
+              <div className="mb-3 flex items-center justify-between text-sm text-muted-foreground">
+                <span>Выбранные скриншоты</span>
+                <span>{pendingFiles.length} файлов</span>
+              </div>
+              <div className="grid max-h-[360px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                {previewUrls.map((url, index) => (
+                  <div key={url} className={`relative aspect-video overflow-hidden rounded-lg border border-white/10 ${isUploading ? "animate-pulse" : ""}`}>
+                    <img src={url} alt={`Предпросмотр скриншота ${index + 1}`} className="h-full w-full object-cover" />
+                    {isUploading && <div className="absolute inset-0 flex items-center justify-center bg-black/35"><Upload className="h-5 w-5 animate-bounce text-white" /></div>}
+                    <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] text-white">{index + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
             {currentUploadTarget === "pto" || currentUploadTarget === "cdud" ? (
               <div className="space-y-2">
                 <Label className={theme.mode === "dark" ? "text-white" : "text-gray-900"}>
@@ -3644,6 +3691,7 @@ export function ReportGenerationSection() {
                 </div>
               </>
             )}
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button
