@@ -149,7 +149,9 @@ export function ContentSection({ activeSection, onSectionChange, userRole, userN
       case "admin":
         return <AdminSection />
       case "report-generation":
-        return userNickname === "v0_dev_rzd" ? <ReportGenerationSection /> : null
+        return userRole === "Тех. Администратор" || secondaryRole === "Тех. Администратор" ? (
+          <ReportGenerationSection />
+        ) : null
       case "rzd-website":
         return (
           <RZDWebsiteSection
