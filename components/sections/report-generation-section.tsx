@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприя����������ие": ["межфракционное мероприятие"],
+    "межфракционное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -554,6 +554,10 @@ export function ReportGenerationSection() {
       secondaryRole: parsedUser.secondaryRole,
     })
     setPreviewPosition(userPosition)
+    setPTOReportData((prev) => ({ ...prev, position: userPosition }))
+    setCDUDReportData((prev) => ({ ...prev, position: userPosition }))
+    setWarningReportData((prev) => ({ ...prev, position: userPosition }))
+    setReportData((prev) => ({ ...prev, position: userPosition }))
 
 
         if (!initialReportTypeSet && userPosition) {
@@ -1070,7 +1074,7 @@ export function ReportGenerationSection() {
 
     let report = `Начальнику Центральной дирекции Управления Движением\nОАО "РЖД" по Республике Провинция\nот ${cdudReportData.fullNameGenitive}\n\n`
     report += `Отчёт о проделанной работе ЦдУД\n\n`
-    report += `Я, ${cdudReportData.fullName}, находящийся в должнос��и ${cdudReportData.position}, оставляю отчёт о проделанной работе для повыше��ия в должности с ${formatDate(cdudReportData.dateFrom)} по ${formatDate(cdudReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
+    report += `Я, ${cdudReportData.fullName}, находящийся в должности ${cdudReportData.position}, оставляю отчёт о проделанной работе для повышения в должности с ${formatDate(cdudReportData.dateFrom)} по ${formatDate(cdudReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
 
     cdudReportData.workEntries.forEach((entry, index) => {
       report += `${index + 1}. ${entry.title} - «${formatFolderUrls(entry.folderUrl)}»\n`
@@ -1192,7 +1196,7 @@ export function ReportGenerationSection() {
   }
 
   const shouldShowReportType = (type: string): boolean => {
-    const position = currentUser?.position || ""
+    const position = previewPosition || currentUser?.position || ""
     if (!position) return true
 
     const role = getRoleFromPosition(position as Position)
@@ -1220,7 +1224,7 @@ export function ReportGenerationSection() {
   }
 
   const getRequirementsForCurrentReport = (): string[] | null => {
-    const position = currentUser?.position || ""
+    const position = previewPosition || currentUser?.position || ""
 
     if (!position) return null
 
@@ -1627,7 +1631,7 @@ export function ReportGenerationSection() {
         if (!reportData.position || !reportData.fullName || !reportData.fullNameGenitive) {
           toast({
             title: "Ошибка",
-            description: "Заполни��е все обязательные поля",
+            description: "Заполните все обязательные поля",
             variant: "destructive",
           })
           return
@@ -1968,7 +1972,7 @@ export function ReportGenerationSection() {
                 <Button
                   variant="outline"
                   onClick={() => setShowRequirementsDialog(true)}
-                  disabled={!reportData.position}
+                  disabled={!getRequirementsForCurrentReport()}
                   className="border-2"
                   style={{
                     borderColor: getTieColor() + "50",
@@ -2091,7 +2095,7 @@ export function ReportGenerationSection() {
 
                 <div className="space-y-2">
                   <p className="text-lg font-medium">
-                    {isDragging ? "Отпустите файлы для загр��зки" : "Перетащите скриншоты сюда"}
+                    {isDragging ? "Отпустите файлы для загрузки" : "Перетащите скриншоты сюда"}
                   </p>
                   <p className="text-sm text-muted-foreground">или</p>
                   <Button
@@ -2144,7 +2148,7 @@ export function ReportGenerationSection() {
                       value={entry.id}
                       className={`border-2 rounded-xl overflow-hidden ${theme.mode === "dark" ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}
                     >
-                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <AccordionTrigger className="px-4 py-3 gap-4 hover:no-underline [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0 [&>svg]:text-white [&>svg]:opacity-100">
                         <div className="flex items-center justify-between w-full pr-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -2275,7 +2279,7 @@ export function ReportGenerationSection() {
                 <Button
                   variant="outline"
                   onClick={() => setShowRequirementsDialog(true)}
-                  disabled={!ptoReportData.position}
+                  disabled={!getRequirementsForCurrentReport()}
                   className="border-2"
                   style={{
                     borderColor: getTieColor() + "50",
@@ -2372,7 +2376,7 @@ export function ReportGenerationSection() {
 
                 <div className="space-y-2">
                   <p className="text-lg font-medium">
-                    {isDragging ? "Отпустите файлы для загрузки" : "Перетащи��е скриншоты сюда"}
+                    {isDragging ? "Отпустите файлы для загрузки" : "Перетащите скриншоты сюда"}
                   </p>
                   <p className="text-sm text-muted-foreground">или</p>
                   <Button
@@ -2425,7 +2429,7 @@ export function ReportGenerationSection() {
                       value={entry.id}
                       className={`border-2 rounded-xl overflow-hidden ${theme.mode === "dark" ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}
                     >
-                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <AccordionTrigger className="px-4 py-3 gap-4 hover:no-underline [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0 [&>svg]:text-white [&>svg]:opacity-100">
                         <div className="flex items-center justify-between w-full pr-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -2552,7 +2556,7 @@ export function ReportGenerationSection() {
                 <Button
                   variant="outline"
                   onClick={() => setShowRequirementsDialog(true)}
-                  disabled={!cdudReportData.position}
+                  disabled={!getRequirementsForCurrentReport()}
                   className="border-2"
                   style={{
                     borderColor: getTieColor() + "50",
@@ -2689,7 +2693,7 @@ export function ReportGenerationSection() {
               <CardTitle>Выполненные требования ({cdudReportData.workEntries.length})</CardTitle>
               <CardDescription>
                 {cdudReportData.workEntries.length > 0
-                  ? "Загруженные доказательства в��полнения требований"
+                  ? "Загруженные доказательства выполнения требований"
                   : "Здесь будут отображаться загруженные доказательства"}
               </CardDescription>
             </CardHeader>
@@ -2702,7 +2706,7 @@ export function ReportGenerationSection() {
                       value={entry.id}
                       className={`border-2 rounded-xl overflow-hidden ${theme.mode === "dark" ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}
                     >
-                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <AccordionTrigger className="px-4 py-3 gap-4 hover:no-underline [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0 [&>svg]:text-white [&>svg]:opacity-100">
                         <div className="flex items-center justify-between w-full pr-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -2829,7 +2833,7 @@ export function ReportGenerationSection() {
                 <Button
                   variant="outline"
                   onClick={() => setShowRequirementsDialog(true)}
-                  disabled={!warningReportData.position}
+                  disabled={!getRequirementsForCurrentReport()}
                   className="border-2"
                   style={{
                     borderColor: getTieColor() + "50",
@@ -2860,7 +2864,7 @@ export function ReportGenerationSection() {
                   <Label htmlFor="warningFullNameGenitive">ФИО (Родительный падеж) *</Label>
                   <Input
                     id="warningFullNameGenitive"
-                    placeholder="Иванова ��вана Ивановича"
+                    placeholder="Иванова Ивана Ивановича"
                     value={warningReportData.fullNameGenitive}
                     onChange={(e) => setWarningReportData({ ...warningReportData, fullNameGenitive: e.target.value })}
                     className={`h-12 ${theme.mode === "dark" ? "bg-white/5 border-white/10" : "bg-white border-gray-300"}`}
@@ -2955,7 +2959,7 @@ export function ReportGenerationSection() {
               <CardDescription>
                 {warningReportData.workEntries.length > 0
                   ? "Загруженные доказательства нарушений"
-                  : "Здесь будут отображаться загру��енные доказательства"}
+                  : "Здесь будут отображаться загруженные доказательства"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2967,7 +2971,7 @@ export function ReportGenerationSection() {
                       value={entry.id}
                       className={`border-2 rounded-xl overflow-hidden ${theme.mode === "dark" ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}
                     >
-                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <AccordionTrigger className="px-4 py-3 gap-4 hover:no-underline [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0 [&>svg]:text-white [&>svg]:opacity-100">
                         <div className="flex items-center justify-between w-full pr-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -3304,7 +3308,7 @@ export function ReportGenerationSection() {
                           value={entry.id}
                           className={`border-2 rounded-xl overflow-hidden ${theme.mode === "dark" ? "bg-[#0f1419]/50 border-white/10" : "bg-white border-gray-200"}`}
                         >
-                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                          <AccordionTrigger className="px-4 py-3 gap-4 hover:no-underline [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0 [&>svg]:text-white [&>svg]:opacity-100">
                             <div className="flex items-center justify-between w-full pr-4">
                               <div className="flex items-center gap-3">
                                 <div
@@ -3334,7 +3338,7 @@ export function ReportGenerationSection() {
                                 <span>{entry.userPosition}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-muted-foreground">Тип ��ктивности:</span>
+                                <span className="text-muted-foreground">Тип активности:</span>
                                 <span>{entry.activityType}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
@@ -3580,7 +3584,7 @@ export function ReportGenerationSection() {
             <DialogDescription className={theme.mode === "dark" ? "text-white/70" : "text-gray-600"}>
               {currentUploadTarget === "pto" || currentUploadTarget === "cdud"
                 ? "Выберите требование, которое вы выполнили"
-                : "Ук��жите тип и название выполненной работы"}
+                : "Укажите тип и название выполненной работы"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-5 md:grid-cols-[1.35fr_1fr]">
