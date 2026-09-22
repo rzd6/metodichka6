@@ -499,6 +499,7 @@ export function ReportGenerationSection() {
 
   const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string; role?: string; secondaryRole?: string } | null>(null)
   const [previewPosition, setPreviewPosition] = useState("")
+  const previewPositionRef = useRef("")
 
   const MAX_FILE_SIZE = 15 * 1024 * 1024
   const MAX_BATCH_SIZE = 3.5 * 1024 * 1024 // Leave room for multipart/form-data overhead on hosted runtimes
@@ -553,7 +554,10 @@ export function ReportGenerationSection() {
       role: parsedUser.role,
       secondaryRole: parsedUser.secondaryRole,
     })
-    setPreviewPosition(userPosition)
+    if (!previewPositionRef.current) {
+      previewPositionRef.current = userPosition
+      setPreviewPosition(userPosition)
+    }
     setPTOReportData((prev) => ({ ...prev, position: userPosition }))
     setCDUDReportData((prev) => ({ ...prev, position: userPosition }))
     setWarningReportData((prev) => ({ ...prev, position: userPosition }))
@@ -1258,11 +1262,6 @@ export function ReportGenerationSection() {
             ? cdudReportData.workEntries
             : warningReportData.workEntries
 
-    console.log(
-      "[v0] Available entries:",
-      entries.map((e) => ({ title: e.title, activityType: e.activityType })),
-    )
-
     // Split by "/" to handle alternative requirements
     const requirementParts = requirement.split("/").map((part) => part.trim())
 
@@ -1282,7 +1281,12 @@ export function ReportGenerationSection() {
 
 
     const matchingEntries = entries.filter((entry) => {
+      const normalizedEntryTitle = entry.title.toLowerCase().trim()
       const normalizedEntryType = entry.activityType.toLowerCase().trim()
+
+      if (reportType === "pto" || reportType === "cdud") {
+        return normalizedEntryTitle === requirement.toLowerCase().trim()
+      }
 
       const matches = activityTypes.some((type) => {
         const normalizedType = type.toLowerCase().trim()
@@ -1329,7 +1333,7 @@ export function ReportGenerationSection() {
       return matches
     })
 
-    const matchingCount = matchingEntries.length
+    const matchingCount = matchingEntries.reduce((total, entry) => total + Math.max(1, entry.filesCount || 0), 0)
 
     const fulfilled = matchingCount >= requiredCount
     const percentage = requiredCount > 0 ? Math.min((matchingCount / requiredCount) * 100, 100) : 0
@@ -1790,6 +1794,18 @@ export function ReportGenerationSection() {
         return
       }
     }
+    if (currentUploadTarget === "pto" || currentUploadTarget === "cdud") {
+      const requiredCount = getRequiredEvidenceCount(entryTitle)
+      if (pendingFiles.length !== requiredCount) {
+        toast({
+          title: "Неверное количество скриншотов",
+          description: `Для критерия «${entryTitle}» нужно ${requiredCount} ${requiredCount === 1 ? "скриншот" : "скриншотов"}. Сейчас выбрано: ${pendingFiles.length}. Загрузка отменена.`,
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     if (pendingFiles.length > 0) {
       addEntry(pendingFiles, currentUploadTarget)
     }
@@ -1823,6 +1839,7 @@ export function ReportGenerationSection() {
           <Select
             value={previewPosition}
             onValueChange={(value) => {
+              previewPositionRef.current = value
               setPreviewPosition(value)
               setReportData((prev) => ({ ...prev, position: value }))
               setPTOReportData((prev) => ({ ...prev, position: value }))
