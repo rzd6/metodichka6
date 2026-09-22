@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракцио������ное мероприятие": ["межфракционное мероприятие"],
+    "межфракцио��������ное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -496,6 +496,7 @@ export function ReportGenerationSection() {
   const [generatedReportText, setGeneratedReportText] = useState("")
   const [isCopied, setIsCopied] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadingFileIndexes, setUploadingFileIndexes] = useState<Set<number>>(new Set())
 
   const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string; role?: string; secondaryRole?: string } | null>(null)
   const [previewPosition, setPreviewPosition] = useState("")
@@ -805,6 +806,7 @@ export function ReportGenerationSection() {
       const optimizedFiles = await optimizeUploadFiles(files)
       const batches = splitFilesIntoBatches(optimizedFiles)
       const folderUrls: string[] = []
+      let uploadedCount = 0
       for (const batch of batches) {
         const formData = new FormData()
         formData.append("category", category)
@@ -819,8 +821,18 @@ export function ReportGenerationSection() {
           throw new Error(result.error || result.details || `Не удалось загрузить файлы в Google Drive (${response.status})`)
         }
         if (result.folderUrl && !folderUrls.includes(result.folderUrl)) folderUrls.push(result.folderUrl)
+        const finishedIndexes = batch.map((_, batchIndex) => uploadedCount + batchIndex)
+        uploadedCount += batch.length
+        setUploadingFileIndexes((current) => {
+          const next = new Set(current)
+          finishedIndexes.forEach((index) => next.delete(index))
+          return next
+        })
       }
       return folderUrls
+    } catch (error) {
+      setUploadingFileIndexes(new Set())
+      throw error
     } finally {
       setIsUploading(false)
     }
@@ -890,6 +902,7 @@ export function ReportGenerationSection() {
 
 
 
+    setUploadingFileIndexes(new Set(files.map((_, index) => index)))
     uploadToDrive(files, target, finalTitle, finalActivityType)
       .then((folderUrls) => {
         const newEntry: WorkEntry = {
@@ -1199,7 +1212,7 @@ export function ReportGenerationSection() {
       })
     }
     if (leaderReportData.cdudWorkEntries.length > 0) {
-      report += `ЦдУД:\n`
+      report += `Ц��УД:\n`
       leaderReportData.cdudWorkEntries.forEach((entry, i) => {
         report += `${i + 1}. ${entry.title} - ${formatFolderUrls(entry.folderUrl)}\n`
       })
@@ -3316,7 +3329,7 @@ export function ReportGenerationSection() {
                 <Label htmlFor="warnings">7. Выданные выговоры</Label>
                 <Textarea
                   id="warnings"
-                  placeholder="Никнеймы, причины, количество..."
+                  placeholder="Ник��еймы, причины, количество..."
                   value={leaderReportData.warnings}
                   onChange={(e) => setLeaderReportData((prev) => ({ ...prev, warnings: e.target.value }))}
                   rows={4}
@@ -3667,26 +3680,35 @@ export function ReportGenerationSection() {
                   }}
                 />
               </div>
-              <div className="grid max-h-48 grid-cols-4 gap-2 overflow-y-auto">
-                {previewUrls.map((url, index) => (
-                  <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-black/20">
-                    {pendingFiles[index]?.type.startsWith("image/") ? (
-                      <img src={url} alt={`Скриншот ${index + 1}`} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">PDF</div>
-                    )}
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      aria-label={`Удалить скриншот ${index + 1}`}
-                      className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() => setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+              <div className="grid max-h-[360px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                {previewUrls.map((url, index) => {
+                  const isFileUploading = uploadingFileIndexes.has(index)
+                  return (
+                    <div key={`${url}-${index}`} className={`group relative aspect-video overflow-hidden rounded-lg border border-white/10 bg-black/20 ${isFileUploading ? "animate-pulse" : ""}`}>
+                      {pendingFiles[index]?.type.startsWith("image/") ? (
+                        <img src={url} alt={`Предпросмотр скриншота ${index + 1}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">PDF</div>
+                      )}
+                      {isFileUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                          <Upload className="h-5 w-5 animate-bounce text-white" aria-label="Загрузка" />
+                        </div>
+                      )}
+                      <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] text-white">{index + 1}</span>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        aria-label={`Удалить скриншот ${index + 1}`}
+                        className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                        onClick={() => setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
             {currentUploadTarget === "pto" || currentUploadTarget === "cdud" ? (
