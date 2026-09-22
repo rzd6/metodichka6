@@ -1782,8 +1782,7 @@ export function ReportGenerationSection() {
       </div>
 
       {(currentUser?.role === "Тех. Администратор" ||
-        currentUser?.secondaryRole === "Тех. Администратор" ||
-        currentUser?.nickname === "v0_dev_rzd") && (
+        currentUser?.secondaryRole === "Тех. Администратор") && (
         <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-3">
           <Label htmlFor="report-preview-position">Временная должность для генерации</Label>
           <Select
@@ -2061,7 +2060,7 @@ export function ReportGenerationSection() {
 
                 <div className="space-y-2">
                   <p className="text-lg font-medium">
-                    {isDragging ? "Отпустите файлы для загрузки" : "Перетащите скриншоты сюда"}
+                    {isDragging ? "Отпустите файлы для загр��зки" : "Перетащите скриншоты сюда"}
                   </p>
                   <p className="text-sm text-muted-foreground">или</p>
                   <Button
@@ -2925,7 +2924,7 @@ export function ReportGenerationSection() {
               <CardDescription>
                 {warningReportData.workEntries.length > 0
                   ? "Загруженные доказательства нарушений"
-                  : "Здесь будут отображаться загруженные доказательства"}
+                  : "Здесь будут отображаться загру��енные доказательства"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3304,7 +3303,7 @@ export function ReportGenerationSection() {
                                 <span>{entry.userPosition}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-muted-foreground">Тип активности:</span>
+                                <span className="text-muted-foreground">Тип ��ктивности:</span>
                                 <span>{entry.activityType}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">

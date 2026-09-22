@@ -211,7 +211,6 @@ function MainContentInner() {
   }, [theme.colorTheme])
 
   const isTechAdmin =
-    user?.nickname === "v0_dev_rzd" ||
     user?.role === "Тех. Администратор" ||
     user?.secondaryRole === "Тех. Администратор"
 
