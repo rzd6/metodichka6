@@ -545,7 +545,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, setIsColl
     sections.push({ id: "report-compiler", label: "Составитель докладов" })
   }
 
-  if (user.nickname === "v0_dev_rzd") {
+  if (user.role === "Тех. Администратор" || sr === "Тех. Администратор") {
     sections.push({ id: "report-generation", label: "Генерация отчётов" })
   }
 

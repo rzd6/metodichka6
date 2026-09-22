@@ -56,10 +56,7 @@ export function ContentsSection({ onSectionChange, userRole, secondaryRole }: Co
       icon: FileBarChart,
       title: "Генерация отчётов",
       description: "Инструмент подготовки отчётов по рабочим операциям.",
-      canAccess:
-        userRole === "Тех. Администратор" ||
-        secondaryRole === "Тех. Администратор" ||
-        (typeof window !== "undefined" && JSON.parse(localStorage.getItem("currentUser") || "null")?.nickname === "v0_dev_rzd"),
+      canAccess: userRole === "Тех. Администратор" || secondaryRole === "Тех. Администратор",
     },
     {
       id: "information",
