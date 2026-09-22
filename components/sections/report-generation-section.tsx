@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракцио����ное мероприятие": ["межфракционное мероприятие"],
+    "межфракцио������ное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -500,6 +500,7 @@ export function ReportGenerationSection() {
   const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string; role?: string; secondaryRole?: string } | null>(null)
   const [previewPosition, setPreviewPosition] = useState("")
   const previewPositionRef = useRef("")
+  const hydratedReportDataRef = useRef(false)
 
   const MAX_FILE_SIZE = 15 * 1024 * 1024
   const MAX_BATCH_SIZE = 3.5 * 1024 * 1024 // Leave room for multipart/form-data overhead on hosted runtimes
@@ -672,23 +673,27 @@ export function ReportGenerationSection() {
 
   // Save report data to localStorage whenever it changes
   useEffect(() => {
-    saveReportData("reportData", reportData)
+    if (hydratedReportDataRef.current) saveReportData("reportData", reportData)
   }, [reportData])
 
   useEffect(() => {
-    saveReportData("ptoReportData", ptoReportData)
+    hydratedReportDataRef.current = true
+  }, [])
+
+  useEffect(() => {
+    if (hydratedReportDataRef.current) saveReportData("ptoReportData", ptoReportData)
   }, [ptoReportData])
 
   useEffect(() => {
-    saveReportData("cdudReportData", cdudReportData)
+    if (hydratedReportDataRef.current) saveReportData("cdudReportData", cdudReportData)
   }, [cdudReportData])
 
   useEffect(() => {
-    saveReportData("warningReportData", warningReportData)
+    if (hydratedReportDataRef.current) saveReportData("warningReportData", warningReportData)
   }, [warningReportData])
 
   useEffect(() => {
-    saveReportData("leaderReportData", leaderReportData)
+    if (hydratedReportDataRef.current) saveReportData("leaderReportData", leaderReportData)
   }, [leaderReportData])
 
   useEffect(() => {
@@ -793,7 +798,7 @@ export function ReportGenerationSection() {
     return batches
   }
 
-  const uploadToDrive = async (files: File[], target: typeof currentUploadTarget, title: string): Promise<string[]> => {
+  const uploadToDrive = async (files: File[], target: typeof currentUploadTarget, title: string, activity: string): Promise<string[]> => {
     setIsUploading(true)
     try {
       const category = target === "weekly" ? "weekly" : target === "pto" || target === "leader-pto" ? "pto" : target === "cdud" || target === "leader-cdud" ? "cdud" : target === "warning" ? "warning" : "leader"
@@ -804,7 +809,7 @@ export function ReportGenerationSection() {
         const formData = new FormData()
         formData.append("category", category)
         formData.append("nickname", currentUser?.nickname || nickname || "Без ника")
-        formData.append("activityType", activityType === "Другое" && customActivityType.trim() ? customActivityType.trim() : activityType)
+        formData.append("activityType", activity)
         formData.append("activityTitle", title)
         batch.forEach((file) => formData.append("file", file))
 
@@ -823,9 +828,13 @@ export function ReportGenerationSection() {
 
   const addEntry = (files: File[], target: typeof currentUploadTarget = currentUploadTarget) => {
     const finalActivityType =
-      activityType === "Другое" && customActivityType.trim() ? customActivityType.trim() : activityType
+      target === "pto" || target === "cdud"
+        ? entryTitle.trim()
+        : activityType === "Другое" && customActivityType.trim()
+          ? customActivityType.trim()
+          : activityType
 
-    const finalTitle = (target === "pto" || target === "cdud") && entryTitle ? entryTitle : entryTitle.trim()
+    const finalTitle = entryTitle.trim()
 
     if (!finalTitle) {
       toast({
@@ -834,6 +843,18 @@ export function ReportGenerationSection() {
         variant: "destructive",
       })
       return
+    }
+
+    if ((target === "pto" || target === "cdud") && entryTitle) {
+      const requiredScreenshots = getRequiredEvidenceCount(entryTitle)
+      if (files.length !== requiredScreenshots) {
+        toast({
+          title: "Неверное количество скриншотов",
+          description: `Для требования «${entryTitle}» нужно загрузить ровно ${requiredScreenshots}. Сейчас выбрано: ${files.length}.`,
+          variant: "destructive",
+        })
+        return
+      }
     }
 
     if (!finalActivityType && !(target === "pto" || target === "cdud")) {
@@ -869,7 +890,7 @@ export function ReportGenerationSection() {
 
 
 
-    uploadToDrive(files, target, finalTitle)
+    uploadToDrive(files, target, finalTitle, finalActivityType)
       .then((folderUrls) => {
         const newEntry: WorkEntry = {
           id: `${Date.now()}`,
