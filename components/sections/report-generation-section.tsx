@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприятие": ["межфракционное мероприятие"],
+    "межфракцио������ное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -500,6 +500,7 @@ export function ReportGenerationSection() {
   const [currentUser, setCurrentUser] = useState<{ nickname?: string; position?: string; role?: string; secondaryRole?: string } | null>(null)
   const [previewPosition, setPreviewPosition] = useState("")
   const previewPositionRef = useRef("")
+  const hydratedReportDataRef = useRef(false)
 
   const MAX_FILE_SIZE = 15 * 1024 * 1024
   const MAX_BATCH_SIZE = 3.5 * 1024 * 1024 // Leave room for multipart/form-data overhead on hosted runtimes
@@ -672,23 +673,27 @@ export function ReportGenerationSection() {
 
   // Save report data to localStorage whenever it changes
   useEffect(() => {
-    saveReportData("reportData", reportData)
+    if (hydratedReportDataRef.current) saveReportData("reportData", reportData)
   }, [reportData])
 
   useEffect(() => {
-    saveReportData("ptoReportData", ptoReportData)
+    hydratedReportDataRef.current = true
+  }, [])
+
+  useEffect(() => {
+    if (hydratedReportDataRef.current) saveReportData("ptoReportData", ptoReportData)
   }, [ptoReportData])
 
   useEffect(() => {
-    saveReportData("cdudReportData", cdudReportData)
+    if (hydratedReportDataRef.current) saveReportData("cdudReportData", cdudReportData)
   }, [cdudReportData])
 
   useEffect(() => {
-    saveReportData("warningReportData", warningReportData)
+    if (hydratedReportDataRef.current) saveReportData("warningReportData", warningReportData)
   }, [warningReportData])
 
   useEffect(() => {
-    saveReportData("leaderReportData", leaderReportData)
+    if (hydratedReportDataRef.current) saveReportData("leaderReportData", leaderReportData)
   }, [leaderReportData])
 
   useEffect(() => {
@@ -745,6 +750,23 @@ export function ReportGenerationSection() {
     e.target.value = ""
   }
 
+  const optimizeUploadFiles = async (files: File[]): Promise<File[]> => {
+    return Promise.all(
+      files.map(async (file) => {
+        if (!file.type.startsWith("image/") || file.size <= 700 * 1024) return file
+        const bitmap = await createImageBitmap(file)
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+        canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+        bitmap.close()
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82))
+        return blob ? new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }) : file
+      }),
+    )
+  }
+
   const splitFilesIntoBatches = (files: File[]): File[][] => {
     const batches: File[][] = []
     let currentBatch: File[] = []
@@ -776,17 +798,18 @@ export function ReportGenerationSection() {
     return batches
   }
 
-  const uploadToDrive = async (files: File[], target: typeof currentUploadTarget, title: string): Promise<string[]> => {
+  const uploadToDrive = async (files: File[], target: typeof currentUploadTarget, title: string, activity: string): Promise<string[]> => {
     setIsUploading(true)
     try {
       const category = target === "weekly" ? "weekly" : target === "pto" || target === "leader-pto" ? "pto" : target === "cdud" || target === "leader-cdud" ? "cdud" : target === "warning" ? "warning" : "leader"
-      const batches = splitFilesIntoBatches(files)
+      const optimizedFiles = await optimizeUploadFiles(files)
+      const batches = splitFilesIntoBatches(optimizedFiles)
       const folderUrls: string[] = []
       for (const batch of batches) {
         const formData = new FormData()
         formData.append("category", category)
         formData.append("nickname", currentUser?.nickname || nickname || "Без ника")
-        formData.append("activityType", activityType === "Другое" && customActivityType.trim() ? customActivityType.trim() : activityType)
+        formData.append("activityType", activity)
         formData.append("activityTitle", title)
         batch.forEach((file) => formData.append("file", file))
 
@@ -805,17 +828,33 @@ export function ReportGenerationSection() {
 
   const addEntry = (files: File[], target: typeof currentUploadTarget = currentUploadTarget) => {
     const finalActivityType =
-      activityType === "Другое" && customActivityType.trim() ? customActivityType.trim() : activityType
+      target === "pto" || target === "cdud"
+        ? entryTitle.trim()
+        : activityType === "Другое" && customActivityType.trim()
+          ? customActivityType.trim()
+          : activityType
 
-    const finalTitle = (target === "pto" || target === "cdud") && entryTitle ? entryTitle : entryTitle.trim()
+    const finalTitle = entryTitle.trim()
 
     if (!finalTitle) {
       toast({
         title: "Ошибка",
-        description: "Пожалуйста, укажите название работы или выбранное требование",
+        description: "Пожалуйста, укажите название ра��оты или выбранное требование",
         variant: "destructive",
       })
       return
+    }
+
+    if ((target === "pto" || target === "cdud") && entryTitle) {
+      const requiredScreenshots = getRequiredEvidenceCount(entryTitle)
+      if (files.length !== requiredScreenshots) {
+        toast({
+          title: "Неверное количество скриншотов",
+          description: `Для требования «${entryTitle}» нужно загрузить ровно ${requiredScreenshots}. Сейчас выбрано: ${files.length}.`,
+          variant: "destructive",
+        })
+        return
+      }
     }
 
     if (!finalActivityType && !(target === "pto" || target === "cdud")) {
@@ -851,7 +890,7 @@ export function ReportGenerationSection() {
 
 
 
-    uploadToDrive(files, target, finalTitle)
+    uploadToDrive(files, target, finalTitle, finalActivityType)
       .then((folderUrls) => {
         const newEntry: WorkEntry = {
           id: `${Date.now()}`,
@@ -1059,7 +1098,7 @@ export function ReportGenerationSection() {
   const generatePTOReport = (): string => {
     const today = new Date().toLocaleDateString("ru-RU")
 
-    let report = `Начальнику Производственн��-технического отдела\nОАО "РЖД" по Республике Провинция\nот ${ptoReportData.fullNameGenitive}\n\n`
+    let report = `Начальнику Производст��енн��-технического отдела\nОАО "РЖД" по Республике Провинция\nот ${ptoReportData.fullNameGenitive}\n\n`
     report += `Отчёт о проделанной работе ПТО\n\n`
     report += `Я, ${ptoReportData.fullName}, находящийся в должности ${ptoReportData.position}, оставляю отчёт о проделанной работе для повышения в должности с ${formatDate(ptoReportData.dateFrom)} по ${formatDate(ptoReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
 
@@ -1270,7 +1309,9 @@ export function ReportGenerationSection() {
 
     let requiredCount = 1
 
-    if (requirementParts.length > 1) {
+    if (reportType === "pto" || reportType === "cdud") {
+      requiredCount = 1
+    } else if (requirementParts.length > 1) {
       // Multiple alternatives - find the minimum count across all parts
       const counts = requirementParts.map((part) => extractNumberFromRequirement(part)).filter((count) => count > 0)
 
@@ -1462,7 +1503,7 @@ export function ReportGenerationSection() {
                 </>
               ) : (
                 <>
-                  Прогресс выполнения: {fulfilledCount} из {requirements.length} ({Math.round(progress)}%)
+                  Выполнено требований: {fulfilledCount} из {requirements.length} ({Math.round(progress)}%)
                 </>
               )}
             </DialogDescription>
@@ -1583,11 +1624,11 @@ export function ReportGenerationSection() {
                         )}
                         <div className="flex-1">
                           <p className={`text-sm ${result.fulfilled ? "line-through opacity-70" : ""}`}>{req}</p>
-                          {!result.fulfilled && result.progress !== "0/1" && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Выполнено: {result.progress} ({Math.round(result.percentage)}%)
-                            </p>
-                          )}
+                  {(result.fulfilled || result.progress !== "0/1") && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Выполнено: {result.fulfilled ? "100%" : `${result.progress} (${Math.round(result.percentage)}%)`}
+                    </p>
+                  )}
                         </div>
                       </div>
                     )
@@ -3604,23 +3645,50 @@ export function ReportGenerationSection() {
                 : "Укажите тип и название выполненной работы"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-5 md:grid-cols-[1.35fr_1fr]">
-            <div className="min-h-56 rounded-xl border border-dashed border-white/15 bg-black/10 p-3">
-              <div className="mb-3 flex items-center justify-between text-sm text-muted-foreground">
-                <span>Выбранные скриншоты</span>
-                <span>{pendingFiles.length} файлов</span>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-dashed border-white/15 bg-black/10 p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Предпросмотр скриншотов</p>
+                  <p className="text-xs text-muted-foreground">Выбрано: {pendingFiles.length}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("previewFileInput")?.click()}>
+                  <Upload className="mr-2 h-4 w-4" /> Добавить
+                </Button>
+                <input
+                  id="previewFileInput"
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.length) setPendingFiles((current) => [...current, ...Array.from(e.target.files ?? [])])
+                    e.target.value = ""
+                  }}
+                />
               </div>
-              <div className="grid max-h-[360px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+              <div className="grid max-h-48 grid-cols-4 gap-2 overflow-y-auto">
                 {previewUrls.map((url, index) => (
-                  <div key={url} className={`relative aspect-video overflow-hidden rounded-lg border border-white/10 ${isUploading ? "animate-pulse" : ""}`}>
-                    <img src={url} alt={`Предпросмотр скриншота ${index + 1}`} className="h-full w-full object-cover" />
-                    {isUploading && <div className="absolute inset-0 flex items-center justify-center bg-black/35"><Upload className="h-5 w-5 animate-bounce text-white" /></div>}
-                    <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] text-white">{index + 1}</span>
+                  <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                    {pendingFiles[index]?.type.startsWith("image/") ? (
+                      <img src={url} alt={`Скриншот ${index + 1}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">PDF</div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      aria-label={`Удалить скриншот ${index + 1}`}
+                      className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="space-y-4">
             {currentUploadTarget === "pto" || currentUploadTarget === "cdud" ? (
               <div className="space-y-2">
                 <Label className={theme.mode === "dark" ? "text-white" : "text-gray-900"}>
@@ -3712,7 +3780,6 @@ export function ReportGenerationSection() {
                 </div>
               </>
             )}
-            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button
