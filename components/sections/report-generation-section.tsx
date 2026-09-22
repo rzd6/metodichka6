@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракционное мероприятие": ["межфракционное мероприятие"],
+    "межфракцио��ное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -745,6 +745,23 @@ export function ReportGenerationSection() {
     e.target.value = ""
   }
 
+  const optimizeUploadFiles = async (files: File[]): Promise<File[]> => {
+    return Promise.all(
+      files.map(async (file) => {
+        if (!file.type.startsWith("image/") || file.size <= 700 * 1024) return file
+        const bitmap = await createImageBitmap(file)
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+        canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+        bitmap.close()
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82))
+        return blob ? new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }) : file
+      }),
+    )
+  }
+
   const splitFilesIntoBatches = (files: File[]): File[][] => {
     const batches: File[][] = []
     let currentBatch: File[] = []
@@ -780,7 +797,8 @@ export function ReportGenerationSection() {
     setIsUploading(true)
     try {
       const category = target === "weekly" ? "weekly" : target === "pto" || target === "leader-pto" ? "pto" : target === "cdud" || target === "leader-cdud" ? "cdud" : target === "warning" ? "warning" : "leader"
-      const batches = splitFilesIntoBatches(files)
+      const optimizedFiles = await optimizeUploadFiles(files)
+      const batches = splitFilesIntoBatches(optimizedFiles)
       const folderUrls: string[] = []
       for (const batch of batches) {
         const formData = new FormData()
@@ -1059,7 +1077,7 @@ export function ReportGenerationSection() {
   const generatePTOReport = (): string => {
     const today = new Date().toLocaleDateString("ru-RU")
 
-    let report = `Начальнику Производственн��-технического отдела\nОАО "РЖД" по Республике Провинция\nот ${ptoReportData.fullNameGenitive}\n\n`
+    let report = `Начальнику Производст��енн��-технического отдела\nОАО "РЖД" по Республике Провинция\nот ${ptoReportData.fullNameGenitive}\n\n`
     report += `Отчёт о проделанной работе ПТО\n\n`
     report += `Я, ${ptoReportData.fullName}, находящийся в должности ${ptoReportData.position}, оставляю отчёт о проделанной работе для повышения в должности с ${formatDate(ptoReportData.dateFrom)} по ${formatDate(ptoReportData.dateTo)} и прикрепляю к отчёту следующие документы:\n\n`
 
@@ -1462,7 +1480,7 @@ export function ReportGenerationSection() {
                 </>
               ) : (
                 <>
-                  Прогресс выполнения: {fulfilledCount} из {requirements.length} ({Math.round(progress)}%)
+                  Выполнено требований: {fulfilledCount} из {requirements.length} ({Math.round(progress)}%)
                 </>
               )}
             </DialogDescription>
@@ -3621,6 +3639,49 @@ export function ReportGenerationSection() {
               </div>
             </div>
             <div className="space-y-4">
+            <div className="rounded-xl border border-dashed border-white/15 bg-black/10 p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Предпросмотр скриншотов</p>
+                  <p className="text-xs text-muted-foreground">Выбрано: {pendingFiles.length}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("previewFileInput")?.click()}>
+                  <Upload className="mr-2 h-4 w-4" /> Добавить
+                </Button>
+                <input
+                  id="previewFileInput"
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.length) setPendingFiles((current) => [...current, ...Array.from(e.target.files ?? [])])
+                    e.target.value = ""
+                  }}
+                />
+              </div>
+              <div className="grid max-h-48 grid-cols-4 gap-2 overflow-y-auto">
+                {previewUrls.map((url, index) => (
+                  <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                    {pendingFiles[index]?.type.startsWith("image/") ? (
+                      <img src={url} alt={`Скриншот ${index + 1}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">PDF</div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      aria-label={`Удалить скриншот ${index + 1}`}
+                      className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
             {currentUploadTarget === "pto" || currentUploadTarget === "cdud" ? (
               <div className="space-y-2">
                 <Label className={theme.mode === "dark" ? "text-white" : "text-gray-900"}>
