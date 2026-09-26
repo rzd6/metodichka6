@@ -218,13 +218,18 @@ export async function findUserByNickname(nickname: string): Promise<User | undef
   }
 }
 
-export async function findUserByVkId(vkId: string): Promise<User | null> {
+export async function findUsersByVkId(vkId: string): Promise<User[]> {
   try {
     const { data } = await apiFetch(`/api/users?vk_id=${encodeURIComponent(vkId)}`)
-    return data ? rowToUser(data) : null
+    const rows = Array.isArray(data) ? data : data ? [data] : []
+    return rows.map(rowToUser)
   } catch {
-    return null
+    return []
   }
+}
+
+export async function findUserByVkId(vkId: string): Promise<User | null> {
+  return (await findUsersByVkId(vkId))[0] ?? null
 }
 
 export async function authenticateUser(nickname: string, password: string): Promise<User | null> {

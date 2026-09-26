@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
 
     const vkId = searchParams.get("vk_id")
     if (vkId) {
-      const res = await db.query("SELECT * FROM users WHERE vk_id = $1 LIMIT 1", [vkId])
-      return NextResponse.json({ data: res.rows[0] ?? null })
+      const res = await db.query("SELECT * FROM users WHERE vk_id = $1 ORDER BY created_at ASC", [vkId])
+      return NextResponse.json({ data: res.rows })
     }
 
     const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
