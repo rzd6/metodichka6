@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { authenticateUser, findUserByVkId } from "@/data/users"
+import { authenticateUser, findUsersByVkId, getUserAvatar } from "@/data/users"
 import { DEV_VK_USER_ID, makeDevUser } from "@/lib/dev-account"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
@@ -24,6 +24,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [copiedVkId, setCopiedVkId] = useState(false)
+  const [vkAccounts, setVkAccounts] = useState<any[]>([])
+  const [vkPhoto, setVkPhoto] = useState<string | undefined>()
   const floatingOneTapRef = useRef<any>(null)
   const router = useRouter()
   const { theme } = useTheme()
@@ -36,6 +38,21 @@ export default function LoginPage() {
       window.location.replace("/")
     }
   }, [])
+
+  const completeVkLogin = async (user: any, photo?: string) => {
+    const updatedUser = photo && user.id !== "dev-test-account"
+      ? (await fetch("/api/users", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: user.id, vk_avatar: photo }),
+        }).then(async (response) => {
+          const result = await response.json()
+          return response.ok && result.data ? { ...user, ...result.data, vkAvatar: photo } : { ...user, vkAvatar: photo }
+        }).catch(() => ({ ...user, vkAvatar: photo })))
+      : user
+    localStorage.setItem("currentUser", JSON.stringify(updatedUser))
+    router.push("/")
+  }
 
   const vkidOnSuccess = async (data: any) => {
     try {
@@ -58,28 +75,22 @@ export default function LoginPage() {
         return
       }
 
-  const user = vkUserId === DEV_VK_USER_ID ? makeDevUser() : await findUserByVkId(vkUserId)
+      const databaseAccounts = await findUsersByVkId(vkUserId)
+      const accounts = vkUserId === DEV_VK_USER_ID ? [makeDevUser(), ...databaseAccounts] : databaseAccounts
 
-  if (!user) {
-
+      if (accounts.length === 0) {
         setError(`VK ID ${vkUserId} не привязан ни к одному аккаунту. Попросите администратора прописать именно этот числовой ID в настройках пользователя.`)
         return
       }
 
       const photo = exchanged?.photo
-      const updatedUser = photo && user.id !== "dev-test-account"
-        ? (await fetch("/api/users", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: user.id, vk_avatar: photo }),
-          }).then(async (response) => {
-            const result = await response.json()
-            return response.ok && result.data ? { ...user, ...result.data, vkAvatar: photo } : { ...user, vkAvatar: photo }
-          }).catch(() => ({ ...user, vkAvatar: photo })))
-        : user
+      if (accounts.length === 1) {
+        await completeVkLogin(accounts[0], photo)
+      } else {
+        setVkPhoto(photo)
+        setVkAccounts(accounts)
+      }
 
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser))
-      router.push("/")
     } catch {
       setError("Ошибка авторизации через ВКонтакте. Попробуйте снова.")
     }
@@ -205,6 +216,34 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
+            {vkAccounts.length > 1 ? (
+              <div className="space-y-3" role="dialog" aria-labelledby="vk-account-title">
+                <div>
+                  <h2 id="vk-account-title" className="text-lg font-semibold">Выберите аккаунт</h2>
+                  <p className="text-sm text-muted-foreground">К этому VK привязано несколько аккаунтов.</p>
+                </div>
+                <div className="space-y-2">
+                  {vkAccounts.map((account) => {
+                    const avatar = getUserAvatar(account)
+                    return (
+                      <button
+                        key={account.id}
+                        type="button"
+                        onClick={() => completeVkLogin(account, vkPhoto)}
+                        className="flex w-full items-center gap-3 rounded-xl border border-white/10 p-3 text-left transition hover:border-red-400/70 hover:bg-white/5"
+                      >
+                        {avatar ? <img src={avatar} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full bg-red-500/20" />}
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{account.nickname}</span>
+                          <span className="block text-sm text-muted-foreground">{account.role}{account.position ? ` · ${account.position}` : ""}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <Button type="button" variant="ghost" className="w-full" onClick={() => setVkAccounts([])}>Назад</Button>
+              </div>
+            ) : <>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="nickname" className={theme.mode === "dark" ? "text-white" : "text-black"}>
@@ -298,7 +337,8 @@ export default function LoginPage() {
               </span>
               <div className={`flex-1 h-px ${theme.mode === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
             </div>
-            <div id="vk-onetap-container" className="min-h-11 w-full overflow-hidden rounded-lg" />
+              <div id="vk-onetap-container" className="min-h-11 w-full overflow-hidden rounded-lg" />
+            </>}
           </CardContent>
         </Card>
       </div>
