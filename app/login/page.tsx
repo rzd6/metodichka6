@@ -225,14 +225,14 @@ export default function LoginPage() {
 
           <CardContent className="space-y-4">
             {vkAccounts.length > 1 ? (
-              <div className="space-y-4" role="dialog" aria-labelledby="vk-account-title">
+              <div className="space-y-4 rounded-2xl bg-black/35 p-1" role="dialog" aria-labelledby="vk-account-title">
                 <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-4">
                   <h2 id="vk-account-title" className="text-lg font-semibold text-red-100">Выберите аккаунт</h2>
                   <p className="mt-1 text-sm text-red-100/65">Выберите профиль для входа в Методичку.</p>
                 </div>
                 <div className="space-y-2">
                   {vkAccounts.map((account) => {
-                    const avatar = account.customAvatar || account.avatar || roleAvatars[account.role] || "/avatars/cdud.png"
+                    const avatar = roleAvatars[account.role] || "/avatars/cdud.png"
                     return (
                       <button
                         key={account.id}
@@ -240,7 +240,9 @@ export default function LoginPage() {
                         onClick={() => completeVkLogin(account, vkPhoto)}
                         className="group flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-red-950/20 p-3 text-left transition hover:border-red-400/70 hover:bg-red-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
-                        <img src={avatar} alt="" className="h-12 w-12 rounded-full border-2 border-red-500/50 bg-red-950/50 object-cover" />
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-red-600/70 bg-red-950/70 shadow-[0_0_0_3px_rgba(127,29,29,0.35)]">
+                          <img src={avatar} alt="" className="h-full w-full scale-110 object-cover" />
+                        </span>
                         <span className="min-w-0">
                           <span className="block truncate font-semibold text-white">{account.nickname}</span>
                           <span className="mt-0.5 block truncate text-sm text-red-100/70">{account.role}</span>
