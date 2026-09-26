@@ -12,6 +12,7 @@ import { authenticateUser, findUsersByVkId } from "@/data/users"
 import { DEV_VK_USER_ID, makeDevUser } from "@/lib/dev-account"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
+import { getAvatarFilterFromColor } from "@/lib/color-utils"
 
 // VK ID разрешает только redirect URL, добавленные в настройках приложения.
 const VK_APP_ID = Number(process.env.NEXT_PUBLIC_VK_APP_ID || 54678517)
@@ -264,7 +265,7 @@ export default function LoginPage() {
                     src={avatar}
                     alt=""
                     className="h-full w-full scale-110 object-cover"
-                    style={{ filter: theme.mode === "dark" ? "sepia(0.62) saturate(2.25) hue-rotate(-12deg) contrast(1.05)" : "sepia(0.48) saturate(1.85) hue-rotate(-10deg) contrast(1.03)" }}
+                    style={{ filter: getAvatarFilterFromColor(theme.colorTheme) }}
                   />
                         </span>
                         <span className="min-w-0">
