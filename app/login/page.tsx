@@ -265,7 +265,7 @@ export default function LoginPage() {
                     src={avatar}
                     alt=""
                     className="h-full w-full scale-110 object-cover"
-                    style={{ filter: getAvatarFilterFromColor(theme.colorTheme) }}
+                    style={{ filter: getAvatarFilterFromColor("red") }}
                   />
                         </span>
                         <span className="min-w-0">
