@@ -48,6 +48,7 @@ export default function LoginPage() {
   }, [])
 
   const completeVkLogin = async (user: any, photo?: string) => {
+    setLoading(true)
     const updatedUser = photo && user.id !== "dev-test-account"
       ? (await fetch("/api/users", {
           method: "PATCH",
@@ -63,6 +64,7 @@ export default function LoginPage() {
   }
 
   const vkidOnSuccess = async (data: any) => {
+    setLoading(true)
     try {
       const exchangeResponse = await fetch("/api/vk/exchange", {
         method: "POST",
@@ -101,10 +103,13 @@ export default function LoginPage() {
 
     } catch {
       setError("Ошибка авторизации через ВКонтакте. Попробуйте снова.")
+    } finally {
+      setLoading(false)
     }
   }
 
   const vkidOnError = (err: any) => {
+    setLoading(false)
     console.error("[VK] error:", err)
     const description = err?.message || err?.text || ""
     setError(description ? `Ошибка авторизации VK: ${description}` : "Ошибка авторизации через ВКонтакте. Попробуйте снова.")
@@ -147,6 +152,11 @@ export default function LoginPage() {
       })
 
   }
+
+  useEffect(() => {
+    const timer = window.setTimeout(initVkSdk, 0)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -198,6 +208,15 @@ export default function LoginPage() {
         />
         <div className="absolute inset-0 bg-black/40" />
 
+        {loading && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/65 backdrop-blur-sm" role="status" aria-live="polite">
+            <div className="flex min-w-52 flex-col items-center gap-4 rounded-2xl border border-red-500/35 bg-black/80 px-8 py-7 text-center shadow-2xl">
+              <span className="h-10 w-10 animate-spin rounded-full border-4 border-white/15 border-t-red-500" aria-hidden="true" />
+              <span className="text-sm font-medium text-white">Выполняется вход…</span>
+            </div>
+          </div>
+        )}
+
         <Card
           className={`w-full max-w-sm shadow-2xl border-2 relative z-10 ${
             theme.mode === "dark" ? "bg-black/70 border-white/10" : "bg-white/95 border-gray-200"
@@ -245,7 +264,7 @@ export default function LoginPage() {
                     src={avatar}
                     alt=""
                     className="h-full w-full scale-110 object-cover"
-                    style={{ filter: theme.mode === "dark" ? "sepia(0.18) saturate(1.18) hue-rotate(-8deg)" : "sepia(0.1) saturate(1.08) hue-rotate(-5deg)" }}
+                    style={{ filter: theme.mode === "dark" ? "sepia(0.62) saturate(2.25) hue-rotate(-12deg) contrast(1.05)" : "sepia(0.48) saturate(1.85) hue-rotate(-10deg) contrast(1.03)" }}
                   />
                         </span>
                         <span className="min-w-0">
