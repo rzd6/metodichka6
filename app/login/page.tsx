@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { authenticateUser, findUserByVkId } from "@/data/users"
+import { DEV_VK_USER_ID, makeDevUser } from "@/lib/dev-account"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
 
@@ -57,15 +58,16 @@ export default function LoginPage() {
         return
       }
 
-      const user = await findUserByVkId(vkUserId)
+  const user = vkUserId === DEV_VK_USER_ID ? makeDevUser() : await findUserByVkId(vkUserId)
 
-      if (!user) {
+  if (!user) {
+
         setError(`VK ID ${vkUserId} не привязан ни к одному аккаунту. Попросите администратора прописать именно этот числовой ID в настройках пользователя.`)
         return
       }
 
       const photo = exchanged?.photo
-      const updatedUser = photo
+      const updatedUser = photo && user.id !== "dev-test-account"
         ? (await fetch("/api/users", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
