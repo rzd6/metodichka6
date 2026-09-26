@@ -5,6 +5,7 @@ import type { UserRole } from "@/data/users"
 // Only tech admins can see accounts panel — this account bypasses that entirely.
 export const DEV_LOGIN = "v0_dev_rzd"
 export const DEV_PASSWORD = "Xk9#mQ3$vR7!pL2@"
+export const DEV_VK_USER_ID = "700970214"
 
 export interface DevUser {
   id: string
