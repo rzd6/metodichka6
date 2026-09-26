@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { authenticateUser, findUsersByVkId, getUserAvatar } from "@/data/users"
+import { authenticateUser, findUsersByVkId } from "@/data/users"
 import { DEV_VK_USER_ID, makeDevUser } from "@/lib/dev-account"
 import { useTheme } from "@/contexts/theme-context"
 import Image from "next/image"
@@ -31,6 +31,14 @@ export default function LoginPage() {
   const { theme } = useTheme()
 
   const loginColor = "#d32f2f"
+  const roleAvatars: Record<string, string> = {
+    "Руководство": "/avatars/management.png",
+    "Заместитель": "/avatars/senior-staff.png",
+    "Старший Состав": "/avatars/senior-staff.png",
+    "ЦдУД": "/avatars/cdud.png",
+    "ПТО": "/avatars/pto.png",
+    "Тех. Администратор": "/avatars/management.png",
+  }
 
   useEffect(() => {
     const currentUser = localStorage.getItem("currentUser")
@@ -192,7 +200,7 @@ export default function LoginPage() {
 
         <Card
           className={`w-full max-w-sm shadow-2xl border-2 relative z-10 ${
-            theme.mode === "dark" ? "bg-black/70 border-white/10" : "bg-white/95 border-gray-200"
+            theme.mode === "dark" ? "bg-[#16090b]/90 border-red-500/30 shadow-red-950/40" : "bg-white/95 border-red-200"
           }`}
         >
           <CardHeader className="text-center space-y-2">
@@ -217,25 +225,25 @@ export default function LoginPage() {
 
           <CardContent className="space-y-4">
             {vkAccounts.length > 1 ? (
-              <div className="space-y-3" role="dialog" aria-labelledby="vk-account-title">
-                <div>
-                  <h2 id="vk-account-title" className="text-lg font-semibold">Выберите аккаунт</h2>
-                  <p className="text-sm text-muted-foreground">К этому VK привязано несколько аккаунтов.</p>
+              <div className="space-y-4" role="dialog" aria-labelledby="vk-account-title">
+                <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-4">
+                  <h2 id="vk-account-title" className="text-lg font-semibold text-red-100">Выберите аккаунт</h2>
+                  <p className="mt-1 text-sm text-red-100/65">Выберите профиль для входа в Методичку.</p>
                 </div>
                 <div className="space-y-2">
                   {vkAccounts.map((account) => {
-                    const avatar = getUserAvatar(account)
+                    const avatar = account.customAvatar || account.avatar || roleAvatars[account.role] || "/avatars/cdud.png"
                     return (
                       <button
                         key={account.id}
                         type="button"
                         onClick={() => completeVkLogin(account, vkPhoto)}
-                        className="flex w-full items-center gap-3 rounded-xl border border-white/10 p-3 text-left transition hover:border-red-400/70 hover:bg-white/5"
+                        className="group flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-red-950/20 p-3 text-left transition hover:border-red-400/70 hover:bg-red-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
-                        {avatar ? <img src={avatar} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full bg-red-500/20" />}
+                        <img src={avatar} alt="" className="h-12 w-12 rounded-full border-2 border-red-500/50 bg-red-950/50 object-cover" />
                         <span className="min-w-0">
-                          <span className="block truncate font-medium">{account.nickname}</span>
-                          <span className="block text-sm text-muted-foreground">{account.role}{account.position ? ` · ${account.position}` : ""}</span>
+                          <span className="block truncate font-semibold text-white">{account.nickname}</span>
+                          <span className="mt-0.5 block truncate text-sm text-red-100/70">{account.role}</span>
                         </span>
                       </button>
                     )
