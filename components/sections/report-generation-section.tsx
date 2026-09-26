@@ -216,7 +216,7 @@ const getActivityTypesFromRequirement = (requirement: string): string[] => {
   const activityMappings: { [key: string]: string[] } = {
     "лекция про объекты железной дороги": ["лекция про объекты железной дороги"],
     "лекции про объекты железной дороги": ["лекция про объекты железной дороги"],
-    "межфракцио��������ное мероприятие": ["межфракционное мероприятие"],
+    "межфракцио����������ное мероприятие": ["межфракционное мероприятие"],
     "выездное мероприятие": ["выездное мероприятие", "выездные мероприятия"],
     "мероприятие для сотрудников": ["мероприятие для сотрудников"],
     "мероприятие по тех. осмотру": ["мероприятие по тех. осмотру поездов"],
@@ -1651,7 +1651,7 @@ export function ReportGenerationSection() {
                 {/* Uploaded entries list */}
                 {currentEntries.length > 0 && (
                   <div className="space-y-2 mt-4">
-                    <h4 className="font-medium text-sm">Загруженные доказательства:</h4>
+                    <h4 className="font-medium text-sm">Загруженные доказа��ельства:</h4>
                     {currentEntries.map((entry, index) => (
                       <div
                         key={entry.id}
@@ -3646,7 +3646,7 @@ export function ReportGenerationSection() {
       {/* Upload Dialog */}
       <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
         <DialogContent
-          className={`sm:max-w-4xl ${theme.mode === "dark" ? "bg-[#0f1419] border-white/10" : "bg-white border-gray-200"}`}
+          className={`w-[min(92vw,36rem)] max-h-[88vh] overflow-y-auto ${theme.mode === "dark" ? "bg-[#0f1419] border-white/10" : "bg-white border-gray-200"}`}
         >
           <DialogHeader>
             <DialogTitle className={theme.mode === "dark" ? "text-white" : "text-gray-900"}>
