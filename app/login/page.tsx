@@ -200,7 +200,7 @@ export default function LoginPage() {
 
         <Card
           className={`w-full max-w-sm shadow-2xl border-2 relative z-10 ${
-            theme.mode === "dark" ? "bg-[#16090b]/90 border-red-500/30 shadow-red-950/40" : "bg-white/95 border-red-200"
+            theme.mode === "dark" ? "bg-black/70 border-white/10" : "bg-white/95 border-gray-200"
           }`}
         >
           <CardHeader className="text-center space-y-2">
@@ -225,7 +225,7 @@ export default function LoginPage() {
 
           <CardContent className="space-y-4">
             {vkAccounts.length > 1 ? (
-              <div className="space-y-4 rounded-2xl bg-black/35 p-1" role="dialog" aria-labelledby="vk-account-title">
+              <div className="space-y-4" role="dialog" aria-labelledby="vk-account-title">
                 <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-4">
                   <h2 id="vk-account-title" className="text-lg font-semibold text-red-100">Выберите аккаунт</h2>
                   <p className="mt-1 text-sm text-red-100/65">Выберите профиль для входа в Методичку.</p>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                         key={account.id}
                         type="button"
                         onClick={() => completeVkLogin(account, vkPhoto)}
-                        className="group flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-red-950/20 p-3 text-left transition hover:border-red-400/70 hover:bg-red-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-red-400/70 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
                         <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-red-600/70 bg-red-950/70 shadow-[0_0_0_3px_rgba(127,29,29,0.35)]">
                           <img src={avatar} alt="" className="h-full w-full scale-110 object-cover" />
