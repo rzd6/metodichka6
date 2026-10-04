@@ -25,6 +25,7 @@ import {
   Link,
   Terminal,
   RefreshCw,
+  Loader2,
   ClipboardList,
 } from "lucide-react"
 import { BuiltinSectionsTab } from "@/components/sections/builtin-sections-tab"
@@ -811,8 +812,9 @@ export function AdminSection() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="space-y-2">
+  {isLoading ? (
+  <div className="space-y-2" role="status" aria-live="polite">
+  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Обновляем список сотрудников…</div>
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
