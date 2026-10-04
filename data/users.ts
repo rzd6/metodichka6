@@ -86,7 +86,7 @@ async function initializeUsers(forceRefresh = false): Promise<User[]> {
   }
 
   try {
-    const { data, error } = await apiFetch("/api/users")
+    const { data, error } = await apiFetch("/api/users?hydrate_vk=1")
     if (error || !Array.isArray(data)) return []
     const users = data.map(rowToUser)
     cachedUsers = users

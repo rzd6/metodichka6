@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     const vkId = searchParams.get("vk_id")
     if (vkId) {
       const res = await db.query("SELECT * FROM users WHERE vk_id = $1 ORDER BY created_at ASC", [vkId])
-    return NextResponse.json({ data: res.rows }, { headers: { "Cache-Control": "no-store" } })
+      return NextResponse.json({ data: res.rows }, { headers: { "Cache-Control": "no-store" } })
     }
 
     const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
@@ -89,14 +89,14 @@ export async function GET(req: NextRequest) {
         try {
           const url = new URL("https://api.vk.com/method/users.get")
           url.searchParams.set("user_ids", String(row.vk_id))
-          url.searchParams.set("fields", "photo_max_orig,photo_200")
+          url.searchParams.set("fields", "photo_max_orig,photo_200,photo_100")
           url.searchParams.set("access_token", process.env.VK_SERVICE_TOKEN as string)
           url.searchParams.set("v", "5.199")
           const response = await fetch(url, { cache: "no-store" })
           const data = await response.json()
           if (!response.ok || data.error) throw new Error(data.error?.error_msg || `VK HTTP ${response.status}`)
           const profile = data.response?.[0]
-          const photo = profile?.photo_max_orig || profile?.photo_200
+          const photo = profile?.photo_max_orig || profile?.photo_200 || profile?.photo_100
           if (photo) {
             await db.query("UPDATE users SET vk_avatar = $1, updated_at = NOW() WHERE id = $2", [photo, row.id])
             row.vk_avatar = photo

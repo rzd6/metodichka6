@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       const profileData = await profileRes.json()
       const profile = profileData.response?.[0]
       return NextResponse.json({
-        photo: profile?.photo_max_orig || profile?.photo_200 || null,
+        photo: profile?.photo_max_orig || profile?.photo_200 || profile?.photo_100 || null,
       })
     }
 
