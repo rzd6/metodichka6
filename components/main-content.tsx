@@ -29,6 +29,7 @@ function MainContentInner() {
   const [activeSection, setActiveSection] = useState("contents")
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [user, setUser] = useState<LocalUser | null>(null)
+  const [showAccountWarnings, setShowAccountWarnings] = useState(false)
   const [customBg, setCustomBg] = useState<string | null>(null)
   const [globalTechMode, setGlobalTechMode] = useState(false)
   const { theme } = useTheme()
@@ -54,7 +55,8 @@ function MainContentInner() {
   // Sync users from Google Sheet on page load (once per mount)
   // After sync completes, run a full DB refresh so isDefaultPassword / position propagate
   useEffect(() => {
-    const auth = localStorage.getItem("currentUser")
+  const auth = localStorage.getItem("currentUser")
+  if (auth) setShowAccountWarnings(true)
     if (!auth) return
     fetch("/api/sync-from-sheets")
       .then(() => {
@@ -276,38 +278,6 @@ function MainContentInner() {
           }}
         >
           <div className="relative p-4 space-y-3">
-            {/* Medical card warning banner */}
-            {user?.medicalCard && (() => {
-              const match = user.medicalCard.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/)
-              const expiry = match ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[2]) - 1, Number(match[1])) : null
-              if (!expiry || expiry.getTime() > Date.now()) return null
-              return <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-red-500/40 bg-red-500/10 text-sm font-medium text-red-700 dark:text-red-300">Медицинская карта закончилась ({user.medicalCard}). Требуется её обновить.</div>
-            })()}
-            {/* Default password warning banner */}
-            {user?.isDefaultPassword && (
-              <div
-                className="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium"
-                style={{
-                  backgroundColor: getTieColor() + "18",
-                  borderColor: getTieColor() + "40",
-                  color: getTieColor(),
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 flex-shrink-0 mt-0.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                </svg>
-                <span>
-                  У вас установлен пароль по умолчанию (банковский счёт). Необходимо сменить его в разделе{" "}
-                  <button
-                    onClick={() => window.dispatchEvent(new CustomEvent("openSettings", { detail: { tab: "account" } }))}
-                    className="underline font-semibold hover:opacity-80 transition-opacity"
-                  >
-                    Настройки
-                  </button>
-                  {" "}→ Изменить пароль.
-                </span>
-              </div>
-            )}
             <ContentSection
               activeSection={activeSection}
               onSectionChange={handleSectionChange}
@@ -316,9 +286,36 @@ function MainContentInner() {
               secondaryRole={user?.secondaryRole}
             />
           </div>
-        </div>
-      </main>
-    </div>
+          </div>
+        </main>
+        {showAccountWarnings && user && (() => {
+          const match = user.medicalCard?.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/)
+          const expiry = match ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[2]) - 1, Number(match[1])) : null
+          const medicalExpired = Boolean(expiry && expiry.getTime() <= Date.now())
+          if (!medicalExpired && !user.isDefaultPassword) return null
+          return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="account-warning-title">
+              <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#11161c] p-6 text-white shadow-2xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 id="account-warning-title" className="text-xl font-semibold">Требуется внимание</h2>
+                    <p className="mt-1 text-sm text-white/65">Проверьте данные аккаунта перед продолжением работы.</p>
+                  </div>
+                  <button type="button" onClick={() => setShowAccountWarnings(false)} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Закрыть">×</button>
+                </div>
+                <div className="mt-5 space-y-3 text-sm">
+                  {medicalExpired && <div className="rounded-xl border border-red-400/35 bg-red-500/10 p-4 text-red-200">Медицинская карта закончилась ({user.medicalCard}). Требуется её обновить.</div>}
+                  {user.isDefaultPassword && <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-4 text-amber-100">Используется стандартный пароль. Его необходимо сменить в настройках аккаунта.</div>}
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button type="button" onClick={() => setShowAccountWarnings(false)} className="rounded-xl border border-white/15 px-4 py-2 text-sm hover:bg-white/10">Закрыть</button>
+                  {user.isDefaultPassword && <button type="button" onClick={() => { setShowAccountWarnings(false); window.dispatchEvent(new CustomEvent("openSettings", { detail: { tab: "account" } })) }} className="rounded-xl px-4 py-2 text-sm font-semibold text-black" style={{ backgroundColor: getTieColor() }}>Открыть настройки</button>}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+      </div>
     </TechModeGuard>
   )
 }

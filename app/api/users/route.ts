@@ -78,13 +78,13 @@ export async function GET(req: NextRequest) {
     const vkId = searchParams.get("vk_id")
     if (vkId) {
       const res = await db.query("SELECT * FROM users WHERE vk_id = $1 ORDER BY created_at ASC", [vkId])
-      return NextResponse.json({ data: res.rows })
+    return NextResponse.json({ data: res.rows }, { headers: { "Cache-Control": "no-store" } })
     }
 
     const res = await db.query("SELECT * FROM users ORDER BY created_at ASC")
     const hydrateVk = searchParams.get("hydrate_vk") === "1"
     if (hydrateVk && process.env.VK_SERVICE_TOKEN) {
-      const pending = res.rows.filter((row) => row.vk_id && !row.vk_avatar).slice(0, 25)
+      const pending = res.rows.filter((row) => row.vk_id).slice(0, 100)
       await Promise.all(pending.map(async (row) => {
         try {
           const url = new URL("https://api.vk.com/method/users.get")
@@ -92,7 +92,9 @@ export async function GET(req: NextRequest) {
           url.searchParams.set("fields", "photo_max_orig,photo_200")
           url.searchParams.set("access_token", process.env.VK_SERVICE_TOKEN as string)
           url.searchParams.set("v", "5.199")
-          const data = await (await fetch(url, { cache: "no-store" })).json()
+          const response = await fetch(url, { cache: "no-store" })
+          const data = await response.json()
+          if (!response.ok || data.error) throw new Error(data.error?.error_msg || `VK HTTP ${response.status}`)
           const profile = data.response?.[0]
           const photo = profile?.photo_max_orig || profile?.photo_200
           if (photo) {
