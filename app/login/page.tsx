@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [nickname, setNickname] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [loadingStage, setLoadingStage] = useState("Проверяем данные…")
   const [error, setError] = useState("")
   const [copiedVkId, setCopiedVkId] = useState(false)
   const [vkAccounts, setVkAccounts] = useState<any[]>([])
@@ -161,9 +162,11 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    await fetch("/api/sync-from-sheets", { cache: "no-store" }).catch(() => undefined)
     setError("")
     setLoading(true)
+    setLoadingStage("Обновляем данные сотрудников…")
+    await fetch("/api/sync-from-sheets", { cache: "no-store" }).catch(() => undefined)
+    setLoadingStage("Проверяем логин и пароль…")
 
     if (!nickname || !password) {
       setError("Заполните все поля")
@@ -214,7 +217,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/65 backdrop-blur-sm" role="status" aria-live="polite">
             <div className="flex min-w-52 flex-col items-center gap-4 rounded-2xl border border-red-500/35 bg-black/80 px-8 py-7 text-center shadow-2xl">
               <span className="h-10 w-10 animate-spin rounded-full border-4 border-white/15 border-t-red-500" aria-hidden="true" />
-              <span className="text-sm font-medium text-white">Выполняется вход…</span>
+              <span className="text-sm font-medium text-white">{loadingStage}</span>
             </div>
           </div>
         )}
