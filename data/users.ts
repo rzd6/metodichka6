@@ -33,7 +33,8 @@ export interface User {
   position?: string
   /** Если true — пароль не изменён (равен банковскому счёту из таблицы) */
   isDefaultPassword?: boolean
-}
+  medicalCard?: string
+  }
 
 let cachedUsers: User[] | null = null
 let lastFetchTime = 0
@@ -65,6 +66,7 @@ function rowToUser(row: Record<string, unknown>): User {
     gender: row.gender === "female" ? "female" : "male",
     position: row.position_title ? String(row.position_title) : undefined,
     isDefaultPassword: row.is_default_password === true || row.is_default_password === "true",
+    medicalCard: row.medical_card ? String(row.medical_card) : undefined,
   }
 }
 

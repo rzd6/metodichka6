@@ -161,6 +161,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    await fetch("/api/sync-from-sheets", { cache: "no-store" }).catch(() => undefined)
     setError("")
     setLoading(true)
 
