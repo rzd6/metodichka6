@@ -99,8 +99,9 @@ export function AdminSection() {
     if (!silent) setIsLoading(true)
     else setIsRefreshing(true)
     if (!silent) setUsersError(false)
-    try {
-      const res = await fetch("/api/users?hydrate_vk=1", { headers: { "Content-Type": "application/json" }, cache: "no-store" })
+  try {
+  await fetch("/api/sync-from-sheets", { cache: "no-store" }).catch(() => undefined)
+  const res = await fetch("/api/users?hydrate_vk=1", { headers: { "Content-Type": "application/json" }, cache: "no-store" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (!Array.isArray(json.data)) throw new Error("no data")

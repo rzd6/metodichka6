@@ -40,6 +40,7 @@ async function ensureTable() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'male';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS position_title TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_default_password BOOLEAN DEFAULT false;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS medical_card TEXT DEFAULT NULL;
     CREATE TABLE IF NOT EXISTS user_avatar_cleanup (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       avatar_url TEXT NOT NULL,

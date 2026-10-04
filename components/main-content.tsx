@@ -22,6 +22,7 @@ interface LocalUser {
   gender?: "male" | "female"
   isDefaultPassword?: boolean
   position?: string
+  medicalCard?: string
 }
 
 function MainContentInner() {
@@ -31,6 +32,10 @@ function MainContentInner() {
   const [customBg, setCustomBg] = useState<string | null>(null)
   const [globalTechMode, setGlobalTechMode] = useState(false)
   const { theme } = useTheme()
+
+  useEffect(() => {
+    void fetch("/api/sync-from-sheets", { cache: "no-store" }).then(() => getAllUsers(true)).catch(() => undefined)
+  }, [])
 
   const DEFAULT_BACKGROUND =
     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/sapsan-bridge-P2tdAk8LEJIgwJMoqXjcGPvLxnyjps.jpg"
@@ -153,7 +158,8 @@ function MainContentInner() {
           dbUser.reportTag !== currentData.reportTag ||
           dbUser.gender !== currentData.gender ||
           dbUser.position !== currentData.position ||
-          dbUser.isDefaultPassword !== currentData.isDefaultPassword
+          dbUser.isDefaultPassword !== currentData.isDefaultPassword ||
+          dbUser.medicalCard !== currentData.medicalCard
         ) {
           const updated: LocalUser = {
             id: dbUser.id,
@@ -166,6 +172,7 @@ function MainContentInner() {
             gender: dbUser.gender,
             position: dbUser.position,
             isDefaultPassword: dbUser.isDefaultPassword,
+            medicalCard: dbUser.medicalCard,
           }
           localStorage.setItem("currentUser", JSON.stringify(updated))
           setUser(updated)
@@ -269,6 +276,13 @@ function MainContentInner() {
           }}
         >
           <div className="relative p-4 space-y-3">
+            {/* Medical card warning banner */}
+            {user?.medicalCard && (() => {
+              const match = user.medicalCard.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/)
+              const expiry = match ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[2]) - 1, Number(match[1])) : null
+              if (!expiry || expiry.getTime() > Date.now()) return null
+              return <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-red-500/40 bg-red-500/10 text-sm font-medium text-red-700 dark:text-red-300">Медицинская карта закончилась ({user.medicalCard}). Требуется её обновить.</div>
+            })()}
             {/* Default password warning banner */}
             {user?.isDefaultPassword && (
               <div

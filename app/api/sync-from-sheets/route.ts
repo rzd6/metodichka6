@@ -183,6 +183,7 @@ interface SheetEmployee {
   role: string       // derived UserRole string
   rank: number
   bankAccount: string
+  medicalCard: string
   /** Already-extracted numeric VK id, or null if not present */
   vkId: string | null
 }
@@ -236,6 +237,7 @@ async function parseEmployeesFromGridData(sheetData: any): Promise<SheetEmployee
 
     const nickname = getCellText(0)
     const positionRaw = getCellText(2)
+    const medicalCard = getCellText(5)
     const bankAccount = getCellText(7)
     const vkRaw = getCellHyperlink(8) ?? getCellText(8)
 
@@ -248,7 +250,7 @@ async function parseEmployeesFromGridData(sheetData: any): Promise<SheetEmployee
     const role = POSITION_TO_ROLE[normalizedPosition] ?? "ЦдУД"
     const rank = ROLE_RANK[role] ?? 1
 
-    employees.push({ nickname, position: normalizedPosition, role, rank, bankAccount, vkId })
+    employees.push({ nickname, position: normalizedPosition, role, rank, bankAccount, medicalCard, vkId })
   }
 
   return employees
@@ -261,6 +263,7 @@ async function ensureColumns(db: Pool): Promise<void> {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS position_title TEXT DEFAULT NULL;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_default_password BOOLEAN DEFAULT false;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS absent_since TIMESTAMPTZ DEFAULT NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS medical_card TEXT DEFAULT NULL;
   `)
 }
 
@@ -384,8 +387,8 @@ export async function GET() {
         const password = emp.bankAccount.trim() || "password123"
         const insertRes = await db.query(
           `INSERT INTO users
-             (username, password, full_name, position, rank, avatar, vk_id, position_title, is_default_password)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+             (username, password, full_name, position, rank, avatar, vk_id, position_title, is_default_password, medical_card)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9)
            ON CONFLICT (username) DO NOTHING
            RETURNING id`,
           [
@@ -397,6 +400,7 @@ export async function GET() {
             "/avatars/cdud.png",
             emp.vkId,
             emp.position,
+            emp.medicalCard || null,
           ]
         )
         stats.created++
@@ -423,10 +427,11 @@ export async function GET() {
              position      = $2,
              rank          = $3,
              position_title = $4,
-             vk_id         = CASE WHEN $5::text IS NOT NULL AND (vk_id IS NULL OR vk_id = '') THEN $5::text ELSE vk_id END,
+             medical_card = $5,
+             vk_id         = CASE WHEN $6::text IS NOT NULL AND (vk_id IS NULL OR vk_id = '') THEN $6::text ELSE vk_id END,
              updated_at    = NOW()
            WHERE id = $1`,
-          [existing.id, emp.role, emp.rank, emp.position, emp.vkId]
+          [existing.id, emp.role, emp.rank, emp.position, emp.medicalCard || null, emp.vkId]
         )
         stats.updated++
 
